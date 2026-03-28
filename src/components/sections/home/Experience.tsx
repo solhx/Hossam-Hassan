@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import { SectionHeading } from "@/components/ui/section-heading";
-import { Timeline } from "@/components/ui/timeline";
-import { experiences } from "@/lib/portfolio-data";
-import { CheckCircle2 } from "lucide-react";
+import { useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
+import { CheckCircle2 } from 'lucide-react';
+import { SectionHeading } from '@/components/ui/section-heading';
+import { Timeline } from '@/components/ui/timeline';
+import { experiences } from '@/lib/portfolio-data';
 
 export function Experience() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-80px" });
+  const isInView = useInView(ref, { once: true, margin: '-80px' });
 
   const timelineItems = experiences.map((exp) => ({
     title: exp.role,
@@ -17,29 +17,28 @@ export function Experience() {
     period: exp.period,
     content: (
       <div>
-        <p className="text-sm text-muted-foreground mb-3 text-left">
+        <p className="text-sm text-neutral-500 mb-3 text-left">
           {exp.description}
         </p>
-
-        {/* Achievements */}
         <ul className="space-y-2 mb-4 text-left">
-          {exp.achievements.map((achievement, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground/80">
+          {exp.achievements.map((a, i) => (
+            <li
+              key={i}
+              className="flex items-start gap-2 text-sm text-neutral-500"
+            >
               <CheckCircle2
                 size={14}
-                className="text-primary mt-0.5 flex-shrink-0"
+                className="text-emerald-500 mt-0.5 flex-shrink-0"
               />
-              <span>{achievement}</span>
+              <span>{a}</span>
             </li>
           ))}
         </ul>
-
-        {/* Technologies */}
         <div className="flex flex-wrap gap-1.5">
           {exp.technologies.map((tech) => (
             <span
               key={tech}
-              className="inline-block px-2.5 py-1 text-xs font-medium rounded-lg bg-primary/10 text-primary border border-primary/10"
+              className="inline-block px-2.5 py-1 text-xs font-medium rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10"
             >
               {tech}
             </span>
@@ -55,7 +54,6 @@ export function Experience() {
       ref={ref}
       className="relative py-24 sm:py-32 overflow-hidden"
     >
-      {/* Dot pattern bg */}
       <div className="absolute inset-0 dot-pattern pointer-events-none" />
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">

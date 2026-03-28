@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
-import { Github, Linkedin, Twitter, Mail, Heart, ArrowUp } from "lucide-react";
-import { siteConfig, socialLinks } from "@/lib/portfolio-data";
+import { motion } from 'framer-motion';
+import { Github, Linkedin, Twitter, Mail, Heart, ArrowUp } from 'lucide-react';
+import { siteConfig, socialLinks } from '@/lib/portfolio-data';
 
 const iconMap: Record<string, React.ReactNode> = {
   github: <Github size={18} />,
@@ -13,25 +13,23 @@ const iconMap: Record<string, React.ReactNode> = {
 
 export function Footer() {
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <footer className="relative border-t border-border bg-card/50">
+    <footer className="relative border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-          {/* Left — Brand */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold">
               H
             </div>
             <div>
               <p className="font-bold text-foreground">{siteConfig.name}</p>
-              <p className="text-sm text-muted-foreground">{siteConfig.title}</p>
+              <p className="text-sm text-neutral-500">{siteConfig.title}</p>
             </div>
           </div>
 
-          {/* Center — Social */}
           <div className="flex items-center gap-3">
             {socialLinks.map((link) => (
               <motion.a
@@ -39,7 +37,7 @@ export function Footer() {
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2.5 rounded-xl bg-secondary/50 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                className="p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
                 whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 aria-label={link.name}
@@ -49,10 +47,9 @@ export function Footer() {
             ))}
           </div>
 
-          {/* Right — Back to Top */}
           <motion.button
             onClick={scrollToTop}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-foreground hover:bg-emerald-500/10 transition-all cursor-pointer"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -61,14 +58,13 @@ export function Footer() {
           </motion.button>
         </div>
 
-        {/* Bottom line */}
-        <div className="mt-8 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground flex items-center gap-1">
+        <div className="mt-8 pt-8 border-t border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-neutral-500 flex items-center gap-1">
             © {new Date().getFullYear()} {siteConfig.name}. Built with
-            <Heart size={12} className="text-primary fill-primary" />
+            <Heart size={12} className="text-emerald-500 fill-emerald-500" />
             and lots of coffee.
           </p>
-          <p className="text-xs text-muted-foreground/50">
+          <p className="text-xs text-neutral-400">
             Next.js • React • TypeScript • Tailwind CSS
           </p>
         </div>

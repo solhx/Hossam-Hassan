@@ -1,251 +1,204 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useTheme } from "next-themes";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Menu,
-  X,
-  Sun,
-  Moon,
-  Download,
   Home,
   User,
+  Zap,
   Briefcase,
   FolderOpen,
   Mail,
-  Zap,
-} from "lucide-react";
-import { cn } from "@/utils/utils";
-import { FloatingDock } from "@/components/ui/floating-dock";
+  Download,
+} from 'lucide-react';
+import { cn } from '@/utils/utils';
+import { ToggleTheme } from '@/components/common/ToggleTheme';
 
 const navItems = [
-  { label: "Home", href: "#hero", icon: <Home size={16} /> },
-  { label: "About", href: "#about", icon: <User size={16} /> },
-  { label: "Skills", href: "#skills", icon: <Zap size={16} /> },
-  { label: "Experience", href: "#experience", icon: <Briefcase size={16} /> },
-  { label: "Projects", href: "#projects", icon: <FolderOpen size={16} /> },
-  { label: "Contact", href: "#contact", icon: <Mail size={16} /> },
+  { label: 'Home', href: '#hero', icon: Home },
+  { label: 'About', href: '#about', icon: User },
+  { label: 'Skills', href: '#skills', icon: Zap },
+  { label: 'Experience', href: '#experience', icon: Briefcase },
+  { label: 'Projects', href: '#projects', icon: FolderOpen },
+  { label: 'Contact', href: '#contact', icon: Mail },
 ];
 
 export function FloatingAppBar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("hero");
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const [activeSection, setActiveSection] = useState('hero');
+  const [visible, setVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 400) {
+        setVisible(false);
+      } else {
+        setVisible(true);
+      }
+      setLastScrollY(currentScrollY);
 
       const sections = navItems.map((item) => item.href.slice(1));
       for (let i = sections.length - 1; i >= 0; i--) {
         const el = document.getElementById(sections[i]);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.top <= 150) {
-            setActiveSection(sections[i]);
-            break;
-          }
+        if (el && el.getBoundingClientRect().top <= 200) {
+          setActiveSection(sections[i]);
+          break;
         }
       }
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   const scrollTo = (href: string) => {
-    const el = document.querySelector(href);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-      setMobileOpen(false);
-    }
+    document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
     <>
-      {/* Desktop Navbar */}
-      <motion.header
-        className={cn(
-          "fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden md:flex items-center gap-1 rounded-2xl border px-2 py-2 transition-all duration-500",
-          scrolled
-            ? "bg-card/80 backdrop-blur-xl border-border shadow-lg shadow-primary/5"
-            : "bg-transparent border-transparent"
-        )}
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 200, damping: 25, delay: 0.5 }}
+      {/* ═══ Desktop ═══ */}
+      <motion.nav
+        className="fixed bottom-6 left-1/2 z-50 hidden md:flex items-center"
+        initial={{ y: 100, x: '-50%', opacity: 0 }}
+        animate={{
+          y: visible ? 0 : 100,
+          x: '-50%',
+          opacity: visible ? 1 : 0,
+        }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        {/* Logo */}
-        <a
-          href="#hero"
-          onClick={(e) => {
-            e.preventDefault();
-            scrollTo("#hero");
-          }}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary/50 transition-colors mr-2"
-        >
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+        <div className="flex items-center gap-1 px-2 py-2 rounded-full glass-strong shadow-2xl shadow-black/10 dark:shadow-black/40">
+          {/* Logo */}
+          <motion.button
+            onClick={() => scrollTo('#hero')}
+            className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-sm mr-1 cursor-pointer"
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.9 }}
+          >
             H
-          </div>
-          <span className="font-semibold text-sm text-foreground">Hossam</span>
-        </a>
+          </motion.button>
 
-        {/* Nav Links */}
-        {navItems.map((item) => (
-          <button
-            key={item.label}
-            onClick={() => scrollTo(item.href)}
-            className={cn(
-              "relative px-3 py-2 text-sm font-medium rounded-xl transition-colors cursor-pointer",
-              activeSection === item.href.slice(1)
-                ? "text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {activeSection === item.href.slice(1) && (
-              <motion.div
-                layoutId="activeSection"
-                className="absolute inset-0 bg-primary/10 rounded-xl"
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              />
-            )}
-            <span className="relative z-10">{item.label}</span>
-          </button>
-        ))}
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeSection === item.href.slice(1);
 
-        {/* Theme Toggle */}
-        {mounted && (
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="p-2 rounded-xl hover:bg-secondary/50 transition-colors text-muted-foreground hover:text-foreground ml-1 cursor-pointer"
-            aria-label="Toggle theme"
-          >
-            <AnimatePresence mode="wait">
-              {theme === "dark" ? (
-                <motion.div
-                  key="sun"
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Sun size={18} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="moon"
-                  initial={{ rotate: 90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: -90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Moon size={18} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </button>
-        )}
-
-        {/* Resume Button */}
-        <a
-          href="/resume.pdf"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-4 py-2 ml-1 text-sm font-medium rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/20"
-        >
-          <Download size={14} />
-          Resume
-        </a>
-      </motion.header>
-
-      {/* Mobile Hamburger */}
-      <motion.button
-        className="fixed top-4 right-4 z-50 md:hidden p-3 rounded-xl glass border border-border cursor-pointer"
-        onClick={() => setMobileOpen(!mobileOpen)}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        aria-label="Toggle mobile menu"
-      >
-        <AnimatePresence mode="wait">
-          {mobileOpen ? (
-            <motion.div key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
-              <X size={20} className="text-foreground" />
-            </motion.div>
-          ) : (
-            <motion.div key="menu" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }}>
-              <Menu size={20} className="text-foreground" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.button>
-
-      {/* Mobile Menu Overlay */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            className="fixed inset-0 z-40 md:hidden glass"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.nav
-              className="flex flex-col items-center justify-center h-full gap-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ delay: 0.1 }}
-            >
-              {navItems.map((item, i) => (
-                <motion.button
-                  key={item.label}
-                  onClick={() => scrollTo(item.href)}
-                  className={cn(
-                    "flex items-center gap-3 text-2xl font-semibold transition-colors cursor-pointer",
-                    activeSection === item.href.slice(1)
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground"
+            return (
+              <motion.button
+                key={item.label}
+                onClick={() => scrollTo(item.href)}
+                className={cn(
+                  'relative flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer',
+                  isActive
+                    ? 'text-neutral-900 dark:text-white'
+                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
+                )}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-active-pill"
+                    className="absolute inset-0 rounded-full bg-neutral-200/80 dark:bg-white/[0.08] border border-neutral-300/50 dark:border-white/[0.08]"
+                    transition={{
+                      type: 'spring',
+                      stiffness: 400,
+                      damping: 30,
+                    }}
+                  />
+                )}
+                <Icon size={16} className="relative z-10" />
+                <AnimatePresence>
+                  {isActive && (
+                    <motion.span
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: 'auto', opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="relative z-10 overflow-hidden whitespace-nowrap text-xs"
+                    >
+                      {item.label}
+                    </motion.span>
                   )}
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 + i * 0.05 }}
-                >
-                  {item.icon}
-                  {item.label}
-                </motion.button>
-              ))}
+                </AnimatePresence>
+              </motion.button>
+            );
+          })}
 
-              {mounted && (
-                <motion.button
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="mt-4 p-3 rounded-xl bg-secondary/50 text-foreground cursor-pointer"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-                </motion.button>
-              )}
-            </motion.nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <div className="w-px h-6 bg-neutral-300 dark:bg-white/10 mx-1" />
 
-      {/* Mobile Floating Dock (bottom) */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 md:hidden">
-        <FloatingDock
-          items={navItems.map((item) => ({
-            title: item.label,
-            icon: item.icon,
-            href: item.href,
-          }))}
-        />
-      </div>
+          {/* Theme Toggle */}
+          <div className="relative w-9 h-9">
+            <ToggleTheme animationType="circle-spread" />
+          </div>
+
+          {/* Resume */}
+          <motion.a
+            href="/resume.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-all cursor-pointer"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Download size={12} />
+            <span>Resume</span>
+          </motion.a>
+        </div>
+      </motion.nav>
+
+      {/* ═══ Mobile Dock ═══ */}
+      <motion.nav
+        className="fixed bottom-4 left-1/2 z-50 flex md:hidden items-center"
+        initial={{ y: 100, x: '-50%', opacity: 0 }}
+        animate={{
+          y: visible ? 0 : 100,
+          x: '-50%',
+          opacity: visible ? 1 : 0,
+        }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      >
+        <div className="flex items-center gap-1 px-2 py-2 rounded-full glass-strong shadow-2xl shadow-black/10 dark:shadow-black/40">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeSection === item.href.slice(1);
+
+            return (
+              <motion.button
+                key={item.label}
+                onClick={() => scrollTo(item.href)}
+                className={cn(
+                  'relative w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-colors',
+                  isActive
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-neutral-400 dark:text-neutral-600 hover:text-neutral-600 dark:hover:text-neutral-400'
+                )}
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
+                aria-label={item.label}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="mobile-active-pill"
+                    className="absolute inset-0 rounded-full bg-emerald-500/10 border border-emerald-500/20"
+                    transition={{
+                      type: 'spring',
+                      stiffness: 400,
+                      damping: 30,
+                    }}
+                  />
+                )}
+                <Icon size={18} className="relative z-10" />
+              </motion.button>
+            );
+          })}
+          <div className="w-px h-6 bg-neutral-300 dark:bg-white/10 mx-0.5" />
+          <div className="relative w-9 h-9">
+            <ToggleTheme animationType="circle-spread" />
+          </div>
+        </div>
+      </motion.nav>
     </>
   );
 }
