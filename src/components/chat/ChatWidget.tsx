@@ -15,7 +15,10 @@ export function ChatWidget() {
     if (hasInteracted) return;
     const timer = setTimeout(() => setShowTooltip(true), 5000);
     const hideTimer = setTimeout(() => setShowTooltip(false), 12000);
-    return () => { clearTimeout(timer); clearTimeout(hideTimer); };
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(hideTimer);
+    };
   }, [hasInteracted]);
 
   const handleOpen = () => {
@@ -33,7 +36,10 @@ export function ChatWidget() {
       <AnimatePresence>
         {isOpen && !isMinimized && (
           <ChatWindow
-            onClose={() => { setIsOpen(false); setIsMinimized(false); }}
+            onClose={() => {
+              setIsOpen(false);
+              setIsMinimized(false);
+            }}
             onMinimize={() => setIsMinimized(true)}
           />
         )}
@@ -46,18 +52,18 @@ export function ChatWidget() {
             initial={{ opacity: 0, y: 10, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.9 }}
-            className="relative bg-background border border-neutral-200 dark:border-neutral-800 rounded-2xl rounded-br-sm px-4 py-3 shadow-lg max-w-[220px]"
+            className="relative bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 rounded-2xl rounded-br-sm px-4 py-3 shadow-lg dark:shadow-black/30 max-w-[220px]"
           >
             <button
               onClick={() => setShowTooltip(false)}
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex items-center justify-center text-neutral-400 hover:text-foreground cursor-pointer"
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-neutral-100 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 flex items-center justify-center text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer transition-colors"
             >
               <X size={10} />
             </button>
-            <p className="text-xs text-foreground font-medium">
+            <p className="text-xs text-neutral-900 dark:text-neutral-100 font-medium">
               👋 Have questions about Hossam?
             </p>
-            <p className="text-[10px] text-neutral-500 mt-1">
+            <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-1">
               Chat with his AI assistant!
             </p>
           </motion.div>
@@ -109,7 +115,7 @@ export function ChatWidget() {
         {/* Online dot */}
         {!isOpen && (
           <motion.div
-            className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-300 border-2 border-background"
+            className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-300 border-2 border-white dark:border-neutral-900"
             animate={{ scale: [1, 1.15, 1] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           />
@@ -118,7 +124,7 @@ export function ChatWidget() {
         {/* Minimized badge */}
         {isMinimized && (
           <motion.div
-            className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center text-[8px] font-bold text-white border-2 border-background"
+            className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center text-[8px] font-bold text-white border-2 border-white dark:border-neutral-900"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
           >

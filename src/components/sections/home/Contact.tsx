@@ -107,7 +107,7 @@ export function Contact() {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <div className="rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 space-y-6">
-              <h3 className="text-xl font-bold text-foreground">
+              <h3 className="text-xl dark:text-neutral-50 font-bold text-foreground">
                 Get in Touch
               </h3>
               <p className="text-sm text-neutral-500 leading-relaxed">
@@ -126,7 +126,7 @@ export function Contact() {
                     {item.href ? (
                       <a
                         href={item.href}
-                        className="text-sm font-medium text-foreground hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                        className="text-sm font-medium  text-foreground hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                       >
                         {item.value}
                       </a>

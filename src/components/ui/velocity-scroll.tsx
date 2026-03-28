@@ -62,7 +62,7 @@ export function VelocityScroll({
         {Array.from({ length: 6 }).map((_, i) => (
           <span
             key={i}
-            className="text-5xl sm:text-7xl lg:text-8xl font-black opacity-10 text-foreground select-none"
+            className="text-5xl sm:text-7xl lg:text-8xl font-black opacity-10 dark:text-neutral-300 text-foreground select-none"
           >
             {children}
           </span>

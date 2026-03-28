@@ -34,13 +34,11 @@ export function Projects() {
     const track = trackRef.current;
     if (!section || !track) return;
 
-    // Only run horizontal scroll on desktop
     const mm = gsap.matchMedia();
 
     mm.add('(min-width: 768px)', () => {
       const cards = cardsRef.current.filter(Boolean);
 
-      // Staggered entrance
       gsap.fromTo(
         cards,
         { y: 80, opacity: 0, rotateY: -10 },
@@ -59,7 +57,6 @@ export function Projects() {
         }
       );
 
-      // Horizontal scroll
       const totalScroll = track.scrollWidth - window.innerWidth;
 
       const scrollTween = gsap.to(track, {
@@ -76,7 +73,6 @@ export function Projects() {
         },
       });
 
-      // Parallax on card images
       cards.forEach((card) => {
         const img = card.querySelector('.card-image');
         if (!img) return;
@@ -118,11 +114,12 @@ export function Projects() {
           subtitle="Scroll horizontally to explore projects built with modern technologies."
         />
 
+        {/* FIX: neutral-400 → neutral-500 dark:neutral-400 */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ delay: 1 }}
-          className="hidden md:flex items-center justify-center gap-2 text-sm text-neutral-400"
+          className="hidden md:flex items-center justify-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 font-medium"
         >
           <span>Scroll to explore</span>
           <motion.div
@@ -163,7 +160,7 @@ export function Projects() {
   );
 }
 
-/* ═══ Desktop Card — 3D Tilt + Animated Gradient Border ═══ */
+/* ═══ Desktop Card ═══ */
 
 interface ProjectCardProps {
   project: (typeof projects)[number];
@@ -207,7 +204,8 @@ function ProjectCard({ project, index, setRef }: ProjectCardProps) {
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       >
-        <div className="relative rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 overflow-hidden h-full flex flex-col">
+        {/* FIX: Stronger bg colors to ensure card content readability */}
+        <div className="relative rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-700/80 overflow-hidden h-full flex flex-col shadow-sm">
           {/* Light reflection */}
           <div
             className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-300"
@@ -233,7 +231,7 @@ function ProjectCard({ project, index, setRef }: ProjectCardProps) {
             <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-neutral-950/20 to-transparent dark:from-neutral-950/90" />
 
             {project.featured && (
-              <div className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-emerald-500/90 text-white text-xs font-semibold flex items-center gap-1 z-10">
+              <div className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-emerald-500/90 text-white text-xs font-semibold flex items-center gap-1 z-10 shadow-sm">
                 <Star size={10} className="fill-current" />
                 Featured
               </div>
@@ -242,14 +240,16 @@ function ProjectCard({ project, index, setRef }: ProjectCardProps) {
 
           {/* Content */}
           <div className="p-6 flex-1 flex flex-col">
-            <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-100 mb-2">
+            {/* FIX: Title — explicit high-contrast colors */}
+            <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-50 mb-2">
               {project.title}
             </h3>
-            <p className="text-sm text-neutral-500 leading-relaxed mb-4 flex-1">
+            {/* FIX: Description — neutral-500 → neutral-600/400 for WCAG AA */}
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed mb-4 flex-1">
               {project.description}
             </p>
 
-            {/* Animated tech badges */}
+            {/* Tech badges */}
             <div className="flex flex-wrap gap-1.5 mb-5">
               {project.tags.map((tag, i) => (
                 <motion.span
@@ -258,7 +258,8 @@ function ProjectCard({ project, index, setRef }: ProjectCardProps) {
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.05, duration: 0.3 }}
                   viewport={{ once: true }}
-                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10"
+                  // FIX: Stronger badge text + border
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/15 dark:border-emerald-500/20"
                 >
                   {tag}
                 </motion.span>
@@ -312,7 +313,8 @@ function MobileProjectCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-50px' }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 overflow-hidden"
+      // FIX: Explicit bg-white + stronger border
+      className="rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-700/80 overflow-hidden shadow-sm"
     >
       <div className="relative w-full aspect-video">
         <Image
@@ -326,15 +328,18 @@ function MobileProjectCard({
         <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 to-transparent" />
       </div>
       <div className="p-5">
-        <h3 className="text-base font-bold text-neutral-800 dark:text-neutral-100 mb-1.5">
+        {/* FIX: same contrast improvements as desktop */}
+        <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-50 mb-1.5">
           {project.title}
         </h3>
-        <p className="text-sm text-neutral-500 mb-3">{project.description}</p>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
+          {project.description}
+        </p>
         <div className="flex flex-wrap gap-1 mb-4">
           {project.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="px-2 py-0.5 text-xs rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10"
+              className="px-2 py-0.5 text-xs font-semibold rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/15 dark:border-emerald-500/20"
             >
               {tag}
             </span>

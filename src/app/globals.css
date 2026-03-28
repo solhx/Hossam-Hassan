@@ -4,7 +4,6 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* ── Light Mode (default) ── */
   --color-background: oklch(1 0 0);
   --color-foreground: oklch(0.145 0 0);
   --color-card: oklch(1 0 0);
@@ -33,9 +32,9 @@
   --animate-float: float 6s ease-in-out infinite;
   --animate-glow: glow 2s ease-in-out infinite alternate;
   --animate-shimmer: shimmer 2.5s linear infinite;
+  --animate-shimmer-sweep: shimmer-sweep 2.5s ease-in-out infinite;
 }
 
-/* ── Dark Mode ── */
 .dark {
   --color-background: oklch(0.145 0 0);
   --color-foreground: oklch(0.985 0 0);
@@ -77,6 +76,11 @@
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 @keyframes pulse-ring {
@@ -140,9 +144,10 @@ body {
 /* ── Gradient text — emerald ── */
 .gradient-text {
   background: linear-gradient(135deg, #009966 0%, #6ee7b7 50%, #008299 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
   background-size: 200% 200%;
   animation: gradient-shift 6s ease infinite;
 }
@@ -213,7 +218,7 @@ body {
   background-size: 24px 24px;
 }
 
-/* ── View Transition — base styles ── */
+/* ── View Transition ── */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
