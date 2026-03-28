@@ -22,10 +22,11 @@ interface UseChatReturn {
 
 const WELCOME: ChatMessage = {
   id: 'welcome',
+
   role: 'assistant',
-  content:
-    "👋 Hey there! I'm Hossam's AI assistant — powered by GPT-4o. I know all about his skills, projects, and experience.\n\nAsk me anything like:\n- *\"What technologies does Hossam work with?\"*\n- *\"Tell me about his featured projects\"*\n- *\"How can I hire him?\"*\n\nWhat would you like to know?",
-  timestamp: new Date(),
+   content: `👋 Hey there! I'm Hossam's AI assistant — powered by OpenRouter GPT-4o-mini. I know all about his skills, projects, and experience.\\n\\nAsk me anything like:\\n- *\\\\\"What technologies does Hossam work with?\\\\\\\"*\\n- *\\\\\"Tell me about his featured projects\\\\\\\"*\\n- *\\\\\"How can I hire him?\\\\\\\"*\\n\\nWhat would you like to know?`,
+    timestamp: new Date(),
+
 };
 
 export function useChat(): UseChatReturn {
