@@ -218,6 +218,46 @@ body {
   background-size: 24px 24px;
 }
 
+/* ── Enhanced Navbar Glass (scroll-responsive) ──
+   Applied via Tailwind classes directly in the component.
+   These supplementary utilities help with edge cases. */
+
+/* Ensure navbar shimmer doesn't bleed outside radius */
+.navbar-shimmer-mask {
+  -webkit-mask-image: linear-gradient(black, black);
+  mask-image: linear-gradient(black, black);
+}
+
+/* Smooth backdrop-filter transition (Chromium doesn't transition backdrop-filter natively) */
+@supports (backdrop-filter: blur(1px)) {
+  .nav-glass-transition {
+    transition:
+      background-color 700ms ease-out,
+      border-color 700ms ease-out,
+      box-shadow 700ms ease-out;
+  }
+}
+
+/* High-contrast mode fallback */
+@media (forced-colors: active) {
+  .glass-nav,
+  .glass-strong,
+  .glass {
+    background: Canvas !important;
+    border: 1px solid ButtonText !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* ── Reduce motion: strip all nav animations ── */
+@media (prefers-reduced-motion: reduce) {
+  [data-nav-animated] {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 /* ── View Transition ── */
 ::view-transition-old(root),
 ::view-transition-new(root) {
