@@ -98,6 +98,18 @@
   50% { background-position: 100% 50%; }
 }
 
+/* ── Project panel clip reveal ── */
+@keyframes clip-reveal {
+  from { clip-path: inset(100% 0% 0% 0%); }
+  to   { clip-path: inset(0% 0% 0% 0%);   }
+}
+
+/* ── Ambient pulse (progress rail) ── */
+@keyframes rail-pulse {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(16, 185, 129, 0);   }
+  50%       { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.18); }
+}
+
 @property --gradient-angle {
   syntax: "<angle>";
   initial-value: 0deg;
@@ -263,4 +275,9 @@ body {
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
+}
+
+/* border-white/8 explicit (some Tailwind v4 setups need this) */
+.border-white\/8 {
+  border-color: rgba(255, 255, 255, 0.08);
 }
