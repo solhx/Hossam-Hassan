@@ -14,11 +14,19 @@ import {
   AnimatePresence,
   type Variants,
 } from 'framer-motion';
-import { ExternalLink, Github, Star, ChevronDown, Code2, Layers } from 'lucide-react';
+import {
+  ExternalLink,
+  Github,
+  Star,
+  ChevronDown,
+  Code2,
+  Layers,
+} from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SectionHeading } from '@/components/ui/section-heading';
 import { Button } from '@/components/ui/button';
+import { ProjectPanelBg } from '@/components/ui/project-panel-bg';
 import { projects } from '@/lib/portfolio-data';
 import { cn, prefersReducedMotion } from '@/utils/utils';
 import Image from 'next/image';
@@ -74,12 +82,12 @@ const PROJECT_ACCENTS = [
 type Accent  = (typeof PROJECT_ACCENTS)[number];
 type Project = (typeof projects)[number];
 
-// ─── Typed easing tuples ──────────────────────────────────────
-const EASE_OUT_EXPO   = [0.16, 1, 0.3, 1]      as const;
-const EASE_IN_CUBIC   = [0.55, 0, 1, 0.45]     as const;
-const EASE_SPRING_OUT = [0.34, 1.56, 0.64, 1]  as const;
+// ─── Easing ───────────────────────────────────────────────────
+const EASE_OUT_EXPO   = [0.16, 1, 0.3, 1]     as const;
+const EASE_IN_CUBIC   = [0.55, 0, 1, 0.45]    as const;
+const EASE_SPRING_OUT = [0.34, 1.56, 0.64, 1] as const;
 
-// ─── Framer Motion variants ───────────────────────────────────
+// ─── Framer variants ──────────────────────────────────────────
 const wrapperVariants: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
@@ -89,11 +97,15 @@ const wrapperVariants: Variants = {
 const lineVariants: Variants = {
   hidden: { opacity: 0, y: 22, filter: 'blur(6px)' },
   show: {
-    opacity: 1, y: 0, filter: 'blur(0px)',
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
     transition: { duration: 0.55, ease: EASE_OUT_EXPO },
   },
   exit: {
-    opacity: 0, y: -14, filter: 'blur(4px)',
+    opacity: 0,
+    y: -14,
+    filter: 'blur(4px)',
     transition: { duration: 0.22, ease: EASE_IN_CUBIC },
   },
 };
@@ -101,14 +113,16 @@ const lineVariants: Variants = {
 const tagVariants: Variants = {
   hidden: { opacity: 0, scale: 0.7, y: 8 },
   show: (i: number) => ({
-    opacity: 1, scale: 1, y: 0,
+    opacity: 1,
+    scale: 1,
+    y: 0,
     transition: { delay: i * 0.05, duration: 0.35, ease: EASE_SPRING_OUT },
   }),
   exit: { opacity: 0, scale: 0.75, transition: { duration: 0.12 } },
 };
 
 // ═══════════════════════════════════════════════════════════════
-//  Noise Texture SVG (inline — zero network request)
+//  Noise Overlay
 // ═══════════════════════════════════════════════════════════════
 function NoiseOverlay() {
   return (
@@ -128,14 +142,14 @@ function NoiseOverlay() {
 //  Cursor Follower
 // ═══════════════════════════════════════════════════════════════
 function CursorFollower({ active }: { active: boolean }) {
-  const cursorRef   = useRef<HTMLDivElement>(null);
-  const trailRef    = useRef<HTMLDivElement>(null);
-  const posX        = useMotionValue(0);
-  const posY        = useMotionValue(0);
-  const springX     = useSpring(posX, { stiffness: 500, damping: 40 });
-  const springY     = useSpring(posY, { stiffness: 500, damping: 40 });
-  const trailX      = useSpring(posX, { stiffness: 150, damping: 25 });
-  const trailY      = useSpring(posY, { stiffness: 150, damping: 25 });
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const trailRef  = useRef<HTMLDivElement>(null);
+  const posX      = useMotionValue(0);
+  const posY      = useMotionValue(0);
+  const springX   = useSpring(posX, { stiffness: 500, damping: 40 });
+  const springY   = useSpring(posY, { stiffness: 500, damping: 40 });
+  const trailX    = useSpring(posX, { stiffness: 150, damping: 25 });
+  const trailY    = useSpring(posY, { stiffness: 150, damping: 25 });
 
   useEffect(() => {
     const move = (e: MouseEvent) => {
@@ -148,7 +162,6 @@ function CursorFollower({ active }: { active: boolean }) {
 
   return (
     <>
-      {/* Trail (lags behind) */}
       <motion.div
         ref={trailRef}
         className="pointer-events-none fixed z-[998] rounded-full border border-white/10 mix-blend-difference"
@@ -163,7 +176,6 @@ function CursorFollower({ active }: { active: boolean }) {
           transition: 'opacity 0.3s ease',
         }}
       />
-      {/* Dot (follows instantly) */}
       <motion.div
         ref={cursorRef}
         className="pointer-events-none fixed z-[999] rounded-full bg-white mix-blend-difference"
@@ -190,18 +202,25 @@ export function Projects() {
   const wrapperRef  = useRef<HTMLDivElement>(null);
   const panelRefs   = useRef<HTMLDivElement[]>([]);
   const bgRefs      = useRef<HTMLDivElement[]>([]);
-  const [activeIndex, setActiveIndex]       = useState(0);
-  const [cursorActive, setCursorActive]     = useState(false);
+  const [activeIndex, setActiveIndex]   = useState(0);
+  const [cursorActive, setCursorActive] = useState(false);
   const reduced = useMemo(() => prefersReducedMotion(), []);
 
-  const setPanelRef = useCallback((el: HTMLDivElement | null, i: number) => {
-    if (el) panelRefs.current[i] = el;
-  }, []);
-  const setBgRef = useCallback((el: HTMLDivElement | null, i: number) => {
-    if (el) bgRefs.current[i] = el;
-  }, []);
+  const setPanelRef = useCallback(
+    (el: HTMLDivElement | null, i: number) => {
+      if (el) panelRefs.current[i] = el;
+    },
+    [],
+  );
 
-  // ── GSAP pin + scrub ──────────────────────────────────────
+  const setBgRef = useCallback(
+    (el: HTMLDivElement | null, i: number) => {
+      if (el) bgRefs.current[i] = el;
+    },
+    [],
+  );
+
+  // ── GSAP pin + scrub ────────────────────────────────────────
   useEffect(() => {
     if (reduced) return;
     const section = sectionRef.current;
@@ -212,8 +231,8 @@ export function Projects() {
       const mm = gsap.matchMedia();
 
       mm.add('(min-width: 768px)', () => {
-        const count  = projects.length;
-        const proxy  = { index: 0 };
+        const count = projects.length;
+        const proxy = { index: 0 };
 
         const masterTween = gsap.to(proxy, {
           index: count - 1,
@@ -235,13 +254,16 @@ export function Projects() {
             },
             invalidateOnRefresh: true,
             onUpdate: (self) => {
-              const newIndex = Math.round(self.progress * (count - 1));
+              const newIndex = Math.round(
+                self.progress * (count - 1),
+              );
               setActiveIndex(newIndex);
 
               panelRefs.current.forEach((panel, i) => {
                 if (!panel || i === 0) return;
-                const panelProgress = self.progress * (count - 1) - (i - 1);
-                const clamped       = Math.max(0, Math.min(1, panelProgress));
+                const panelProgress =
+                  self.progress * (count - 1) - (i - 1);
+                const clamped = Math.max(0, Math.min(1, panelProgress));
                 panel.style.clipPath = `inset(${(1 - clamped) * 100}% 0% 0% 0%)`;
               });
 
@@ -321,10 +343,7 @@ export function Projects() {
             />
           ))}
 
-          <ProgressRail
-            total={projects.length}
-            active={activeIndex}
-          />
+          <ProgressRail total={projects.length} active={activeIndex} />
 
           {/* Scroll cue */}
           <AnimatePresence>
@@ -342,7 +361,11 @@ export function Projects() {
                 </span>
                 <motion.div
                   animate={{ y: [0, 5, 0] }}
-                  transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                  transition={{
+                    duration: 1.4,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
                 >
                   <ChevronDown size={14} />
                 </motion.div>
@@ -372,10 +395,14 @@ interface PanelProps {
 }
 
 function Panel({
-  project, index, isActive, accent,
-  setPanelRef, setBgRef, reduced,
+  project,
+  index,
+  isActive,
+  accent,
+  setPanelRef,
+  setBgRef,
+  reduced,
 }: PanelProps) {
-  // Cursor-tracked spotlight
   const spotlightRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = useCallback(
@@ -383,8 +410,8 @@ function Panel({
       const el = spotlightRef.current;
       if (!el) return;
       const rect = e.currentTarget.getBoundingClientRect();
-      const x    = ((e.clientX - rect.left) / rect.width)  * 100;
-      const y    = ((e.clientY - rect.top)  / rect.height) * 100;
+      const x = ((e.clientX - rect.left) / rect.width)  * 100;
+      const y = ((e.clientY - rect.top)  / rect.height) * 100;
       el.style.background = `radial-gradient(circle 600px at ${x}% ${y}%, ${accent.spotlight}, transparent 70%)`;
     },
     [accent.spotlight],
@@ -401,43 +428,35 @@ function Panel({
       ref={(el) => setPanelRef(el, index)}
       className="absolute inset-0 w-full h-full"
       style={{
-        clipPath: index === 0
-          ? 'inset(0% 0% 0% 0%)'
-          : 'inset(100% 0% 0% 0%)',
+        clipPath:
+          index === 0 ? 'inset(0% 0% 0% 0%)' : 'inset(100% 0% 0% 0%)',
         zIndex: index + 1,
       }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Cursor-tracked spotlight layer */}
+      {/* Spotlight */}
       <div
         ref={spotlightRef}
         className="pointer-events-none absolute inset-0 z-10 transition-[background] duration-300"
         aria-hidden="true"
       />
 
-      {/* Background */}
+      {/* ── Background ── */}
       <div
         ref={(el) => setBgRef(el, index)}
         className="absolute inset-0 will-change-transform"
         style={{ transform: 'scale(1.25) translateY(0%)' }}
       >
-        <Image
-          src={project.image}
-          alt=""
-          aria-hidden="true"
-          fill
-          className="object-cover"
-          sizes="100vw"
-          priority={index === 0}
-          loading={index === 0 ? 'eager' : 'lazy'}
-        />
+        {/* Animated gradient background */}
+        <ProjectPanelBg index={index} isActive={isActive} />
+
         {/* Left scrim */}
-        <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/94 via-neutral-950/65 to-neutral-950/15" />
+        <div className="absolute inset-0 bg-gradient-to-r from-neutral-50/90 via-neutral-50/60 to-neutral-50/10 dark:from-neutral-950/94 dark:via-neutral-950/65 dark:to-neutral-950/15" />
         {/* Top scrim */}
-        <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/80 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-neutral-50/75 via-transparent to-transparent dark:from-neutral-950/80 dark:via-transparent dark:to-transparent" />
         {/* Bottom scrim */}
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-50/55 via-transparent to-transparent dark:from-neutral-950/60 dark:via-transparent dark:to-transparent" />
         {/* Accent glow */}
         <div
           className="absolute inset-0"
@@ -447,11 +466,11 @@ function Panel({
         />
       </div>
 
-      {/* Foreground */}
+      {/* ── Foreground ── */}
       <div className="relative z-10 h-full flex items-center">
         <div className="max-w-7xl mx-auto w-full px-6 lg:px-10 grid grid-cols-12 gap-6 xl:gap-12 items-center pt-40 pb-8">
 
-          {/* Left: text content */}
+          {/* Left: text */}
           <div className="col-span-12 lg:col-span-5 xl:col-span-5">
             <AnimatePresence mode="wait">
               {isActive && (
@@ -466,19 +485,26 @@ function Panel({
             </AnimatePresence>
           </div>
 
-          {/* Right: flippable card */}
+          {/* Right: flip card */}
           <div className="col-span-12 lg:col-span-7 xl:col-span-6 xl:col-start-7 flex justify-center lg:justify-end">
             <AnimatePresence mode="wait">
               {isActive && (
                 <motion.div
                   key={`card-${project.id}`}
-                  initial={reduced ? false : { opacity: 0, x: 60, rotateY: -8 }}
+                  initial={
+                    reduced ? false : { opacity: 0, x: 60, rotateY: -8 }
+                  }
                   animate={{ opacity: 1, x: 0, rotateY: 0 }}
-                  exit={reduced ? {} : {
-                    opacity: 0, x: -40,
-                    transition: { duration: 0.2 },
+                  exit={
+                    reduced
+                      ? {}
+                      : { opacity: 0, x: -40, transition: { duration: 0.2 } }
+                  }
+                  transition={{
+                    duration: 0.55,
+                    ease: EASE_OUT_EXPO,
+                    delay: 0.1,
                   }}
-                  transition={{ duration: 0.55, ease: EASE_OUT_EXPO, delay: 0.1 }}
                   className="w-full max-w-[500px]"
                 >
                   <FlipCard project={project} accent={accent} />
@@ -497,7 +523,8 @@ function Panel({
         )}
         aria-hidden="true"
       >
-        {String(index + 1).padStart(2, '0')} / {String(projects.length).padStart(2, '0')}
+        {String(index + 1).padStart(2, '0')} /{' '}
+        {String(projects.length).padStart(2, '0')}
       </div>
     </div>
   );
@@ -513,7 +540,12 @@ interface ContentBlockProps {
   reduced: boolean;
 }
 
-function ContentBlock({ project, index, accent, reduced }: ContentBlockProps) {
+function ContentBlock({
+  project,
+  index,
+  accent,
+  reduced,
+}: ContentBlockProps) {
   return (
     <motion.div
       variants={reduced ? undefined : wrapperVariants}
@@ -522,7 +554,7 @@ function ContentBlock({ project, index, accent, reduced }: ContentBlockProps) {
       exit="exit"
       className="flex flex-col gap-5 relative"
     >
-      {/* ── Large background counter ── */}
+      {/* Large background counter */}
       <motion.div
         variants={reduced ? undefined : lineVariants}
         className={cn(
@@ -535,9 +567,12 @@ function ContentBlock({ project, index, accent, reduced }: ContentBlockProps) {
         {String(index + 1).padStart(2, '0')}
       </motion.div>
 
-      {/* ── Featured badge ── */}
+      {/* Featured badge */}
       {project.featured && (
-        <motion.div variants={reduced ? undefined : lineVariants} className="relative z-10">
+        <motion.div
+          variants={reduced ? undefined : lineVariants}
+          className="relative z-10"
+        >
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 backdrop-blur-md text-emerald-400 border border-emerald-500/25 text-[10px] font-bold tracking-widest uppercase">
             <Star size={9} className="fill-current" />
             Featured Project
@@ -545,25 +580,25 @@ function ContentBlock({ project, index, accent, reduced }: ContentBlockProps) {
         </motion.div>
       )}
 
-      {/* ── Title ── */}
+      {/* Title */}
       <motion.h3
         variants={reduced ? undefined : lineVariants}
-        className="relative z-10 text-4xl xl:text-5xl font-extrabold text-white leading-[1.05] tracking-tight"
+        className="relative z-10 text-4xl xl:text-5xl font-extrabold leading-[1.05] tracking-tight text-neutral-900 dark:text-white"
       >
         {project.title}
       </motion.h3>
 
-      {/* ── Glass description card ── */}
+      {/* Description glass card */}
       <motion.div
         variants={reduced ? undefined : lineVariants}
-        className="relative z-10 rounded-xl px-4 py-3 bg-white/[0.04] backdrop-blur-sm border border-white/[0.07]"
+        className="relative z-10 rounded-xl px-4 py-3 backdrop-blur-sm border bg-black/[0.04] border-black/[0.07] dark:bg-white/[0.04] dark:border-white/[0.07]"
       >
-        <p className="text-[14px] leading-relaxed text-neutral-300">
+        <p className="text-[14px] leading-relaxed text-neutral-700 dark:text-neutral-300">
           {project.description}
         </p>
       </motion.div>
 
-      {/* ── Tech tags with sweep underline ── */}
+      {/* Tech tags */}
       <motion.div
         variants={reduced ? undefined : lineVariants}
         className="relative z-10 flex flex-wrap gap-2"
@@ -579,7 +614,6 @@ function ContentBlock({ project, index, accent, reduced }: ContentBlockProps) {
               accent.badge,
             )}
           >
-            {/* Sweep underline */}
             <motion.span
               className={cn(
                 'absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r',
@@ -587,14 +621,18 @@ function ContentBlock({ project, index, accent, reduced }: ContentBlockProps) {
               )}
               initial={{ scaleX: 0, originX: 0 }}
               animate={{ scaleX: 1 }}
-              transition={{ delay: 0.4 + i * 0.05, duration: 0.5, ease: EASE_OUT_EXPO }}
+              transition={{
+                delay: 0.4 + i * 0.05,
+                duration: 0.5,
+                ease: EASE_OUT_EXPO,
+              }}
             />
             {tag}
           </motion.span>
         ))}
       </motion.div>
 
-      {/* ── CTAs ── */}
+      {/* CTAs */}
       <motion.div
         variants={reduced ? undefined : lineVariants}
         className="relative z-10 flex items-center gap-3 pt-1"
@@ -613,7 +651,7 @@ function ContentBlock({ project, index, accent, reduced }: ContentBlockProps) {
           <Button
             variant="outline"
             size="md"
-            className="gap-2 border-white/15 text-white/80 bg-white/[0.04] backdrop-blur-sm hover:bg-white/[0.08] hover:border-white/30 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150"
+            className="gap-2 backdrop-blur-sm hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 border-black/15 text-neutral-700 bg-black/[0.04] hover:bg-black/[0.08] hover:border-black/30 hover:text-neutral-900 dark:border-white/15 dark:text-white/80 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] dark:hover:border-white/30 dark:hover:text-white"
           >
             <Github size={14} />
             Source Code
@@ -625,9 +663,15 @@ function ContentBlock({ project, index, accent, reduced }: ContentBlockProps) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Flip Card  (front: screenshot  |  back: tech stack detail)
+//  Flip Card
 // ═══════════════════════════════════════════════════════════════
-function FlipCard({ project, accent }: { project: Project; accent: Accent }) {
+function FlipCard({
+  project,
+  accent,
+}: {
+  project: Project;
+  accent: Accent;
+}) {
   const [flipped, setFlipped] = useState(false);
 
   return (
@@ -658,14 +702,12 @@ function FlipCard({ project, accent }: { project: Project; accent: Accent }) {
             ].join(', '),
           }}
         >
-          {/* Accent halo */}
           <div
             className="absolute -inset-8 -z-10 rounded-3xl opacity-40 blur-3xl pointer-events-none"
             style={{ background: accent.glow }}
             aria-hidden="true"
           />
 
-          {/* Screenshot */}
           <div className="relative w-full aspect-[16/10] overflow-hidden">
             <Image
               src={project.image}
@@ -675,32 +717,27 @@ function FlipCard({ project, accent }: { project: Project; accent: Accent }) {
               sizes="(min-width: 1024px) 45vw, 90vw"
               loading="lazy"
             />
-            {/* Bottom fade */}
             <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-neutral-950/10 to-transparent" />
-
-            {/* Featured pill on image */}
             {project.featured && (
               <div className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/80 backdrop-blur-md text-white text-[10px] font-bold shadow-sm">
                 <Star size={8} className="fill-current" />
                 Featured
               </div>
             )}
-
-            {/* Hover hint */}
             <div className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-white/50 text-[10px] font-medium border border-white/10">
               <Layers size={9} />
               Hover for stack
             </div>
           </div>
 
-          {/* Glass footer */}
           <div className="relative px-5 py-4 bg-neutral-950/75 backdrop-blur-2xl border-t border-white/[0.06] overflow-hidden">
-            {/* Shimmer */}
             <div
               className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.04] to-transparent animate-[shimmer-sweep_4s_ease-in-out_infinite] pointer-events-none"
               aria-hidden="true"
             />
-            <p className="relative text-sm font-bold text-white">{project.title}</p>
+            <p className="relative text-sm font-bold text-white">
+              {project.title}
+            </p>
             <p className="relative text-xs text-neutral-400 mt-0.5 line-clamp-1">
               {project.description}
             </p>
@@ -721,7 +758,6 @@ function FlipCard({ project, accent }: { project: Project; accent: Accent }) {
             ].join(', '),
           }}
         >
-          {/* Blurred project image as background */}
           <div className="absolute inset-0">
             <Image
               src={project.image}
@@ -735,7 +771,6 @@ function FlipCard({ project, accent }: { project: Project; accent: Accent }) {
             <div className="absolute inset-0 bg-neutral-950/85 backdrop-blur-sm" />
           </div>
 
-          {/* Accent glow back */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -743,9 +778,7 @@ function FlipCard({ project, accent }: { project: Project; accent: Accent }) {
             }}
           />
 
-          {/* Back content */}
           <div className="relative z-10 h-full flex flex-col p-6 justify-between">
-            {/* Header */}
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Code2 size={14} className="text-white/40" />
@@ -761,15 +794,15 @@ function FlipCard({ project, accent }: { project: Project; accent: Accent }) {
               </p>
             </div>
 
-            {/* Tags grid */}
             <div className="flex flex-wrap gap-2 my-4">
               {project.tags.map((tag, i) => (
                 <motion.span
                   key={tag}
                   initial={{ opacity: 0, scale: 0.8 }}
-                  animate={flipped
-                    ? { opacity: 1, scale: 1 }
-                    : { opacity: 0, scale: 0.8 }
+                  animate={
+                    flipped
+                      ? { opacity: 1, scale: 1 }
+                      : { opacity: 0, scale: 0.8 }
                   }
                   transition={{
                     delay: flipped ? 0.3 + i * 0.055 : 0,
@@ -782,17 +815,17 @@ function FlipCard({ project, accent }: { project: Project; accent: Accent }) {
                     accent.badge,
                   )}
                 >
-                  {/* Small colored dot */}
                   <span
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ background: accent.glow.replace('0.22', '0.9') }}
+                    style={{
+                      background: accent.glow.replace('0.22', '0.9'),
+                    }}
                   />
                   {tag}
                 </motion.span>
               ))}
             </div>
 
-            {/* CTA row on back */}
             <div className="flex gap-2.5">
               <a
                 href={project.liveUrl}
@@ -801,7 +834,11 @@ function FlipCard({ project, accent }: { project: Project; accent: Accent }) {
                 className="flex-1"
                 onClick={(e) => e.stopPropagation()}
               >
-                <Button variant="emerald" size="sm" className="w-full gap-1.5 text-xs">
+                <Button
+                  variant="emerald"
+                  size="sm"
+                  className="w-full gap-1.5 text-xs"
+                >
                   <ExternalLink size={12} />
                   Live Demo
                 </Button>
@@ -833,21 +870,24 @@ function FlipCard({ project, accent }: { project: Project; accent: Accent }) {
 // ═══════════════════════════════════════════════════════════════
 //  Progress Rail
 // ═══════════════════════════════════════════════════════════════
-function ProgressRail({ total, active }: { total: number; active: number }) {
+function ProgressRail({
+  total,
+  active,
+}: {
+  total: number;
+  active: number;
+}) {
   return (
     <div
       className="absolute right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-3"
       role="tablist"
       aria-label="Project navigation"
     >
-      {/* Glass pill container */}
       <div className="relative flex flex-col items-center gap-3 px-2 py-3 rounded-full bg-white/[0.04] backdrop-blur-md border border-white/[0.07]">
-        {/* Track line */}
         <div
           className="absolute top-3 bottom-3 w-px bg-white/10 left-1/2 -translate-x-1/2 -z-10"
           aria-hidden="true"
         />
-
         {Array.from({ length: total }).map((_, i) => (
           <div
             key={i}
@@ -856,7 +896,6 @@ function ProgressRail({ total, active }: { total: number; active: number }) {
             aria-label={projects[i]?.title ?? `Project ${i + 1}`}
             className="relative flex items-center justify-center w-4 h-4"
           >
-            {/* Active pulse ring */}
             {i === active && (
               <motion.div
                 key={`pulse-${i}`}
@@ -866,12 +905,11 @@ function ProgressRail({ total, active }: { total: number; active: number }) {
                 transition={{ duration: 0.3, ease: EASE_SPRING_OUT }}
               />
             )}
-            {/* Dot */}
             <motion.div
               animate={
                 i === active
                   ? { scale: 1.4, backgroundColor: '#10b981' }
-                  : { scale: 1,   backgroundColor: 'rgba(255,255,255,0.18)' }
+                  : { scale: 1, backgroundColor: 'rgba(255,255,255,0.18)' }
               }
               transition={{ duration: 0.25, ease: EASE_SPRING_OUT }}
               className="w-1.5 h-1.5 rounded-full"
@@ -880,7 +918,6 @@ function ProgressRail({ total, active }: { total: number; active: number }) {
         ))}
       </div>
 
-      {/* Active index number below rail */}
       <motion.span
         key={active}
         initial={{ opacity: 0, y: -4 }}
@@ -903,14 +940,24 @@ function MobileStack() {
     <div className="md:hidden w-full h-full overflow-y-auto">
       <div className="max-w-lg mx-auto px-4 pt-36 pb-14 space-y-5">
         {projects.map((project, index) => (
-          <MobileCard key={project.id} project={project} index={index} />
+          <MobileCard
+            key={project.id}
+            project={project}
+            index={index}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function MobileCard({ project, index }: { project: Project; index: number }) {
+function MobileCard({
+  project,
+  index,
+}: {
+  project: Project;
+  index: number;
+}) {
   const accent  = PROJECT_ACCENTS[index % PROJECT_ACCENTS.length];
   const [flipped, setFlipped] = useState(false);
 
@@ -919,9 +966,12 @@ function MobileCard({ project, index }: { project: Project; index: number }) {
       initial={{ opacity: 0, y: 32 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.5, delay: index * 0.06, ease: EASE_OUT_EXPO }}
+      transition={{
+        duration: 0.5,
+        delay: index * 0.06,
+        ease: EASE_OUT_EXPO,
+      }}
     >
-      {/* Tap to flip on mobile */}
       <div
         style={{ perspective: 1000 }}
         onClick={() => setFlipped((f) => !f)}
@@ -937,7 +987,10 @@ function MobileCard({ project, index }: { project: Project; index: number }) {
           {/* Front */}
           <div
             className="rounded-2xl overflow-hidden bg-neutral-900 border border-white/[0.07] shadow-xl"
-            style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+            style={{
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+            }}
           >
             <div className="relative w-full aspect-video overflow-hidden">
               <Image
@@ -961,8 +1014,12 @@ function MobileCard({ project, index }: { project: Project; index: number }) {
               </span>
             </div>
             <div className="p-5">
-              <h3 className="text-[15px] font-bold text-white mb-1.5">{project.title}</h3>
-              <p className="text-sm text-neutral-400 leading-relaxed mb-3">{project.description}</p>
+              <h3 className="text-[15px] font-bold text-white mb-1.5">
+                {project.title}
+              </h3>
+              <p className="text-sm text-neutral-400 leading-relaxed mb-3">
+                {project.description}
+              </p>
               <div className="flex flex-wrap gap-1.5 mb-4">
                 {project.tags.slice(0, 4).map((tag) => (
                   <span
@@ -977,13 +1034,33 @@ function MobileCard({ project, index }: { project: Project; index: number }) {
                 ))}
               </div>
               <div className="flex gap-2.5">
-                <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="flex-1" onClick={(e) => e.stopPropagation()}>
-                  <Button variant="emerald" size="sm" className="w-full gap-1.5">
+                <a
+                  href={project.liveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    variant="emerald"
+                    size="sm"
+                    className="w-full gap-1.5"
+                  >
                     <ExternalLink size={12} /> Demo
                   </Button>
                 </a>
-                <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="flex-1" onClick={(e) => e.stopPropagation()}>
-                  <Button variant="outline" size="sm" className="w-full gap-1.5 border-white/15 text-white/80 bg-white/[0.04]">
+                <a
+                  href={project.githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5 border-white/15 text-white/80 bg-white/[0.04]"
+                  >
                     <Github size={12} /> Code
                   </Button>
                 </a>
@@ -1002,31 +1079,52 @@ function MobileCard({ project, index }: { project: Project; index: number }) {
           >
             <div
               className="absolute inset-0 opacity-20"
-              style={{ background: `radial-gradient(ellipse 80% 80% at 50% 50%, ${accent.glow}, transparent 70%)` }}
+              style={{
+                background: `radial-gradient(ellipse 80% 80% at 50% 50%, ${accent.glow}, transparent 70%)`,
+              }}
             />
             <div className="relative z-10">
-              <span className="text-[9px] font-bold tracking-widest uppercase text-white/30">Tech Stack</span>
-              <h4 className="text-base font-bold text-white mt-1 mb-3">{project.title}</h4>
+              <span className="text-[9px] font-bold tracking-widest uppercase text-white/30">
+                Tech Stack
+              </span>
+              <h4 className="text-base font-bold text-white mt-1 mb-3">
+                {project.title}
+              </h4>
               <div className="flex flex-wrap gap-2">
                 {project.tags.map((tag, i) => (
                   <motion.span
                     key={tag}
                     initial={{ opacity: 0, scale: 0.8 }}
-                    animate={flipped ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-                    transition={{ delay: flipped ? 0.25 + i * 0.05 : 0, duration: 0.28, ease: EASE_SPRING_OUT }}
+                    animate={
+                      flipped
+                        ? { opacity: 1, scale: 1 }
+                        : { opacity: 0, scale: 0.8 }
+                    }
+                    transition={{
+                      delay: flipped ? 0.25 + i * 0.05 : 0,
+                      duration: 0.28,
+                      ease: EASE_SPRING_OUT,
+                    }}
                     className={cn(
                       'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-white/[0.05]',
                       accent.badge,
                     )}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: accent.glow.replace('0.22', '0.9') }} />
+                    <span
+                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      style={{
+                        background: accent.glow.replace('0.22', '0.9'),
+                      }}
+                    />
                     {tag}
                   </motion.span>
                 ))}
               </div>
             </div>
             <div className="relative z-10 text-center">
-              <span className="text-[10px] text-white/25">Tap to flip back</span>
+              <span className="text-[10px] text-white/25">
+                Tap to flip back
+              </span>
             </div>
           </div>
         </motion.div>

@@ -57,58 +57,169 @@
   --color-ring: oklch(0.922 0 0);
 }
 
-/* ── Keyframes ── */
+/* ═══════════════════════════════════════════════════════════════
+   Panel Background — CSS-only theme switching
+   Uses CSS custom properties set as inline style on .panel-bg.
+   The .dark class on <html> flips which variable is read.
+   Zero JS involved → zero hydration mismatch.
+═══════════════════════════════════════════════════════════════ */
+
+/* Base layer — solid background color */
+.panel-bg__base {
+  background: var(--pb-base-light);
+  transition: background 600ms ease;
+}
+.dark .panel-bg__base {
+  background: var(--pb-base-dark);
+}
+
+/* Mesh gradient layer */
+.panel-bg__mesh {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 80%, var(--pb-mesh-light)  0%, transparent 55%),
+    radial-gradient(ellipse 60% 80% at 80% 20%, var(--pb-orb3-light)  0%, transparent 55%),
+    radial-gradient(ellipse 90% 50% at 50% 50%, var(--pb-orb2-light)  0%, transparent 60%);
+  transition: background 600ms ease;
+}
+.dark .panel-bg__mesh {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 80%, var(--pb-mesh-dark)  0%, transparent 55%),
+    radial-gradient(ellipse 60% 80% at 80% 20%, var(--pb-orb3-dark)  0%, transparent 55%),
+    radial-gradient(ellipse 90% 50% at 50% 50%, var(--pb-orb2-dark)  0%, transparent 60%);
+}
+
+/* Orb A */
+.panel-bg__orb--a {
+  background: radial-gradient(circle at center, var(--pb-orb1-light) 0%, transparent 68%);
+  transition: background 600ms ease;
+}
+.dark .panel-bg__orb--a {
+  background: radial-gradient(circle at center, var(--pb-orb1-dark) 0%, transparent 68%);
+}
+
+/* Orb B */
+.panel-bg__orb--b {
+  background: radial-gradient(circle at center, var(--pb-orb2-light) 0%, transparent 68%);
+  transition: background 600ms ease;
+}
+.dark .panel-bg__orb--b {
+  background: radial-gradient(circle at center, var(--pb-orb2-dark) 0%, transparent 68%);
+}
+
+/* Orb C */
+.panel-bg__orb--c {
+  background: radial-gradient(circle at center, var(--pb-orb3-light) 0%, transparent 68%);
+  transition: background 600ms ease;
+}
+.dark .panel-bg__orb--c {
+  background: radial-gradient(circle at center, var(--pb-orb3-dark) 0%, transparent 68%);
+}
+
+/* Grid lines */
+.panel-bg__grid {
+  background-image:
+    linear-gradient(rgba(0,0,0,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.028) 1px, transparent 1px);
+  transition: background-image 600ms ease;
+}
+.dark .panel-bg__grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Keyframes
+═══════════════════════════════════════════════════════════════ */
+
 @keyframes marquee {
-  0% { transform: translateX(0%); }
+  0%   { transform: translateX(0%); }
   100% { transform: translateX(-50%); }
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  50%       { transform: translateY(-20px); }
 }
 
 @keyframes glow {
-  0% { box-shadow: 0 0 20px rgba(109, 244, 173, 0.15); }
+  0%   { box-shadow: 0 0 20px rgba(109, 244, 173, 0.15); }
   100% { box-shadow: 0 0 40px rgba(109, 244, 173, 0.3); }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
+  0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
 @keyframes shimmer-sweep {
-  0% { transform: translateX(-100%); }
+  0%   { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
 
 @keyframes pulse-ring {
-  0% { transform: scale(0.85); opacity: 1; }
-  100% { transform: scale(1.8); opacity: 0; }
+  0%   { transform: scale(0.85); opacity: 1; }
+  100% { transform: scale(1.8);  opacity: 0; }
 }
 
 @keyframes gradient-rotate {
-  0% { --gradient-angle: 0deg; }
+  0%   { --gradient-angle: 0deg; }
   100% { --gradient-angle: 360deg; }
 }
 
 @keyframes gradient-shift {
   0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  50%       { background-position: 100% 50%; }
 }
 
-/* ── Project panel clip reveal ── */
 @keyframes clip-reveal {
   from { clip-path: inset(100% 0% 0% 0%); }
-  to   { clip-path: inset(0% 0% 0% 0%);   }
+  to   { clip-path: inset(0%   0% 0% 0%); }
 }
 
-/* ── Ambient pulse (progress rail) ── */
 @keyframes rail-pulse {
-  0%, 100% { box-shadow: 0 0 0 0   rgba(16, 185, 129, 0);   }
+  0%, 100% { box-shadow: 0 0 0 0   rgba(16, 185, 129, 0);    }
   50%       { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.18); }
 }
+
+/* ── Project panel orb animations ── */
+@keyframes panel-orb-a {
+  0%   { transform: translateZ(0) translate(0%,   0%)  scale(1);    }
+  20%  { transform: translateZ(0) translate(8%,  -12%) scale(1.06); }
+  45%  { transform: translateZ(0) translate(-6%,  10%) scale(0.95); }
+  65%  { transform: translateZ(0) translate(12%,  5%)  scale(1.04); }
+  80%  { transform: translateZ(0) translate(-4%, -8%)  scale(1.02); }
+  100% { transform: translateZ(0) translate(0%,   0%)  scale(1);    }
+}
+
+@keyframes panel-orb-b {
+  0%   { transform: translateZ(0) translate(0%,    0%) scale(1);    }
+  25%  { transform: translateZ(0) translate(-10%, 14%) scale(1.08); }
+  50%  { transform: translateZ(0) translate(7%,  -6%)  scale(0.93); }
+  75%  { transform: translateZ(0) translate(-5%,  9%)  scale(1.05); }
+  100% { transform: translateZ(0) translate(0%,   0%)  scale(1);    }
+}
+
+@keyframes panel-orb-c {
+  0%   { transform: translateZ(0) translate(0%,    0%) scale(1);   }
+  30%  { transform: translateZ(0) translate(14%, -10%) scale(1.1); }
+  60%  { transform: translateZ(0) translate(-8%,  12%) scale(0.9); }
+  100% { transform: translateZ(0) translate(0%,   0%)  scale(1);   }
+}
+
+/* ── Reduced motion: freeze all panel orbs ── */
+@media (prefers-reduced-motion: reduce) {
+  .panel-bg__orb--a,
+  .panel-bg__orb--b,
+  .panel-bg__orb--c,
+  .panel-bg__mesh {
+    animation: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   @property
+═══════════════════════════════════════════════════════════════ */
 
 @property --gradient-angle {
   syntax: "<angle>";
@@ -116,10 +227,17 @@
   inherits: false;
 }
 
-/* ── Base ── */
-* { border-color: var(--color-border); }
+/* ═══════════════════════════════════════════════════════════════
+   Base
+═══════════════════════════════════════════════════════════════ */
 
-html { scroll-behavior: auto; }
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  scroll-behavior: auto;
+}
 
 body {
   background: var(--color-background);
@@ -144,8 +262,14 @@ body {
   background: rgba(16, 185, 129, 0.35);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Reduced Motion — global
+═══════════════════════════════════════════════════════════════ */
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -153,7 +277,10 @@ body {
   }
 }
 
-/* ── Gradient text — emerald ── */
+/* ═══════════════════════════════════════════════════════════════
+   Gradient text
+═══════════════════════════════════════════════════════════════ */
+
 .gradient-text {
   background: linear-gradient(135deg, #009966 0%, #6ee7b7 50%, #008299 100%);
   background-clip: text;
@@ -164,14 +291,16 @@ body {
   animation: gradient-shift 6s ease infinite;
 }
 
-/* ── Glassmorphism ── */
+/* ═══════════════════════════════════════════════════════════════
+   Glassmorphism
+═══════════════════════════════════════════════════════════════ */
+
 .glass {
   background: oklch(0.97 0 0 / 60%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid oklch(0.922 0 0);
 }
-
 .dark .glass {
   background: oklch(0.205 0 0 / 60%);
   border: 1px solid oklch(1 0 0 / 8%);
@@ -183,13 +312,15 @@ body {
   -webkit-backdrop-filter: blur(40px);
   border: 1px solid oklch(0.922 0 0);
 }
-
 .dark .glass-strong {
   background: oklch(0.145 0 0 / 85%);
   border: 1px solid oklch(1 0 0 / 10%);
 }
 
-/* ── Animated gradient border ── */
+/* ═══════════════════════════════════════════════════════════════
+   Animated gradient border
+═══════════════════════════════════════════════════════════════ */
+
 .gradient-border-animated {
   position: relative;
   border-radius: var(--radius);
@@ -201,11 +332,7 @@ body {
   border-radius: inherit;
   background: conic-gradient(
     from var(--gradient-angle),
-    #009966,
-    #10b981,
-    #6ee7b7,
-    #008299,
-    #009966
+    #009966, #10b981, #6ee7b7, #008299, #009966
   );
   animation: gradient-rotate 4s linear infinite;
   z-index: -1;
@@ -224,33 +351,41 @@ body {
   z-index: -1;
 }
 
-/* ── Dot pattern ── */
+/* ═══════════════════════════════════════════════════════════════
+   Dot pattern
+═══════════════════════════════════════════════════════════════ */
+
 .dot-pattern {
-  background-image: radial-gradient(circle, rgba(16, 185, 129, 0.06) 1px, transparent 1px);
+  background-image: radial-gradient(
+    circle,
+    rgba(16, 185, 129, 0.06) 1px,
+    transparent 1px
+  );
   background-size: 24px 24px;
 }
 
-/* ── Enhanced Navbar Glass (scroll-responsive) ──
-   Applied via Tailwind classes directly in the component.
-   These supplementary utilities help with edge cases. */
+/* ═══════════════════════════════════════════════════════════════
+   Navbar utilities
+═══════════════════════════════════════════════════════════════ */
 
-/* Ensure navbar shimmer doesn't bleed outside radius */
 .navbar-shimmer-mask {
   -webkit-mask-image: linear-gradient(black, black);
   mask-image: linear-gradient(black, black);
 }
 
-/* Smooth backdrop-filter transition (Chromium doesn't transition backdrop-filter natively) */
 @supports (backdrop-filter: blur(1px)) {
   .nav-glass-transition {
     transition:
       background-color 700ms ease-out,
-      border-color 700ms ease-out,
-      box-shadow 700ms ease-out;
+      border-color     700ms ease-out,
+      box-shadow       700ms ease-out;
   }
 }
 
-/* High-contrast mode fallback */
+/* ═══════════════════════════════════════════════════════════════
+   High-contrast mode fallback
+═══════════════════════════════════════════════════════════════ */
+
 @media (forced-colors: active) {
   .glass-nav,
   .glass-strong,
@@ -262,7 +397,10 @@ body {
   }
 }
 
-/* ── Reduce motion: strip all nav animations ── */
+/* ═══════════════════════════════════════════════════════════════
+   Reduced motion: nav
+═══════════════════════════════════════════════════════════════ */
+
 @media (prefers-reduced-motion: reduce) {
   [data-nav-animated] {
     animation: none !important;
@@ -270,14 +408,20 @@ body {
   }
 }
 
-/* ── View Transition ── */
+/* ═══════════════════════════════════════════════════════════════
+   View Transition
+═══════════════════════════════════════════════════════════════ */
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
 }
 
-/* border-white/8 explicit (some Tailwind v4 setups need this) */
+/* ═══════════════════════════════════════════════════════════════
+   Tailwind v4 explicit utilities
+═══════════════════════════════════════════════════════════════ */
+
 .border-white\/8 {
   border-color: rgba(255, 255, 255, 0.08);
 }
