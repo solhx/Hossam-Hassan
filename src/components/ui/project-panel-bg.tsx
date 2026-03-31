@@ -2,90 +2,86 @@
 
 import { memo } from 'react';
 
-// ─── Per-project color seeds ──────────────────────────────────
-// We use CSS custom properties scoped per panel index so
-// Tailwind dark: variants can switch them without any JS.
-// Each panel gets a data-panel-index attribute and the
-// CSS variables are set via inline style — static values
-// that never change, so zero hydration issues.
+// ─── All-green panel themes ───────────────────────────────────
+// Six green-family hue shifts: emerald → teal → lime → green → cyan → mint
 const PANEL_THEMES = [
-  // 0 — Emerald
+  // 0 — Emerald (hue 162)
   {
-    darkBase:  'oklch(0.13 0 0)',
+    darkBase:  'oklch(0.10 0.015 162)',
     lightBase: 'oklch(0.96 0.012 162)',
-    darkOrb1:  'oklch(0.38 0.12 162)',
-    lightOrb1: 'oklch(0.82 0.09 162)',
-    darkOrb2:  'oklch(0.22 0.07 195)',
-    lightOrb2: 'oklch(0.88 0.05 195)',
-    darkOrb3:  'oklch(0.18 0.05 250)',
-    lightOrb3: 'oklch(0.91 0.03 250)',
-    darkMesh:  'oklch(0.28 0.09 162)',
-    lightMesh: 'oklch(0.78 0.07 162)',
+    darkOrb1:  'oklch(0.35 0.13 162)',
+    lightOrb1: 'oklch(0.80 0.09 162)',
+    darkOrb2:  'oklch(0.20 0.07 175)',
+    lightOrb2: 'oklch(0.87 0.05 175)',
+    darkOrb3:  'oklch(0.16 0.05 148)',
+    lightOrb3: 'oklch(0.91 0.03 148)',
+    darkMesh:  'oklch(0.25 0.09 162)',
+    lightMesh: 'oklch(0.76 0.07 162)',
   },
-  // 1 — Indigo
+  // 1 — Teal (hue 185)
   {
-    darkBase:  'oklch(0.12 0.01 265)',
-    lightBase: 'oklch(0.95 0.015 265)',
-    darkOrb1:  'oklch(0.35 0.14 265)',
-    lightOrb1: 'oklch(0.80 0.10 265)',
-    darkOrb2:  'oklch(0.22 0.08 290)',
-    lightOrb2: 'oklch(0.87 0.06 290)',
-    darkOrb3:  'oklch(0.18 0.05 220)',
-    lightOrb3: 'oklch(0.92 0.03 220)',
-    darkMesh:  'oklch(0.27 0.10 265)',
-    lightMesh: 'oklch(0.76 0.08 265)',
+    darkBase:  'oklch(0.10 0.014 185)',
+    lightBase: 'oklch(0.96 0.011 185)',
+    darkOrb1:  'oklch(0.34 0.12 185)',
+    lightOrb1: 'oklch(0.79 0.09 185)',
+    darkOrb2:  'oklch(0.20 0.07 200)',
+    lightOrb2: 'oklch(0.87 0.05 200)',
+    darkOrb3:  'oklch(0.16 0.05 168)',
+    lightOrb3: 'oklch(0.91 0.03 168)',
+    darkMesh:  'oklch(0.25 0.09 185)',
+    lightMesh: 'oklch(0.75 0.07 185)',
   },
-  // 2 — Amber
+  // 2 — Lime (hue 128)
   {
-    darkBase:  'oklch(0.13 0.01 75)',
-    lightBase: 'oklch(0.96 0.015 75)',
-    darkOrb1:  'oklch(0.40 0.12 75)',
-    lightOrb1: 'oklch(0.85 0.09 75)',
-    darkOrb2:  'oklch(0.24 0.07 50)',
-    lightOrb2: 'oklch(0.90 0.06 50)',
-    darkOrb3:  'oklch(0.19 0.05 30)',
-    lightOrb3: 'oklch(0.93 0.03 30)',
-    darkMesh:  'oklch(0.30 0.09 75)',
-    lightMesh: 'oklch(0.80 0.07 75)',
+    darkBase:  'oklch(0.10 0.014 128)',
+    lightBase: 'oklch(0.97 0.012 128)',
+    darkOrb1:  'oklch(0.38 0.14 128)',
+    lightOrb1: 'oklch(0.83 0.10 128)',
+    darkOrb2:  'oklch(0.22 0.07 145)',
+    lightOrb2: 'oklch(0.89 0.05 145)',
+    darkOrb3:  'oklch(0.17 0.05 110)',
+    lightOrb3: 'oklch(0.92 0.03 110)',
+    darkMesh:  'oklch(0.27 0.10 128)',
+    lightMesh: 'oklch(0.78 0.08 128)',
   },
-  // 3 — Pink
+  // 3 — Green (hue 142)
   {
-    darkBase:  'oklch(0.13 0.01 340)',
-    lightBase: 'oklch(0.96 0.012 340)',
-    darkOrb1:  'oklch(0.38 0.13 340)',
-    lightOrb1: 'oklch(0.83 0.09 340)',
-    darkOrb2:  'oklch(0.22 0.07 315)',
-    lightOrb2: 'oklch(0.89 0.05 315)',
-    darkOrb3:  'oklch(0.18 0.05 290)',
-    lightOrb3: 'oklch(0.92 0.03 290)',
-    darkMesh:  'oklch(0.28 0.09 340)',
-    lightMesh: 'oklch(0.78 0.07 340)',
+    darkBase:  'oklch(0.10 0.015 142)',
+    lightBase: 'oklch(0.96 0.012 142)',
+    darkOrb1:  'oklch(0.36 0.13 142)',
+    lightOrb1: 'oklch(0.81 0.09 142)',
+    darkOrb2:  'oklch(0.21 0.07 158)',
+    lightOrb2: 'oklch(0.88 0.05 158)',
+    darkOrb3:  'oklch(0.16 0.05 125)',
+    lightOrb3: 'oklch(0.91 0.03 125)',
+    darkMesh:  'oklch(0.26 0.09 142)',
+    lightMesh: 'oklch(0.77 0.07 142)',
   },
-  // 4 — Sky
+  // 4 — Cyan-green (hue 175)
   {
-    darkBase:  'oklch(0.12 0.01 220)',
-    lightBase: 'oklch(0.95 0.014 220)',
-    darkOrb1:  'oklch(0.36 0.12 220)',
-    lightOrb1: 'oklch(0.82 0.09 220)',
-    darkOrb2:  'oklch(0.22 0.07 200)',
-    lightOrb2: 'oklch(0.88 0.05 200)',
-    darkOrb3:  'oklch(0.18 0.05 250)',
-    lightOrb3: 'oklch(0.92 0.03 250)',
-    darkMesh:  'oklch(0.27 0.09 220)',
-    lightMesh: 'oklch(0.77 0.07 220)',
+    darkBase:  'oklch(0.10 0.013 175)',
+    lightBase: 'oklch(0.96 0.011 175)',
+    darkOrb1:  'oklch(0.34 0.12 175)',
+    lightOrb1: 'oklch(0.80 0.08 175)',
+    darkOrb2:  'oklch(0.20 0.07 190)',
+    lightOrb2: 'oklch(0.87 0.05 190)',
+    darkOrb3:  'oklch(0.16 0.05 158)',
+    lightOrb3: 'oklch(0.91 0.03 158)',
+    darkMesh:  'oklch(0.25 0.08 175)',
+    lightMesh: 'oklch(0.76 0.07 175)',
   },
-  // 5 — Violet
+  // 5 — Mint (hue 155)
   {
-    darkBase:  'oklch(0.12 0.01 295)',
-    lightBase: 'oklch(0.95 0.015 295)',
-    darkOrb1:  'oklch(0.37 0.14 295)',
-    lightOrb1: 'oklch(0.81 0.10 295)',
-    darkOrb2:  'oklch(0.22 0.08 315)',
-    lightOrb2: 'oklch(0.87 0.06 315)',
-    darkOrb3:  'oklch(0.18 0.05 265)',
-    lightOrb3: 'oklch(0.91 0.04 265)',
-    darkMesh:  'oklch(0.28 0.10 295)',
-    lightMesh: 'oklch(0.76 0.08 295)',
+    darkBase:  'oklch(0.10 0.014 155)',
+    lightBase: 'oklch(0.96 0.011 155)',
+    darkOrb1:  'oklch(0.35 0.12 155)',
+    lightOrb1: 'oklch(0.80 0.09 155)',
+    darkOrb2:  'oklch(0.21 0.07 170)',
+    lightOrb2: 'oklch(0.87 0.05 170)',
+    darkOrb3:  'oklch(0.16 0.05 138)',
+    lightOrb3: 'oklch(0.91 0.03 138)',
+    darkMesh:  'oklch(0.25 0.09 155)',
+    lightMesh: 'oklch(0.76 0.07 155)',
   },
 ] as const;
 
@@ -99,9 +95,6 @@ export const ProjectPanelBg = memo(function ProjectPanelBg({
 }: ProjectPanelBgProps) {
   const t = PANEL_THEMES[index % PANEL_THEMES.length];
 
-  // All color values are injected as CSS custom properties.
-  // The .dark class on <html> switches which variable is active
-  // via the CSS rules in globals.css — zero JS, zero hydration issue.
   const cssVars = {
     '--pb-base-dark':  t.darkBase,
     '--pb-base-light': t.lightBase,
@@ -121,7 +114,7 @@ export const ProjectPanelBg = memo(function ProjectPanelBg({
       aria-hidden="true"
       style={cssVars}
     >
-      {/* Layer 1: Base solid color — switched by CSS var via .dark */}
+      {/* Layer 1: Base */}
       <div className="panel-bg__base absolute inset-0" />
 
       {/* Layer 2: Mesh gradient */}
@@ -195,7 +188,7 @@ export const ProjectPanelBg = memo(function ProjectPanelBg({
         }}
       />
 
-      {/* Layer 4: Grain texture — static, no theme dep */}
+      {/* Layer 4: Grain */}
       <div
         className="absolute inset-0 opacity-[0.035] mix-blend-overlay pointer-events-none"
         style={{
@@ -205,7 +198,7 @@ export const ProjectPanelBg = memo(function ProjectPanelBg({
         }}
       />
 
-      {/* Layer 5: Grid lines — switched via CSS var */}
+      {/* Layer 5: Grid lines */}
       <div
         className="panel-bg__grid absolute inset-0 pointer-events-none"
         style={{

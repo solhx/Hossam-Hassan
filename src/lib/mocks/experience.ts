@@ -7,10 +7,12 @@ export interface Experience {
   achievements: string[];
   technologies: string[];
   logo?: string;
+  image?: string; // ← NEW: optional banner/cover image for the card
 }
 
 export const experiences: Experience[] = [
-   {id: "future-interns",
+  {
+    id: "future-interns",
     company: "Future Interns",
     role: "Full Stack Web Development Intern",
     period: "Feb 2026 – Mar 2026",
@@ -23,8 +25,9 @@ export const experiences: Experience[] = [
       "Applied feedback constructively and showed consistent technical growth",
     ],
     technologies: ["React", "Node.js", "Express", "MongoDB", "JavaScript", "Git"],
-  }
-  ,{
+     image: "/future-interns.webp",
+  },
+  {
     id: "elevvo-intern",
     company: "Elevvo",
     role: "Front-End Developer Intern",
@@ -38,6 +41,7 @@ export const experiences: Experience[] = [
       "Fixed UI bugs and improved overall UX consistency",
     ],
     technologies: ["React", "Next.js", "TypeScript", "Tailwind CSS", "Git"],
+     image: "/elevvo-interns.webp",
   },
   {
     id: "codveda-intern",
@@ -53,6 +57,7 @@ export const experiences: Experience[] = [
       "Collaborated with designers and backend developers to deliver features",
     ],
     technologies: ["React", "JavaScript", "REST APIs", "CSS", "Git"],
+     image: "/codveda-interns.webp",
   },
   {
     id: "gdsc-track-lead",
@@ -68,6 +73,7 @@ export const experiences: Experience[] = [
       "Coordinated with the organizing team to deliver technical events",
     ],
     technologies: ["HTML", "CSS", "JavaScript", "React", "Git"],
+    
   },
   {
     id: "route-diploma",
@@ -83,5 +89,6 @@ export const experiences: Experience[] = [
       "Applied best practices for scalable and maintainable front-end architecture",
     ],
     technologies: ["Angular", "TypeScript", "RxJS", "HTML", "CSS"],
+    image: "/hossroute.webp",
   },
 ];

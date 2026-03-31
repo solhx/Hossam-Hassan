@@ -126,12 +126,12 @@ export function Contact() {
                     {item.href ? (
                       <a
                         href={item.href}
-                        className="text-sm font-medium  text-foreground hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                        className="text-sm font-medium text-foreground dark:text-neutral-100 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                       >
                         {item.value}
                       </a>
                     ) : (
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium text-foreground dark:text-neutral-100">
                         {item.value}
                       </p>
                     )}
@@ -175,7 +175,7 @@ export function Contact() {
                 <div>
                   <label
                     htmlFor="name"
-                    className="block text-sm font-medium text-foreground mb-1.5"
+                    className="block text-sm font-medium dark:text-neutral-100 text-foreground mb-1.5"
                   >
                     Name
                   </label>
@@ -197,7 +197,7 @@ export function Contact() {
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium text-foreground mb-1.5"
+                    className="block text-sm font-medium dark:text-neutral-100 text-foreground mb-1.5"
                   >
                     Email
                   </label>
@@ -225,7 +225,7 @@ export function Contact() {
               <div>
                 <label
                   htmlFor="subject"
-                  className="block text-sm font-medium text-foreground mb-1.5"
+                  className="block text-sm font-medium dark:text-neutral-100 text-foreground mb-1.5"
                 >
                   Subject
                 </label>
@@ -248,7 +248,7 @@ export function Contact() {
               <div>
                 <label
                   htmlFor="message"
-                  className="block text-sm font-medium text-foreground mb-1.5"
+                  className="block text-sm font-medium dark:text-neutral-100 text-foreground mb-1.5"
                 >
                   Message
                 </label>

@@ -3,17 +3,19 @@ export interface SocialLink {
   url: string;
   icon: string;
 }
-
 export const socialLinks: SocialLink[] = [
-  { name: "GitHub", url: "https://github.com/hossamhassan", icon: "github" },
-  { name: "LinkedIn", url: "https://linkedin.com/in/hossamhassan", icon: "linkedin" },
-  { name: "Twitter", url: "https://twitter.com/hossamhassan", icon: "twitter" },
-  { name: "Email", url: "mailto:hello@hossamhassan.dev", icon: "mail" },
+  { name: "GitHub", url: "https://github.com/solhx", icon: "github" },
+  { name: "LinkedIn", url: "https://www.linkedin.com/in/hossam-hassan-132055244/", icon: "linkedin" },
+  { name: "Email", url: "mailto:hossamhassan112003@gmail.com", icon: "mail" },
+  { 
+    name: "WhatsApp", 
+    url: "https://wa.me/201022828316", 
+    icon: "whatsapp" 
+  },
 ];
-
 export const stats = [
-  { label: "Years Experience", value: 5 },
-  { label: "Projects Completed", value: 50 },
-  { label: "Happy Clients", value: 30 },
-  { label: "GitHub Stars", value: 1200 },
+  { label: "Years Experience", value: 3 },
+  { label: "Projects Completed", value: 10 },
+  { label: "Happy Clients", value: 5 },
+  { label: "Awards / Certifications", value: 4 },
 ];

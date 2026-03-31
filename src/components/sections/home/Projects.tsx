@@ -33,49 +33,49 @@ import Image from 'next/image';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// ─── Accent palette ───────────────────────────────────────────
+// ─── Green accent palette ─────────────────────────────────────
 const PROJECT_ACCENTS = [
   {
-    glow: 'rgba(16,185,129,0.22)',
+    glow:      'rgba(16,185,129,0.22)',
     spotlight: 'rgba(16,185,129,0.08)',
-    badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
-    counter: 'text-emerald-500/20',
-    tag: 'from-emerald-500/0 via-emerald-500/60 to-emerald-500/0',
+    badge:     'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+    counter:   'text-emerald-600/20 dark:text-emerald-500/20',
+    tag:       'from-emerald-500/0 via-emerald-500/60 to-emerald-500/0',
   },
   {
-    glow: 'rgba(99,102,241,0.22)',
-    spotlight: 'rgba(99,102,241,0.08)',
-    badge: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
-    counter: 'text-indigo-500/20',
-    tag: 'from-indigo-500/0 via-indigo-500/60 to-indigo-500/0',
+    glow:      'rgba(20,184,166,0.22)',
+    spotlight: 'rgba(20,184,166,0.08)',
+    badge:     'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20',
+    counter:   'text-teal-600/20 dark:text-teal-500/20',
+    tag:       'from-teal-500/0 via-teal-500/60 to-teal-500/0',
   },
   {
-    glow: 'rgba(245,158,11,0.22)',
-    spotlight: 'rgba(245,158,11,0.08)',
-    badge: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
-    counter: 'text-amber-500/20',
-    tag: 'from-amber-500/0 via-amber-500/60 to-amber-500/0',
+    glow:      'rgba(132,204,22,0.22)',
+    spotlight: 'rgba(132,204,22,0.08)',
+    badge:     'bg-lime-500/10 text-lime-700 dark:text-lime-300 border-lime-500/20',
+    counter:   'text-lime-600/20 dark:text-lime-500/20',
+    tag:       'from-lime-500/0 via-lime-500/60 to-lime-500/0',
   },
   {
-    glow: 'rgba(236,72,153,0.22)',
-    spotlight: 'rgba(236,72,153,0.08)',
-    badge: 'bg-pink-500/10 text-pink-300 border-pink-500/20',
-    counter: 'text-pink-500/20',
-    tag: 'from-pink-500/0 via-pink-500/60 to-pink-500/0',
+    glow:      'rgba(34,197,94,0.22)',
+    spotlight: 'rgba(34,197,94,0.08)',
+    badge:     'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/20',
+    counter:   'text-green-600/20 dark:text-green-500/20',
+    tag:       'from-green-500/0 via-green-500/60 to-green-500/0',
   },
   {
-    glow: 'rgba(14,165,233,0.22)',
-    spotlight: 'rgba(14,165,233,0.08)',
-    badge: 'bg-sky-500/10 text-sky-300 border-sky-500/20',
-    counter: 'text-sky-500/20',
-    tag: 'from-sky-500/0 via-sky-500/60 to-sky-500/0',
+    glow:      'rgba(6,182,212,0.22)',
+    spotlight: 'rgba(6,182,212,0.08)',
+    badge:     'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/20',
+    counter:   'text-cyan-600/20 dark:text-cyan-500/20',
+    tag:       'from-cyan-500/0 via-cyan-500/60 to-cyan-500/0',
   },
   {
-    glow: 'rgba(168,85,247,0.22)',
-    spotlight: 'rgba(168,85,247,0.08)',
-    badge: 'bg-violet-500/10 text-violet-300 border-violet-500/20',
-    counter: 'text-violet-500/20',
-    tag: 'from-violet-500/0 via-violet-500/60 to-violet-500/0',
+    glow:      'rgba(52,211,153,0.22)',
+    spotlight: 'rgba(52,211,153,0.08)',
+    badge:     'bg-emerald-400/10 text-emerald-600 dark:text-emerald-200 border-emerald-400/20',
+    counter:   'text-emerald-500/20 dark:text-emerald-400/20',
+    tag:       'from-emerald-400/0 via-emerald-400/60 to-emerald-400/0',
   },
 ] as const;
 
@@ -139,7 +139,7 @@ function NoiseOverlay() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Cursor Follower
+//  Cursor Follower  (unchanged — no text)
 // ═══════════════════════════════════════════════════════════════
 function CursorFollower({ active }: { active: boolean }) {
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -164,7 +164,7 @@ function CursorFollower({ active }: { active: boolean }) {
     <>
       <motion.div
         ref={trailRef}
-        className="pointer-events-none fixed z-[998] rounded-full border border-white/10 mix-blend-difference"
+        className="pointer-events-none fixed z-[998] rounded-full border border-emerald-400/20 mix-blend-difference"
         style={{
           width: 40,
           height: 40,
@@ -178,7 +178,7 @@ function CursorFollower({ active }: { active: boolean }) {
       />
       <motion.div
         ref={cursorRef}
-        className="pointer-events-none fixed z-[999] rounded-full bg-white mix-blend-difference"
+        className="pointer-events-none fixed z-[999] rounded-full bg-emerald-400 mix-blend-difference"
         style={{
           width: 8,
           height: 8,
@@ -254,9 +254,7 @@ export function Projects() {
             },
             invalidateOnRefresh: true,
             onUpdate: (self) => {
-              const newIndex = Math.round(
-                self.progress * (count - 1),
-              );
+              const newIndex = Math.round(self.progress * (count - 1));
               setActiveIndex(newIndex);
 
               panelRefs.current.forEach((panel, i) => {
@@ -308,7 +306,7 @@ export function Projects() {
           aria-hidden="true"
           style={{
             background:
-              'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%)',
+              'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, rgba(0,10,5,0.55) 100%)',
           }}
         />
 
@@ -354,7 +352,7 @@ export function Projects() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, transition: { duration: 0.15 } }}
                 transition={{ delay: 1.2, duration: 0.4 }}
-                className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1.5 text-xs text-white/35 font-medium select-none pointer-events-none"
+                className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1.5 text-xs font-medium select-none pointer-events-none text-emerald-600/60 dark:text-emerald-400/50"
               >
                 <span className="tracking-widest uppercase text-[10px]">
                   Scroll to explore
@@ -448,15 +446,12 @@ function Panel({
         className="absolute inset-0 will-change-transform"
         style={{ transform: 'scale(1.25) translateY(0%)' }}
       >
-        {/* Animated gradient background */}
         <ProjectPanelBg index={index} isActive={isActive} />
 
-        {/* Left scrim */}
-        <div className="absolute inset-0 bg-gradient-to-r from-neutral-50/90 via-neutral-50/60 to-neutral-50/10 dark:from-neutral-950/94 dark:via-neutral-950/65 dark:to-neutral-950/15" />
-        {/* Top scrim */}
-        <div className="absolute inset-0 bg-gradient-to-b from-neutral-50/75 via-transparent to-transparent dark:from-neutral-950/80 dark:via-transparent dark:to-transparent" />
-        {/* Bottom scrim */}
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-50/55 via-transparent to-transparent dark:from-neutral-950/60 dark:via-transparent dark:to-transparent" />
+        {/* Scrims — light uses neutral-50 tints, dark uses deep green-black */}
+        <div className="absolute inset-0 bg-gradient-to-r from-neutral-50/90 via-neutral-50/60 to-neutral-50/10 dark:from-[#030f08]/94 dark:via-[#030f08]/65 dark:to-[#030f08]/15" />
+        <div className="absolute inset-0 bg-gradient-to-b from-neutral-50/75 via-transparent to-transparent dark:from-[#030f08]/80 dark:via-transparent dark:to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-50/55 via-transparent to-transparent dark:from-[#030f08]/60 dark:via-transparent dark:to-transparent" />
         {/* Accent glow */}
         <div
           className="absolute inset-0"
@@ -540,12 +535,7 @@ interface ContentBlockProps {
   reduced: boolean;
 }
 
-function ContentBlock({
-  project,
-  index,
-  accent,
-  reduced,
-}: ContentBlockProps) {
+function ContentBlock({ project, index, accent, reduced }: ContentBlockProps) {
   return (
     <motion.div
       variants={reduced ? undefined : wrapperVariants}
@@ -573,7 +563,11 @@ function ContentBlock({
           variants={reduced ? undefined : lineVariants}
           className="relative z-10"
         >
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 backdrop-blur-md text-emerald-400 border border-emerald-500/25 text-[10px] font-bold tracking-widest uppercase">
+          {/*
+           * Light: emerald-700 text on a soft emerald tinted bg — AA contrast.
+           * Dark:  emerald-400 text on the same bg — bright enough on deep bg.
+           */}
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/10 backdrop-blur-md text-emerald-700 dark:text-emerald-400 border border-emerald-500/25 text-[10px] font-bold tracking-widest uppercase">
             <Star size={9} className="fill-current" />
             Featured Project
           </span>
@@ -591,9 +585,13 @@ function ContentBlock({
       {/* Description glass card */}
       <motion.div
         variants={reduced ? undefined : lineVariants}
-        className="relative z-10 rounded-xl px-4 py-3 backdrop-blur-sm border bg-black/[0.04] border-black/[0.07] dark:bg-white/[0.04] dark:border-white/[0.07]"
+        className="relative z-10 rounded-xl px-4 py-3 backdrop-blur-sm border bg-white/60 border-emerald-500/[0.10] dark:bg-emerald-950/[0.25] dark:border-emerald-500/[0.10]"
       >
-        <p className="text-[14px] leading-relaxed text-neutral-700 dark:text-neutral-300">
+        {/*
+         * Light: neutral-800 on white/60 bg — strong contrast.
+         * Dark:  neutral-300 on dark emerald bg — readable, softer.
+         */}
+        <p className="text-[14px] leading-relaxed text-neutral-800 dark:text-neutral-300">
           {project.description}
         </p>
       </motion.div>
@@ -610,7 +608,7 @@ function ContentBlock({
             variants={reduced ? undefined : tagVariants}
             className={cn(
               'relative px-3 py-1 text-[11px] font-semibold rounded-lg border overflow-hidden',
-              'backdrop-blur-sm bg-white/[0.04]',
+              'backdrop-blur-sm bg-white/40 dark:bg-emerald-500/[0.04]',
               accent.badge,
             )}
           >
@@ -641,17 +639,30 @@ function ContentBlock({
           <Button
             variant="emerald"
             size="md"
-            className="gap-2 shadow-xl shadow-emerald-950/50 hover:-translate-y-0.5 active:translate-y-0 transition-transform duration-150"
+            className="gap-2 shadow-xl shadow-emerald-950/30 dark:shadow-emerald-950/50 hover:-translate-y-0.5 active:translate-y-0 transition-transform duration-150"
           >
             <ExternalLink size={14} />
             Live Demo
           </Button>
         </a>
         <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
+          {/*
+           * Light: dark neutral text, subtle emerald tint border/bg.
+           * Dark:  emerald-300 text, emerald tint — same but lighter.
+           * Both use hover states for clear interaction feedback.
+           */}
           <Button
             variant="outline"
             size="md"
-            className="gap-2 backdrop-blur-sm hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 border-black/15 text-neutral-700 bg-black/[0.04] hover:bg-black/[0.08] hover:border-black/30 hover:text-neutral-900 dark:border-white/15 dark:text-white/80 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] dark:hover:border-white/30 dark:hover:text-white"
+            className={cn(
+              'gap-2 backdrop-blur-sm hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150',
+              // Light
+              'border-emerald-700/25 text-emerald-900 bg-white/50',
+              'hover:bg-emerald-50 hover:border-emerald-700/40 hover:text-emerald-800',
+              // Dark
+              'dark:border-emerald-500/20 dark:text-emerald-300/80 dark:bg-emerald-500/[0.04]',
+              'dark:hover:bg-emerald-500/[0.10] dark:hover:border-emerald-500/35 dark:hover:text-emerald-200',
+            )}
           >
             <Github size={14} />
             Source Code
@@ -665,13 +676,7 @@ function ContentBlock({
 // ═══════════════════════════════════════════════════════════════
 //  Flip Card
 // ═══════════════════════════════════════════════════════════════
-function FlipCard({
-  project,
-  accent,
-}: {
-  project: Project;
-  accent: Accent;
-}) {
+function FlipCard({ project, accent }: { project: Project; accent: Accent }) {
   const [flipped, setFlipped] = useState(false);
 
   return (
@@ -696,9 +701,9 @@ function FlipCard({
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             boxShadow: [
-              '0 32px 80px -10px rgba(0,0,0,0.75)',
-              '0 0 0 1px rgba(255,255,255,0.06)',
-              'inset 0 1px 0 rgba(255,255,255,0.08)',
+              '0 32px 80px -10px rgba(0,0,0,0.35)',
+              '0 0 0 1px rgba(16,185,129,0.08)',
+              'inset 0 1px 0 rgba(16,185,129,0.10)',
             ].join(', '),
           }}
         >
@@ -717,28 +722,37 @@ function FlipCard({
               sizes="(min-width: 1024px) 45vw, 90vw"
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-neutral-950/10 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
             {project.featured && (
               <div className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/80 backdrop-blur-md text-white text-[10px] font-bold shadow-sm">
                 <Star size={8} className="fill-current" />
                 Featured
               </div>
             )}
-            <div className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-white/50 text-[10px] font-medium border border-white/10">
+            {/*
+             * The "Hover for stack" chip:
+             * text-white on a black/50 backdrop — readable in any theme.
+             */}
+            <div className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-white/60 text-[10px] font-medium border border-white/10">
               <Layers size={9} />
               Hover for stack
             </div>
           </div>
 
-          <div className="relative px-5 py-4 bg-neutral-950/75 backdrop-blur-2xl border-t border-white/[0.06] overflow-hidden">
+          {/*
+           * Card footer:
+           * Light → white/95 bg, neutral-900 title, neutral-500 subtitle.
+           * Dark  → #020c06/80 bg, white title, emerald-400/50 subtitle.
+           */}
+          <div className="relative px-5 py-4 bg-white/95 dark:bg-[#020c06]/80 backdrop-blur-2xl border-t border-neutral-200/70 dark:border-emerald-500/[0.07] overflow-hidden">
             <div
-              className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.04] to-transparent animate-[shimmer-sweep_4s_ease-in-out_infinite] pointer-events-none"
+              className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald-500/[0.05] to-transparent animate-[shimmer-sweep_4s_ease-in-out_infinite] pointer-events-none"
               aria-hidden="true"
             />
-            <p className="relative text-sm font-bold text-white">
+            <p className="relative text-sm font-bold text-neutral-900 dark:text-white">
               {project.title}
             </p>
-            <p className="relative text-xs text-neutral-400 mt-0.5 line-clamp-1">
+            <p className="relative text-xs text-neutral-500 dark:text-emerald-400/50 mt-0.5 line-clamp-1">
               {project.description}
             </p>
           </div>
@@ -752,12 +766,13 @@ function FlipCard({
             WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
             boxShadow: [
-              '0 32px 80px -10px rgba(0,0,0,0.75)',
-              '0 0 0 1px rgba(255,255,255,0.08)',
-              'inset 0 1px 0 rgba(255,255,255,0.10)',
+              '0 32px 80px -10px rgba(0,0,0,0.55)',
+              '0 0 0 1px rgba(16,185,129,0.10)',
+              'inset 0 1px 0 rgba(16,185,129,0.12)',
             ].join(', '),
           }}
         >
+          {/* Blurred image bg — always dark-tinted so white text stays legible */}
           <div className="absolute inset-0">
             <Image
               src={project.image}
@@ -768,7 +783,7 @@ function FlipCard({
               sizes="(min-width: 1024px) 45vw, 90vw"
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-neutral-950/85 backdrop-blur-sm" />
+            <div className="absolute inset-0 bg-neutral-950/85 dark:bg-[#020c06]/88 backdrop-blur-sm" />
           </div>
 
           <div
@@ -781,15 +796,20 @@ function FlipCard({
           <div className="relative z-10 h-full flex flex-col p-6 justify-between">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <Code2 size={14} className="text-white/40" />
-                <span className="text-[10px] font-bold tracking-widest uppercase text-white/40">
+                {/*
+                 * The blurred image overlay provides a dark canvas in both
+                 * themes (bg-neutral-950/85), so we can safely use
+                 * text-emerald-400/60 for both without a dark: variant.
+                 */}
+                <Code2 size={14} className="text-emerald-400/60" />
+                <span className="text-[10px] font-bold tracking-widest uppercase text-emerald-400/60">
                   Tech Stack
                 </span>
               </div>
               <h4 className="text-xl font-extrabold text-white mt-2">
                 {project.title}
               </h4>
-              <p className="text-xs text-neutral-400 mt-1 leading-relaxed line-clamp-2">
+              <p className="text-xs text-emerald-300/50 mt-1 leading-relaxed line-clamp-2">
                 {project.description}
               </p>
             </div>
@@ -812,14 +832,14 @@ function FlipCard({
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold border',
                     'backdrop-blur-md bg-white/[0.06]',
-                    accent.badge,
+                    // On the dark overlay back-face, use white-based text for
+                    // contrast; accent.badge light variants are overridden here.
+                    'text-white/80 border-white/10',
                   )}
                 >
                   <span
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{
-                      background: accent.glow.replace('0.22', '0.9'),
-                    }}
+                    style={{ background: accent.glow.replace('0.22', '0.9') }}
                   />
                   {tag}
                 </motion.span>
@@ -834,11 +854,7 @@ function FlipCard({
                 className="flex-1"
                 onClick={(e) => e.stopPropagation()}
               >
-                <Button
-                  variant="emerald"
-                  size="sm"
-                  className="w-full gap-1.5 text-xs"
-                >
+                <Button variant="emerald" size="sm" className="w-full gap-1.5 text-xs">
                   <ExternalLink size={12} />
                   Live Demo
                 </Button>
@@ -853,7 +869,7 @@ function FlipCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full gap-1.5 text-xs border-white/15 text-white/80 bg-white/[0.04] hover:bg-white/[0.08]"
+                  className="w-full gap-1.5 text-xs border-white/15 text-white/70 bg-white/[0.05] hover:bg-white/[0.12] hover:text-white"
                 >
                   <Github size={12} />
                   GitHub
@@ -870,22 +886,16 @@ function FlipCard({
 // ═══════════════════════════════════════════════════════════════
 //  Progress Rail
 // ═══════════════════════════════════════════════════════════════
-function ProgressRail({
-  total,
-  active,
-}: {
-  total: number;
-  active: number;
-}) {
+function ProgressRail({ total, active }: { total: number; active: number }) {
   return (
     <div
       className="absolute right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-3"
       role="tablist"
       aria-label="Project navigation"
     >
-      <div className="relative flex flex-col items-center gap-3 px-2 py-3 rounded-full bg-white/[0.04] backdrop-blur-md border border-white/[0.07]">
+      <div className="relative flex flex-col items-center gap-3 px-2 py-3 rounded-full bg-white/30 dark:bg-emerald-500/[0.04] backdrop-blur-md border border-emerald-600/15 dark:border-emerald-500/[0.08]">
         <div
-          className="absolute top-3 bottom-3 w-px bg-white/10 left-1/2 -translate-x-1/2 -z-10"
+          className="absolute top-3 bottom-3 w-px bg-emerald-600/20 dark:bg-emerald-500/15 left-1/2 -translate-x-1/2 -z-10"
           aria-hidden="true"
         />
         {Array.from({ length: total }).map((_, i) => (
@@ -899,7 +909,7 @@ function ProgressRail({
             {i === active && (
               <motion.div
                 key={`pulse-${i}`}
-                className="absolute inset-0 rounded-full border border-emerald-400/40"
+                className="absolute inset-0 rounded-full border border-emerald-500/50"
                 initial={{ scale: 0.6, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.3, ease: EASE_SPRING_OUT }}
@@ -909,7 +919,7 @@ function ProgressRail({
               animate={
                 i === active
                   ? { scale: 1.4, backgroundColor: '#10b981' }
-                  : { scale: 1, backgroundColor: 'rgba(255,255,255,0.18)' }
+                  : { scale: 1,   backgroundColor: 'rgba(16,185,129,0.22)' }
               }
               transition={{ duration: 0.25, ease: EASE_SPRING_OUT }}
               className="w-1.5 h-1.5 rounded-full"
@@ -918,13 +928,18 @@ function ProgressRail({
         ))}
       </div>
 
+      {/*
+       * Counter below the rail.
+       * Light: emerald-600/40 — visible on light panel backgrounds.
+       * Dark:  emerald-500/40 — visible on dark panel backgrounds.
+       */}
       <motion.span
         key={active}
         initial={{ opacity: 0, y: -4 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="font-mono text-[10px] text-white/30 tracking-widest"
+        className="font-mono text-[10px] text-emerald-600/40 dark:text-emerald-500/40 tracking-widest"
       >
         {String(active + 1).padStart(2, '0')}
       </motion.span>
@@ -940,24 +955,14 @@ function MobileStack() {
     <div className="md:hidden w-full h-full overflow-y-auto">
       <div className="max-w-lg mx-auto px-4 pt-36 pb-14 space-y-5">
         {projects.map((project, index) => (
-          <MobileCard
-            key={project.id}
-            project={project}
-            index={index}
-          />
+          <MobileCard key={project.id} project={project} index={index} />
         ))}
       </div>
     </div>
   );
 }
 
-function MobileCard({
-  project,
-  index,
-}: {
-  project: Project;
-  index: number;
-}) {
+function MobileCard({ project, index }: { project: Project; index: number }) {
   const accent  = PROJECT_ACCENTS[index % PROJECT_ACCENTS.length];
   const [flipped, setFlipped] = useState(false);
 
@@ -966,11 +971,7 @@ function MobileCard({
       initial={{ opacity: 0, y: 32 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
-      transition={{
-        duration: 0.5,
-        delay: index * 0.06,
-        ease: EASE_OUT_EXPO,
-      }}
+      transition={{ duration: 0.5, delay: index * 0.06, ease: EASE_OUT_EXPO }}
     >
       <div
         style={{ perspective: 1000 }}
@@ -984,9 +985,15 @@ function MobileCard({
           transition={{ duration: 0.6, ease: EASE_SPRING_OUT }}
           className="relative"
         >
-          {/* Front */}
+          {/* ── Front ── */}
           <div
-            className="rounded-2xl overflow-hidden bg-neutral-900 border border-white/[0.07] shadow-xl"
+            className={cn(
+              'rounded-2xl overflow-hidden border shadow-xl',
+              // Light: white card, standard border.
+              'bg-white border-neutral-200/80 shadow-neutral-200/50',
+              // Dark: near-black card, emerald tint border.
+              'dark:bg-[#020c06] dark:border-emerald-500/[0.09] dark:shadow-emerald-950/50',
+            )}
             style={{
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
@@ -1001,31 +1008,36 @@ function MobileCard({
                 sizes="(max-width: 768px) 100vw"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/75 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               {project.featured && (
                 <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/85 text-white text-[10px] font-bold">
                   <Star size={8} className="fill-current" />
                   Featured
                 </span>
               )}
-              <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-white/40 text-[9px] border border-white/10">
+              <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-white/50 text-[9px] border border-white/10">
                 <Layers size={8} />
                 Tap for stack
               </span>
             </div>
+
             <div className="p-5">
-              <h3 className="text-[15px] font-bold text-white mb-1.5">
+              {/* Title */}
+              <h3 className="text-[15px] font-bold text-neutral-900 dark:text-white mb-1.5">
                 {project.title}
               </h3>
-              <p className="text-sm text-neutral-400 leading-relaxed mb-3">
+              {/* Description */}
+              <p className="text-sm text-neutral-600 dark:text-emerald-400/50 leading-relaxed mb-3">
                 {project.description}
               </p>
+              {/* Tags */}
               <div className="flex flex-wrap gap-1.5 mb-4">
                 {project.tags.slice(0, 4).map((tag) => (
                   <span
                     key={tag}
                     className={cn(
-                      'px-2 py-0.5 text-[10px] font-semibold rounded-md border backdrop-blur-sm bg-white/[0.04]',
+                      'px-2 py-0.5 text-[10px] font-semibold rounded-md border backdrop-blur-sm',
+                      'bg-white/60 dark:bg-emerald-500/[0.04]',
                       accent.badge,
                     )}
                   >
@@ -1033,6 +1045,7 @@ function MobileCard({
                   </span>
                 ))}
               </div>
+              {/* CTAs */}
               <div className="flex gap-2.5">
                 <a
                   href={project.liveUrl}
@@ -1041,11 +1054,7 @@ function MobileCard({
                   className="flex-1"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Button
-                    variant="emerald"
-                    size="sm"
-                    className="w-full gap-1.5"
-                  >
+                  <Button variant="emerald" size="sm" className="w-full gap-1.5">
                     <ExternalLink size={12} /> Demo
                   </Button>
                 </a>
@@ -1059,7 +1068,13 @@ function MobileCard({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full gap-1.5 border-white/15 text-white/80 bg-white/[0.04]"
+                    className={cn(
+                      'w-full gap-1.5',
+                      // Light
+                      'border-emerald-700/20 text-emerald-800 bg-emerald-50/60 hover:bg-emerald-100/80',
+                      // Dark
+                      'dark:border-emerald-500/20 dark:text-emerald-300/80 dark:bg-emerald-500/[0.04] dark:hover:bg-emerald-500/[0.10]',
+                    )}
                   >
                     <Github size={12} /> Code
                   </Button>
@@ -1068,9 +1083,14 @@ function MobileCard({
             </div>
           </div>
 
-          {/* Back */}
+          {/* ── Back ── */}
+          {/*
+           * The back face always renders over a dark, blurred image overlay,
+           * so white-based text is always legible regardless of theme.
+           * We still add bg-neutral-950/90 as a safe fallback.
+           */}
           <div
-            className="absolute inset-0 rounded-2xl overflow-hidden bg-neutral-900 border border-white/[0.08] shadow-xl p-5 flex flex-col justify-between"
+            className="absolute inset-0 rounded-2xl overflow-hidden bg-neutral-950/90 dark:bg-[#020c06] border border-white/10 dark:border-emerald-500/[0.10] shadow-xl p-5 flex flex-col justify-between"
             style={{
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
@@ -1084,7 +1104,7 @@ function MobileCard({
               }}
             />
             <div className="relative z-10">
-              <span className="text-[9px] font-bold tracking-widest uppercase text-white/30">
+              <span className="text-[9px] font-bold tracking-widest uppercase text-white/40">
                 Tech Stack
               </span>
               <h4 className="text-base font-bold text-white mt-1 mb-3">
@@ -1105,16 +1125,11 @@ function MobileCard({
                       duration: 0.28,
                       ease: EASE_SPRING_OUT,
                     }}
-                    className={cn(
-                      'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-white/[0.05]',
-                      accent.badge,
-                    )}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-white/[0.06] border-white/10 text-white/80"
                   >
                     <span
                       className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      style={{
-                        background: accent.glow.replace('0.22', '0.9'),
-                      }}
+                      style={{ background: accent.glow.replace('0.22', '0.9') }}
                     />
                     {tag}
                   </motion.span>
@@ -1122,7 +1137,7 @@ function MobileCard({
               </div>
             </div>
             <div className="relative z-10 text-center">
-              <span className="text-[10px] text-white/25">
+              <span className="text-[10px] text-white/30">
                 Tap to flip back
               </span>
             </div>

@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-  siteUrl: "https://hossamhassan.dev",
+  siteUrl: "https://hossam-hassann.netlify.app",
   generateRobotsTxt: true,
   sitemapSize: 7000,
   changefreq: "weekly",

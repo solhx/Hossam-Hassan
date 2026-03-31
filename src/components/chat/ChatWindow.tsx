@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Trash2, X, Minus, StopCircle, AlertTriangle, Zap, Sparkles } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
@@ -9,10 +9,10 @@ import { TypingIndicator } from './TypingIndicator';
 import { cn } from '@/utils/utils';
 
 const QUICK_PROMPTS = [
-  { label: '🛠 Skills', prompt: 'What technologies does Hossam work with?' },
-  { label: '📂 Projects', prompt: "Tell me about Hossam's featured projects" },
-  { label: '💼 Hire', prompt: 'How can I hire Hossam?' },
-  { label: '🎓 Experience', prompt: "What's Hossam's work experience?" },
+  { label: '🛠 Skills',      prompt: 'What technologies does Hossam work with?' },
+  { label: '📂 Projects',    prompt: "Tell me about Hossam's featured projects" },
+  { label: '💼 Hire',        prompt: 'How can I hire Hossam?' },
+  { label: '🎓 Experience',  prompt: "What's Hossam's work experience?" },
 ];
 
 interface ChatWindowProps {
@@ -24,24 +24,73 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
   const { messages, isLoading, error, sendMessage, clearMessages, stop, rateLimitInfo } = useChat();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
 
+  // ── Auto-scroll to bottom when new messages arrive ──────────
   useEffect(() => {
-    if (scrollRef.current) {
-      const { scrollHeight, clientHeight, scrollTop } = scrollRef.current;
-      if (scrollHeight - scrollTop - clientHeight < 150 || isLoading) {
-        scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-      }
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollHeight, clientHeight, scrollTop } = el;
+    if (scrollHeight - scrollTop - clientHeight < 150 || isLoading) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
   }, [messages, isLoading]);
 
+  // ── Focus input on open ─────────────────────────────────────
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 300);
   }, []);
 
+  // ── Prevent scroll leaking to the page ──────────────────────
+  // When the user scrolls inside the messages area, wheel/touch
+  // events must NOT bubble up to the <body> (which would scroll
+  // the portfolio page underneath the chat window).
+  //
+  // Strategy:
+  //   • overscroll-contain (CSS) — tells the browser to contain
+  //     scroll within this element. Works in Chrome/Edge/Firefox.
+  //   • wheel listener with stopPropagation — belt-and-suspenders
+  //     for Safari which doesn't honour overscroll-contain fully.
+  //   • preventDefault only at the boundary (top / bottom) so the
+  //     chat itself still scrolls normally in all directions.
+  const preventScrollLeak = useCallback((e: WheelEvent) => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    const atTop    = scrollTop <= 0;
+    const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+
+    // If we're at the boundary and still trying to scroll past it,
+    // prevent the event from reaching the page.
+    if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+      e.preventDefault();
+    }
+
+    // Always stop the event from bubbling to parent scrollers.
+    e.stopPropagation();
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    // passive: false is required so we can call preventDefault
+    el.addEventListener('wheel',     preventScrollLeak, { passive: false });
+    el.addEventListener('touchmove', preventScrollLeak as EventListener, { passive: false });
+
+    return () => {
+      el.removeEventListener('wheel',     preventScrollLeak);
+      el.removeEventListener('touchmove', preventScrollLeak as EventListener);
+    };
+  }, [preventScrollLeak]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() && !isLoading) { sendMessage(input.trim()); setInput(''); }
+    if (input.trim() && !isLoading) {
+      sendMessage(input.trim());
+      setInput('');
+    }
   };
 
   const showQuickPrompts = messages.length <= 1;
@@ -51,12 +100,9 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
       className={cn(
         'w-[380px] max-w-[calc(100vw-2rem)] h-[540px] max-h-[calc(100vh-8rem)]',
         'rounded-2xl overflow-hidden flex flex-col',
-        // Solid background — no bleed-through from page
         'bg-white dark:bg-neutral-900',
-        // Strong border for separation
         'border border-neutral-200 dark:border-neutral-700',
-        // Shadow for depth
-        'shadow-2xl shadow-black/10 dark:shadow-black/40'
+        'shadow-2xl shadow-black/10 dark:shadow-black/40',
       )}
       initial={{ opacity: 0, y: 20, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -64,7 +110,7 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
     >
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/80">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/80 flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-center">
@@ -107,19 +153,37 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
         </div>
       </div>
 
-      {/* ── Messages ── */}
+      {/* ── Messages ─────────────────────────────────────────────
+       *
+       * Key classes:
+       *   flex-1          → takes all available height
+       *   overflow-y-auto → enables scrolling inside this div
+       *   overscroll-contain → CSS containment (Chrome/Firefox/Edge)
+       *
+       * The wheel/touchmove listeners (attached above) handle
+       * Safari and any remaining scroll-bubble cases.
+       */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-1 bg-white dark:bg-neutral-900"
+        className={cn(
+          'flex-1 overflow-y-auto p-4 space-y-1',
+          'bg-white dark:bg-neutral-900',
+          // CSS scroll containment — prevents scroll chaining to body
+          'overscroll-contain',
+        )}
+        // Inline style for cross-browser overscroll support
+        style={{ overscrollBehavior: 'contain' }}
       >
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
+
         <AnimatePresence>
           {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
             <TypingIndicator />
           )}
         </AnimatePresence>
+
         <AnimatePresence>
           {showQuickPrompts && !isLoading && (
             <motion.div
@@ -139,7 +203,7 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
                     'text-emerald-700 dark:text-emerald-300',
                     'border border-emerald-500/20 dark:border-emerald-500/25',
                     'hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25',
-                    'transition-all'
+                    'transition-all',
                   )}
                 >
                   {qp.label}
@@ -157,7 +221,7 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
+            className="overflow-hidden flex-shrink-0"
           >
             <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-500/10 border-t border-red-200 dark:border-red-500/20 text-xs text-red-600 dark:text-red-400">
               <AlertTriangle size={12} className="flex-shrink-0" />
@@ -171,9 +235,9 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
       <form
         onSubmit={handleSubmit}
         className={cn(
-          'flex items-center gap-2 p-3',
+          'flex items-center gap-2 p-3 flex-shrink-0',
           'border-t border-neutral-200 dark:border-neutral-700',
-          'bg-neutral-50 dark:bg-neutral-800/60'
+          'bg-neutral-50 dark:bg-neutral-800/60',
         )}
       >
         <input
@@ -191,7 +255,7 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
           className={cn(
             'flex-1 bg-transparent text-sm outline-none',
             'text-neutral-900 dark:text-neutral-100',
-            'placeholder:text-neutral-400 dark:placeholder:text-neutral-500'
+            'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
           )}
           disabled={isLoading && !input}
           maxLength={500}
@@ -202,7 +266,7 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
               'text-[10px] tabular-nums',
               input.length > 480
                 ? 'text-red-500'
-                : 'text-neutral-400 dark:text-neutral-500'
+                : 'text-neutral-400 dark:text-neutral-500',
             )}
           >
             {input.length}/500

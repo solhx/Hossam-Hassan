@@ -8,7 +8,7 @@ import {
   useSpring,
   useTransform,
   MotionValue,
-   type MotionStyle, 
+  type MotionStyle,
 } from 'framer-motion';
 import {
   Home,
@@ -31,7 +31,6 @@ interface NavItem {
   label: string;
   href?: string;
   icon: React.ReactNode;
-  isActive?: boolean;
   onClick?: () => void;
   isThemeToggle?: boolean;
 }
@@ -58,7 +57,6 @@ function IconContainer({
   label,
   icon,
   href,
-  isActive = false,
   onClick,
   isThemeToggle = false,
 }: {
@@ -66,7 +64,6 @@ function IconContainer({
   label: string;
   icon?: React.ReactNode;
   href?: string;
-  isActive?: boolean;
   onClick?: () => void;
   isThemeToggle?: boolean;
 }) {
@@ -86,67 +83,51 @@ function IconContainer({
   const height   = useSpring(heightSync, { mass: 0.1, stiffness: 150, damping: 12 });
   const iconSize = useSpring(iconSync,   { mass: 0.1, stiffness: 150, damping: 12 });
 
-  const tooltipAndDot = (
-    <>
-      <AnimatePresence>
-        {hovered && (
-          <motion.div
-            initial={{ opacity: 0, y: 6, x: '-50%' }}
-            animate={{ opacity: 1, y: 0, x: '-50%' }}
-            exit={{ opacity: 0, y: 3, x: '-50%' }}
-            transition={{ duration: 0.15 }}
-            className={cn(
-              'absolute -top-9 left-1/2 z-50 pointer-events-none',
-              'whitespace-nowrap rounded-lg px-2 py-1 text-xs font-medium',
-              'bg-white/90 dark:bg-neutral-800/90',
-              'border border-neutral-200/80 dark:border-white/10',
-              'text-neutral-700 dark:text-neutral-200',
-              'shadow-lg backdrop-blur-md'
-            )}
-          >
-            {label}
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-white/90 dark:bg-neutral-800/90 border-r border-b border-neutral-200/80 dark:border-white/10" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isActive && (
-          <motion.div
-            layoutId="desktop-active-dot"
-            className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-500"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-          />
-        )}
-      </AnimatePresence>
-    </>
+  /* Tooltip only — active dot removed */
+  const tooltip = (
+    <AnimatePresence>
+      {hovered && (
+        <motion.div
+          initial={{ opacity: 0, y: 6, x: '-50%' }}
+          animate={{ opacity: 1, y: 0, x: '-50%' }}
+          exit={{ opacity: 0, y: 3, x: '-50%' }}
+          transition={{ duration: 0.15 }}
+          className={cn(
+            'absolute -top-9 left-1/2 z-50 pointer-events-none',
+            'whitespace-nowrap rounded-lg px-2 py-1 text-xs font-medium',
+            'bg-white/90 dark:bg-neutral-800/90',
+            'border border-neutral-200/80 dark:border-white/10',
+            'text-neutral-700 dark:text-neutral-200',
+            'shadow-lg backdrop-blur-md'
+          )}
+        >
+          {label}
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-white/90 dark:bg-neutral-800/90 border-r border-b border-neutral-200/80 dark:border-white/10" />
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 
+  /* Single base style — no active variant */
   const containerClasses = cn(
     'relative flex items-center justify-center rounded-full',
     'cursor-pointer transition-colors duration-200',
-    isActive
-      ? 'bg-emerald-500/10 border border-emerald-500/20'
-      : 'bg-neutral-200/50 dark:bg-white/[0.06] hover:bg-neutral-300/60 dark:hover:bg-white/[0.1]',
+    'bg-neutral-200/50 dark:bg-white/[0.06]',
+    'hover:bg-neutral-300/60 dark:hover:bg-white/[0.1]',
     'backdrop-blur-sm'
   );
 
-  /* ✅ FIX: Theme toggle — <motion.div> wrapper (NOT button)
-     ToggleTheme has its own <button>. No outer interactive element needed. */
+  /* Theme toggle */
   if (isThemeToggle) {
     return (
       <motion.div
         ref={ref}
-           style={{ width, height } as MotionStyle}  
+        style={{ width, height } as MotionStyle}
         className={containerClasses}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        // ✅ No onClick, no role="button" — ToggleTheme handles interaction
       >
-        {tooltipAndDot}
+        {tooltip}
         <ToggleTheme
           animationType="circle-spread"
           className="!p-0 w-full h-full rounded-full bg-transparent"
@@ -166,12 +147,12 @@ function IconContainer({
       >
         <motion.div
           ref={ref}
-            style={{ width, height } as MotionStyle}
+          style={{ width, height } as MotionStyle}
           className={containerClasses}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
-          {tooltipAndDot}
+          {tooltip}
           <motion.div
             style={{ width: iconSize, height: iconSize }}
             className="flex items-center justify-center text-neutral-600 dark:text-neutral-400"
@@ -188,28 +169,24 @@ function IconContainer({
     <motion.button
       aria-label={label}
       onClick={onClick}
-       style={{ width, height } as MotionStyle}
+      style={{ width, height } as MotionStyle}
       className={containerClasses}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       whileTap={{ scale: 0.88 }}
     >
       <div ref={ref} className="absolute inset-0 rounded-full" />
-      {tooltipAndDot}
+      {tooltip}
       <motion.div
         style={{ width: iconSize, height: iconSize }}
-        className={cn(
-          'flex items-center justify-center transition-colors duration-200',
-          isActive
-            ? 'text-emerald-500 dark:text-emerald-400'
-            : 'text-neutral-600 dark:text-neutral-400'
-        )}
+        className="flex items-center justify-center text-neutral-600 dark:text-neutral-400 transition-colors duration-200"
       >
         {icon}
       </motion.div>
     </motion.button>
   );
 }
+
 /* ═══════════════════════════════════════════════════════════════
    MOBILE VERTICAL DOCK ITEM
    ═══════════════════════════════════════════════════════════════ */
@@ -217,58 +194,39 @@ function IconContainer({
 function MobileDockItem({ item }: { item: NavItem }) {
   const [hovered, setHovered] = useState(false);
 
-  const tooltipAndDot = (
-    <>
-      {/* Tooltip — right side */}
-      <AnimatePresence>
-        {hovered && (
-          <motion.div
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -4 }}
-            transition={{ duration: 0.15 }}
-            className={cn(
-              'absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 pointer-events-none',
-              'whitespace-nowrap rounded-lg px-2 py-1 text-xs font-medium',
-              'bg-white/90 dark:bg-neutral-800/90',
-              'border border-neutral-200/80 dark:border-white/10',
-              'text-neutral-700 dark:text-neutral-200',
-              'shadow-lg backdrop-blur-md'
-            )}
-          >
-            {item.label}
-            <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 rotate-45 bg-white/90 dark:bg-neutral-800/90 border-l border-b border-neutral-200/80 dark:border-white/10" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Active dot — right side */}
-      <AnimatePresence>
-        {item.isActive && (
-          <motion.div
-            layoutId="mobile-active-dot"
-            className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-emerald-500"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-          />
-        )}
-      </AnimatePresence>
-    </>
+  /* Tooltip only — active dot removed */
+  const tooltip = (
+    <AnimatePresence>
+      {hovered && (
+        <motion.div
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -4 }}
+          transition={{ duration: 0.15 }}
+          className={cn(
+            'absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 pointer-events-none',
+            'whitespace-nowrap rounded-lg px-2 py-1 text-xs font-medium',
+            'bg-white/90 dark:bg-neutral-800/90',
+            'border border-neutral-200/80 dark:border-white/10',
+            'text-neutral-700 dark:text-neutral-200',
+            'shadow-lg backdrop-blur-md'
+          )}
+        >
+          {item.label}
+          <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 rotate-45 bg-white/90 dark:bg-neutral-800/90 border-l border-b border-neutral-200/80 dark:border-white/10" />
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 
+  /* Single base style — no active variant */
   const baseClasses = cn(
     'relative w-10 h-10 rounded-full flex items-center justify-center',
     'cursor-pointer transition-colors duration-200',
-    item.isActive
-      ? 'bg-emerald-500/10 border border-emerald-500/20'
-      : 'hover:bg-neutral-300/50 dark:hover:bg-white/[0.08]'
+    'hover:bg-neutral-300/50 dark:hover:bg-white/[0.08]'
   );
 
-  /* ✅ FIX: Theme toggle — use <div> wrapper, NOT <button>
-     ToggleTheme renders its own <button> internally.
-     Wrapping it in another <button> = nested buttons = hydration error. */
+  /* Theme toggle */
   if (item.isThemeToggle) {
     return (
       <div
@@ -276,8 +234,7 @@ function MobileDockItem({ item }: { item: NavItem }) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {tooltipAndDot}
-        {/* ToggleTheme provides its own <button> — no wrapper button needed */}
+        {tooltip}
         <ToggleTheme
           animationType="circle-spread"
           className="!p-0 w-full h-full rounded-full bg-transparent"
@@ -298,15 +255,8 @@ function MobileDockItem({ item }: { item: NavItem }) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {tooltipAndDot}
-        <div
-          className={cn(
-            'flex items-center justify-center transition-colors duration-200',
-            item.isActive
-              ? 'text-emerald-500 dark:text-emerald-400'
-              : 'text-neutral-600 dark:text-neutral-400'
-          )}
-        >
+        {tooltip}
+        <div className="flex items-center justify-center text-neutral-600 dark:text-neutral-400 transition-colors duration-200">
           {item.icon}
         </div>
       </Link>
@@ -323,15 +273,8 @@ function MobileDockItem({ item }: { item: NavItem }) {
       onMouseLeave={() => setHovered(false)}
       whileTap={{ scale: 0.82 }}
     >
-      {tooltipAndDot}
-      <div
-        className={cn(
-          'flex items-center justify-center transition-colors duration-200',
-          item.isActive
-            ? 'text-emerald-500 dark:text-emerald-400'
-            : 'text-neutral-600 dark:text-neutral-400'
-        )}
-      >
+      {tooltip}
+      <div className="flex items-center justify-center text-neutral-600 dark:text-neutral-400 transition-colors duration-200">
         {item.icon}
       </div>
     </motion.button>
@@ -370,7 +313,7 @@ function MobileVerticalDock({
           'border border-white/25 dark:border-white/[0.1]',
           'shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
           'isolate [will-change:transform,opacity]',
-          'overflow-visible' // needed so tooltips aren't clipped
+          'overflow-visible'
         )}
         style={{ WebkitBackdropFilter: 'blur(24px) saturate(160%)' }}
         initial={{ x: -80, opacity: 0, scale: 0.85 }}
@@ -425,14 +368,12 @@ function MobileVerticalDock({
    ═══════════════════════════════════════════════════════════════ */
 
 export function FloatingAppBar() {
-  const [activeSection, setActiveSection] = useState('hero');
-  const [visible, setVisible]             = useState(true);
-  const [scrolled, setScrolled]           = useState(false);
-  const [navHovered, setNavHovered]       = useState(false);
+  const [visible, setVisible]   = useState(true);
+  const [scrolled, setScrolled] = useState(false);
+  const [navHovered, setNavHovered] = useState(false);
 
   const lastScrollYRef = useRef(0);
   const navRef         = useRef<HTMLElement>(null);
-  const prevActiveRef  = useRef('hero');
 
   /* mouseX for dock magnification */
   const mouseX = useMotionValue(Infinity);
@@ -441,35 +382,25 @@ export function FloatingAppBar() {
   const navMouseX  = useMotionValue(0);
   const smoothNavX = useSpring(navMouseX, { stiffness: 250, damping: 30 });
 
-  /* ── Scroll handler ── */
+  /* ── Scroll handler — hide/show + scrolled flag only ── */
   const handleScroll = useCallback(() => {
     const currentScrollY = window.scrollY;
+
     if (currentScrollY > lastScrollYRef.current && currentScrollY > 400) {
       setVisible(false);
     } else {
       setVisible(true);
     }
+
     setScrolled(currentScrollY > 80);
     lastScrollYRef.current = currentScrollY;
-
-    const sections = NAV_SECTIONS.map((s) => s.href.slice(1));
-    for (let i = sections.length - 1; i >= 0; i--) {
-      const el = document.getElementById(sections[i]);
-      if (el && el.getBoundingClientRect().top <= 200) {
-        setActiveSection(sections[i]);
-        break;
-      }
-    }
+    // ↑ Spy detection loop removed entirely
   }, []);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
-
-  useEffect(() => {
-    prevActiveRef.current = activeSection;
-  }, [activeSection]);
 
   const scrollTo = useCallback((href: string) => {
     document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
@@ -484,13 +415,12 @@ export function FloatingAppBar() {
       : 'bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl border-white/20 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)]'
   );
 
-  /* ── Mobile items ── */
+  /* ── Mobile items — isActive field removed entirely ── */
   const mobileItems: NavItem[] = [
     ...NAV_SECTIONS.map((s) => ({
       label: s.label,
       href: s.href,
       icon: s.icon,
-      isActive: activeSection === s.href.slice(1),
       onClick: () => scrollTo(s.href),
     })),
     {
@@ -519,7 +449,11 @@ export function FloatingAppBar() {
         <motion.div
           className="w-80 h-14 rounded-full bg-emerald-500/[0.07] dark:bg-emerald-500/[0.09] blur-2xl"
           animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' as const }}
+          transition={{
+            duration: 5,
+            repeat: Infinity,
+            ease: 'easeInOut' as const,
+          }}
         />
       </motion.div>
 
@@ -566,7 +500,9 @@ export function FloatingAppBar() {
             className="absolute top-0 h-full w-1/4 bg-gradient-to-r from-transparent via-white/[0.07] dark:via-white/[0.04] to-transparent skew-x-[-20deg]"
             animate={{ x: ['-100%', '500%'] }}
             transition={{
-              duration: 5, repeat: Infinity, repeatDelay: 7,
+              duration: 5,
+              repeat: Infinity,
+              repeatDelay: 7,
               ease: 'easeInOut' as const,
             }}
           />
@@ -585,11 +521,7 @@ export function FloatingAppBar() {
           transition={{ duration: 0.4 }}
         />
 
-        {/* ══ DOCK CONTENT
-            ✅ FIX 1: items-center (not items-end) so all icons sit
-            on the same horizontal axis. Magnification grows UPWARD
-            because the icons push against the center baseline.
-            ══ */}
+        {/* ══ DOCK CONTENT ══ */}
         <motion.div
           className="flex items-center gap-2 px-3 py-2 relative z-10"
           onMouseMove={(e) => mouseX.set(e.pageX)}
@@ -601,13 +533,24 @@ export function FloatingAppBar() {
             className="group relative flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold text-sm cursor-pointer overflow-hidden"
             initial={{ opacity: 0, scale: 0, rotate: -180 }}
             animate={{
-              opacity: 1, scale: 1, rotate: 0,
-              transition: { delay: 0.2, type: 'spring' as const, stiffness: 300, damping: 20 },
+              opacity: 1,
+              scale: 1,
+              rotate: 0,
+              transition: {
+                delay: 0.2,
+                type: 'spring' as const,
+                stiffness: 300,
+                damping: 20,
+              },
             }}
             whileHover={{
               scale: 1.15,
               boxShadow: '0 0 20px rgba(16,185,129,0.45)',
-              transition: { type: 'spring' as const, stiffness: 400, damping: 15 },
+              transition: {
+                type: 'spring' as const,
+                stiffness: 400,
+                damping: 15,
+              },
             }}
             whileTap={{ scale: 0.85, rotate: -15 }}
           >
@@ -619,19 +562,28 @@ export function FloatingAppBar() {
           <motion.div
             className="w-px h-5 flex-shrink-0 bg-gradient-to-b from-transparent via-neutral-300 dark:via-white/15 to-transparent"
             initial={{ opacity: 0, scaleY: 0 }}
-            animate={{ opacity: 1, scaleY: 1, transition: { delay: 0.3, duration: 0.4 } }}
+            animate={{
+              opacity: 1,
+              scaleY: 1,
+              transition: { delay: 0.3, duration: 0.4 },
+            }}
           />
 
-          {/* Nav section icons */}
+          {/* Nav section icons — isActive removed */}
           {NAV_SECTIONS.map((item, index) => (
             <motion.div
               key={item.label}
               initial={{ opacity: 0, y: 10, scale: 0.8, filter: 'blur(4px)' }}
               animate={{
-                opacity: 1, y: 0, scale: 1, filter: 'blur(0px)',
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                filter: 'blur(0px)',
                 transition: {
                   delay: 0.35 + index * 0.06,
-                  type: 'spring' as const, stiffness: 400, damping: 25,
+                  type: 'spring' as const,
+                  stiffness: 400,
+                  damping: 25,
                 },
               }}
             >
@@ -639,7 +591,6 @@ export function FloatingAppBar() {
                 mouseX={mouseX}
                 label={item.label}
                 icon={item.icon}
-                isActive={activeSection === item.href.slice(1)}
                 onClick={() => scrollTo(item.href)}
               />
             </motion.div>
@@ -649,15 +600,25 @@ export function FloatingAppBar() {
           <motion.div
             className="w-px h-5 flex-shrink-0 bg-gradient-to-b from-transparent via-neutral-300 dark:via-white/15 to-transparent"
             initial={{ opacity: 0, scaleY: 0 }}
-            animate={{ opacity: 1, scaleY: 1, transition: { delay: 0.7, duration: 0.4 } }}
+            animate={{
+              opacity: 1,
+              scaleY: 1,
+              transition: { delay: 0.7, duration: 0.4 },
+            }}
           />
 
-          {/* ✅ FIX 2: Theme toggle uses real <ToggleTheme /> inside IconContainer */}
+          {/* Theme toggle */}
           <motion.div
             initial={{ opacity: 0, scale: 0 }}
             animate={{
-              opacity: 1, scale: 1,
-              transition: { delay: 0.75, type: 'spring' as const, stiffness: 300, damping: 20 },
+              opacity: 1,
+              scale: 1,
+              transition: {
+                delay: 0.75,
+                type: 'spring' as const,
+                stiffness: 300,
+                damping: 20,
+              },
             }}
           >
             <IconContainer
@@ -671,8 +632,15 @@ export function FloatingAppBar() {
           <motion.div
             initial={{ opacity: 0, scale: 0.6, x: 10 }}
             animate={{
-              opacity: 1, scale: 1, x: 0,
-              transition: { delay: 0.82, type: 'spring' as const, stiffness: 300, damping: 22 },
+              opacity: 1,
+              scale: 1,
+              x: 0,
+              transition: {
+                delay: 0.82,
+                type: 'spring' as const,
+                stiffness: 300,
+                damping: 22,
+              },
             }}
           >
             <Link
@@ -686,7 +654,11 @@ export function FloatingAppBar() {
                 whileHover={{
                   scale: 1.08,
                   boxShadow: '0 0 24px rgba(16,185,129,0.4)',
-                  transition: { type: 'spring' as const, stiffness: 400, damping: 15 },
+                  transition: {
+                    type: 'spring' as const,
+                    stiffness: 400,
+                    damping: 15,
+                  },
                 }}
                 whileTap={{ scale: 0.9 }}
               >
