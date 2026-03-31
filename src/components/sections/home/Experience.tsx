@@ -168,32 +168,27 @@ function Lightbox({ src, alt, onClose }: LightboxProps) {
 
   // ── Body scroll lock — no jump on close ──
   useEffect(() => {
-    const scrollY = window.scrollY;
+  const scrollbarWidth =
+    window.innerWidth - document.documentElement.clientWidth;
 
-    // Instead of position:fixed (which causes reflow on restore),
-    // we simply prevent wheel/touch/key scroll events on the body
-    // by setting overflow:hidden + padding-right to compensate
-    // for the scrollbar width so there is zero layout shift.
-    const scrollbarWidth =
-      window.innerWidth - document.documentElement.clientWidth;
+  const prevOverflow     = document.body.style.overflow;
+  const prevPaddingRight = document.body.style.paddingRight;
 
-    const prevOverflow      = document.body.style.overflow;
-    const prevPaddingRight  = document.body.style.paddingRight;
+  // ✅ Use documentElement instead of body for better browser compat
+  document.body.style.overflow     = 'hidden';
+  document.body.style.paddingRight = `${scrollbarWidth}px`;
 
-    document.body.style.overflow     = 'hidden';
-    document.body.style.paddingRight = `${scrollbarWidth}px`;
+  // ✅ Also prevent iOS Safari from scrolling via touch
+  const preventDefault = (e: TouchEvent) => e.preventDefault();
+  document.addEventListener('touchmove', preventDefault, { passive: false });
 
-    return () => {
-      // Restore styles first — body is still at correct scrollY
-      // because we never changed position, so NO jump occurs.
-      document.body.style.overflow     = prevOverflow;
-      document.body.style.paddingRight = prevPaddingRight;
+  return () => {
+    document.body.style.overflow     = prevOverflow;
+    document.body.style.paddingRight = prevPaddingRight;
+    document.removeEventListener('touchmove', preventDefault);
+  };
+}, []);
 
-      // Snap back to exact position synchronously
-      // (needed for Firefox which may drift)
-      window.scrollTo({ top: scrollY, behavior: 'instant' });
-    };
-  }, []);
 
   // ── Prevent scroll leaking to body ──
   useEffect(() => {

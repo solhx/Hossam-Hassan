@@ -1,20 +1,29 @@
+// ✅ FIXED — src/components/Providers.tsx
 'use client';
 
-import { useEffect } from 'react';
+import { ThemeProvider } from 'next-themes';
 
+/**
+ * Central provider wrapper.
+ * next-themes handles:
+ *  - SSR-safe theme reading
+ *  - localStorage persistence
+ *  - System preference sync
+ *  - .dark class toggling on <html>
+ *
+ * Remove the inline <script> from layout.tsx when using this —
+ * next-themes has its own built-in flash prevention.
+ */
 export function Providers({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    const stored = localStorage.getItem('theme');
-    if (stored === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else if (stored === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else {
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark');
-      }
-    }
-  }, []);
-
-  return <>{children}</>;
+  return (
+    <ThemeProvider
+      attribute="class"         // Uses .dark class (matches your CSS)
+      defaultTheme="system"     // Respects OS preference
+      enableSystem              // Sync with prefers-color-scheme
+      disableTransitionOnChange // Prevents theme flash transition
+      storageKey="theme"        // Matches your existing localStorage key
+    >
+      {children}
+    </ThemeProvider>
+  );
 }

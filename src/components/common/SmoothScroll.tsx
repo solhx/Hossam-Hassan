@@ -1,4 +1,4 @@
-// src/components/common/SmoothScroll.tsx
+// ✅ FIXED — src/components/common/SmoothScroll.tsx
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -26,16 +26,21 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
 
     lenisRef.current = lenis;
 
-    // ── KEY FIX: proxy ScrollTrigger through Lenis ──────────
-    // Without this, GSAP pins fight Lenis scroll position.
+    // ✅ FIX 1: Store the ticker function reference so we can remove it
+    // GSAP ticker passes time in seconds → multiply by 1000 for ms
+    const tickerFn = (time: number) => {
+      lenis.raf(time * 1000); // ✅ Was 1500 — caused scroll to run 50% too fast
+    };
+
+    // ✅ FIX 2: Store the refresh handler reference for cleanup
+    const onRefresh = () => lenis.resize();
+
+    // Proxy ScrollTrigger through Lenis so GSAP pins work correctly
     lenis.on('scroll', ScrollTrigger.update);
 
-    gsap.ticker.add((time) => {
-      lenis.raf(time * 1500);
-    });
+    gsap.ticker.add(tickerFn);
     gsap.ticker.lagSmoothing(0);
 
-    // Tell ScrollTrigger to use Lenis's scroll values
     ScrollTrigger.scrollerProxy(document.body, {
       scrollTop(value) {
         if (arguments.length && value !== undefined) {
@@ -51,19 +56,19 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
           height: window.innerHeight,
         };
       },
-      // Required for pinType: 'fixed' to work correctly with Lenis
       pinType: document.body.style.transform ? 'transform' : 'fixed',
     });
 
-    // Refresh after proxy is set
-    ScrollTrigger.addEventListener('refresh', () => lenis.resize());
+    ScrollTrigger.addEventListener('refresh', onRefresh);
     ScrollTrigger.refresh();
 
     return () => {
+      // ✅ FIX 3: All removals now use stored references — cleanup works correctly
+      ScrollTrigger.removeEventListener('refresh', onRefresh);
       ScrollTrigger.scrollerProxy(document.body, undefined as never);
-      ScrollTrigger.removeEventListener('refresh', () => lenis.resize());
+      gsap.ticker.remove(tickerFn); // ✅ Correct reference — actually removes it
       lenis.destroy();
-      gsap.ticker.remove(lenis.raf as unknown as gsap.TickerCallback);
+      lenisRef.current = null;
     };
   }, []);
 

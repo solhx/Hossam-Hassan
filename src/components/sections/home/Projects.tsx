@@ -127,7 +127,8 @@ const tagVariants: Variants = {
 function NoiseOverlay() {
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-[999] opacity-[0.025] mix-blend-overlay"
+      // ✅ absolute + pointer-events-none — scoped to section, not full page
+      className="pointer-events-none absolute inset-0 z-[5] opacity-[0.025] mix-blend-overlay"
       aria-hidden="true"
       style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
@@ -141,29 +142,34 @@ function NoiseOverlay() {
 // ═══════════════════════════════════════════════════════════════
 //  Cursor Follower  (unchanged — no text)
 // ═══════════════════════════════════════════════════════════════
+
 function CursorFollower({ active }: { active: boolean }) {
-  const cursorRef = useRef<HTMLDivElement>(null);
-  const trailRef  = useRef<HTMLDivElement>(null);
-  const posX      = useMotionValue(0);
-  const posY      = useMotionValue(0);
-  const springX   = useSpring(posX, { stiffness: 500, damping: 40 });
-  const springY   = useSpring(posY, { stiffness: 500, damping: 40 });
-  const trailX    = useSpring(posX, { stiffness: 150, damping: 25 });
-  const trailY    = useSpring(posY, { stiffness: 150, damping: 25 });
+  const posX   = useMotionValue(-999);
+  const posY   = useMotionValue(-999);
+  const springX = useSpring(posX, { stiffness: 500, damping: 40 });
+  const springY = useSpring(posY, { stiffness: 500, damping: 40 });
+  const trailX  = useSpring(posX, { stiffness: 150, damping: 25 });
+  const trailY  = useSpring(posY, { stiffness: 150, damping: 25 });
 
   useEffect(() => {
+    // ✅ Only track mouse when section is active
+    if (!active) return;
+
     const move = (e: MouseEvent) => {
       posX.set(e.clientX);
       posY.set(e.clientY);
     };
-    window.addEventListener('mousemove', move);
-    return () => window.removeEventListener('mousemove', move);
-  }, [posX, posY]);
 
+    window.addEventListener('mousemove', move, { passive: true });
+    return () => window.removeEventListener('mousemove', move);
+  }, [posX, posY, active]);
+
+  // ✅ ALWAYS render — never return null.
+  // Use pointer-events-none + opacity to hide when inactive.
+  // This keeps DOM nodes stable and prevents the insertBefore crash.
   return (
     <>
       <motion.div
-        ref={trailRef}
         className="pointer-events-none fixed z-[998] rounded-full border border-emerald-400/20 mix-blend-difference"
         style={{
           width: 40,
@@ -172,12 +178,13 @@ function CursorFollower({ active }: { active: boolean }) {
           y: trailY,
           translateX: '-50%',
           translateY: '-50%',
-          opacity: active ? 0.6 : 0,
-          transition: 'opacity 0.3s ease',
         }}
+        // ✅ CSS opacity transition — no mount/unmount, no DOM crash
+        animate={{ opacity: active ? 0.6 : 0 }}
+        transition={{ duration: 0.3 }}
+        aria-hidden="true"
       />
       <motion.div
-        ref={cursorRef}
         className="pointer-events-none fixed z-[999] rounded-full bg-emerald-400 mix-blend-difference"
         style={{
           width: 8,
@@ -186,13 +193,15 @@ function CursorFollower({ active }: { active: boolean }) {
           y: springY,
           translateX: '-50%',
           translateY: '-50%',
-          opacity: active ? 1 : 0,
-          transition: 'opacity 0.3s ease',
         }}
+        animate={{ opacity: active ? 1 : 0 }}
+        transition={{ duration: 0.3 }}
+        aria-hidden="true"
       />
     </>
   );
 }
+
 
 // ═══════════════════════════════════════════════════════════════
 //  Root Section
@@ -221,88 +230,95 @@ export function Projects() {
   );
 
   // ── GSAP pin + scrub ────────────────────────────────────────
-  useEffect(() => {
-    if (reduced) return;
-    const section = sectionRef.current;
-    const wrapper = wrapperRef.current;
-    if (!section || !wrapper) return;
+ useEffect(() => {
+  if (reduced) return;
+  const section = sectionRef.current;
+  const wrapper = wrapperRef.current;
+  if (!section || !wrapper) return;
 
-    const timer = setTimeout(() => {
-      const mm = gsap.matchMedia();
+  // ✅ requestAnimationFrame ensures DOM is painted before GSAP measures
+  let rafId: number;
+  const mm = gsap.matchMedia();
 
-      mm.add('(min-width: 768px)', () => {
-        const count = projects.length;
-        const proxy = { index: 0 };
+  rafId = requestAnimationFrame(() => {
+    mm.add('(min-width: 768px)', () => {
+      const count = projects.length;
+      const proxy = { index: 0 };
 
-        const masterTween = gsap.to(proxy, {
-          index: count - 1,
-          ease: 'none',
-          scrollTrigger: {
-            id: 'projects-master',
-            trigger: section,
-            start: 'top top',
-            end: () => `+=${(count - 1) * window.innerHeight}`,
-            pin: true,
-            pinSpacing: true,
-            anticipatePin: 1,
-            scrub: 0.8,
-            snap: {
-              snapTo: 1 / (count - 1),
-              duration: { min: 0.3, max: 0.5 },
-              delay: 0.05,
-              ease: 'power2.inOut',
-            },
-            invalidateOnRefresh: true,
-            onUpdate: (self) => {
-              const newIndex = Math.round(self.progress * (count - 1));
-              setActiveIndex(newIndex);
-
-              panelRefs.current.forEach((panel, i) => {
-                if (!panel || i === 0) return;
-                const panelProgress =
-                  self.progress * (count - 1) - (i - 1);
-                const clamped = Math.max(0, Math.min(1, panelProgress));
-                panel.style.clipPath = `inset(${(1 - clamped) * 100}% 0% 0% 0%)`;
-              });
-
-              bgRefs.current.forEach((bg, i) => {
-                if (!bg) return;
-                const center = i / (count - 1);
-                const dist   = self.progress - center;
-                bg.style.transform = `scale(1.25) translateY(${dist * 22}%)`;
-              });
-            },
+      const masterTween = gsap.to(proxy, {
+        index: count - 1,
+        ease: 'none',
+        scrollTrigger: {
+          id: 'projects-master',
+          trigger: section,
+          start: 'top top',
+          end: () => `+=${(count - 1) * window.innerHeight}`,
+          pin: true,
+          pinSpacing: true,
+          anticipatePin: 1,
+          scrub: 0.8,
+          snap: {
+            snapTo: 1 / (count - 1),
+            duration: { min: 0.3, max: 0.5 },
+            delay: 0.05,
+            ease: 'power2.inOut',
           },
-        });
+          invalidateOnRefresh: true,
+          onUpdate: (self) => {
+            const newIndex = Math.round(self.progress * (count - 1));
+            setActiveIndex(newIndex);
 
-        return () => {
-          masterTween.kill();
-          ScrollTrigger.getById('projects-master')?.kill();
-        };
+            panelRefs.current.forEach((panel, i) => {
+              if (!panel || i === 0) return;
+              const panelProgress = self.progress * (count - 1) - (i - 1);
+              const clamped = Math.max(0, Math.min(1, panelProgress));
+              panel.style.clipPath = `inset(${(1 - clamped) * 100}% 0% 0% 0%)`;
+            });
+
+            bgRefs.current.forEach((bg, i) => {
+              if (!bg) return;
+              const center = i / (count - 1);
+              const dist = self.progress - center;
+              bg.style.transform = `scale(1.25) translateY(${dist * 22}%)`;
+            });
+          },
+        },
       });
 
-      return () => mm.revert();
-    }, 100);
+      return () => {
+        masterTween.kill();
+        ScrollTrigger.getById('projects-master')?.kill();
+      };
+    });
+  });
 
-    return () => clearTimeout(timer);
-  }, [reduced]);
+  return () => {
+    cancelAnimationFrame(rafId);
+    mm.revert(); // ✅ revert cleans up ALL matchMedia contexts
+  };
+}, [reduced]);
 
   return (
-    <>
+    <div className="relative">
       <NoiseOverlay />
       <CursorFollower active={cursorActive} />
 
       <section
         id="projects"
         ref={sectionRef}
-        className="relative w-full"
-        style={{ height: '100vh' }}
+        className={cn(
+          'relative w-full',
+          // ✅ Only force 100vh on desktop where GSAP pin is active
+          // On mobile, let content determine height naturally
+          'md:h-screen'
+          // ❌ REMOVE: style={{ height: '100vh' }} — this was clipping mobile
+        )}
         onMouseEnter={() => setCursorActive(true)}
         onMouseLeave={() => setCursorActive(false)}
       >
-        {/* Vignette */}
+        {/* Vignette — desktop only */}
         <div
-          className="pointer-events-none absolute inset-0 z-20"
+          className="pointer-events-none absolute inset-0 z-20 hidden md:block"
           aria-hidden="true"
           style={{
             background:
@@ -323,7 +339,7 @@ export function Projects() {
           </div>
         </div>
 
-        {/* Desktop stage */}
+        {/* Desktop stage — unchanged */}
         <div
           ref={wrapperRef}
           className="hidden md:block relative w-full h-full overflow-hidden"
@@ -343,7 +359,6 @@ export function Projects() {
 
           <ProgressRail total={projects.length} active={activeIndex} />
 
-          {/* Scroll cue */}
           <AnimatePresence>
             {activeIndex === 0 && (
               <motion.div
@@ -359,11 +374,7 @@ export function Projects() {
                 </span>
                 <motion.div
                   animate={{ y: [0, 5, 0] }}
-                  transition={{
-                    duration: 1.4,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
+                  transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
                 >
                   <ChevronDown size={14} />
                 </motion.div>
@@ -372,10 +383,10 @@ export function Projects() {
           </AnimatePresence>
         </div>
 
-        {/* Mobile */}
+        {/* ✅ FIXED Mobile Stack */}
         <MobileStack />
       </section>
-    </>
+    </div>
   );
 }
 
@@ -714,14 +725,15 @@ function FlipCard({ project, accent }: { project: Project; accent: Accent }) {
           />
 
           <div className="relative w-full aspect-[16/10] overflow-hidden">
-            <Image
-              src={project.image}
-              alt={project.title}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
-              sizes="(min-width: 1024px) 45vw, 90vw"
-              loading="lazy"
-            />
+           <Image
+  src={project.image}
+  alt={project.title}
+  fill
+  className="object-cover transition-transform duration-700 group-hover:scale-105"
+  sizes="(min-width: 1024px) 45vw, 90vw"
+  priority={project.featured}           // ✅ Priority for featured projects
+  loading={project.featured ? undefined : 'lazy'} // Can't use both together
+/>
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
             {project.featured && (
               <div className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/80 backdrop-blur-md text-white text-[10px] font-bold shadow-sm">
@@ -933,16 +945,18 @@ function ProgressRail({ total, active }: { total: number; active: number }) {
        * Light: emerald-600/40 — visible on light panel backgrounds.
        * Dark:  emerald-500/40 — visible on dark panel backgrounds.
        */}
-      <motion.span
-        key={active}
-        initial={{ opacity: 0, y: -4 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="font-mono text-[10px] text-emerald-600/40 dark:text-emerald-500/40 tracking-widest"
-      >
-        {String(active + 1).padStart(2, '0')}
-      </motion.span>
+     <AnimatePresence mode="wait">
+  <motion.span
+    key={active}
+    initial={{ opacity: 0, y: -4 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: 4 }}
+    transition={{ duration: 0.2 }}
+    className="font-mono text-[10px] text-emerald-600/40 dark:text-emerald-500/40 tracking-widest"
+  >
+    {String(active + 1).padStart(2, '0')}
+  </motion.span>
+</AnimatePresence>
     </div>
   );
 }
@@ -952,8 +966,8 @@ function ProgressRail({ total, active }: { total: number; active: number }) {
 // ═══════════════════════════════════════════════════════════════
 function MobileStack() {
   return (
-    <div className="md:hidden w-full h-full overflow-y-auto">
-      <div className="max-w-lg mx-auto px-4 pt-36 pb-14 space-y-5">
+    <div className="md:hidden w-full">
+      <div className="max-w-lg mx-auto px-4 pt-32 pb-16 space-y-6">
         {projects.map((project, index) => (
           <MobileCard key={project.id} project={project} index={index} />
         ))}

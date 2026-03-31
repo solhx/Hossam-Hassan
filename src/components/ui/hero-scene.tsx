@@ -1,3 +1,4 @@
+// ✅ FIXED — src/components/ui/hero-scene.tsx
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -13,52 +14,73 @@ export function HeroScene({ className }: { className?: string }) {
     const container = containerRef.current;
     if (!container) return;
 
+    // ✅ Skip Three.js on mobile — too heavy, battery drain
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) return;
+
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(
+      60,
+      container.clientWidth / container.clientHeight,
+      0.1,
+      1000,
+    );
     camera.position.z = 30;
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: false, // ✅ Disable antialias — big perf win, barely visible
+      powerPreference: 'high-performance',
+    });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // ✅ Cap at 1.5 instead of 2 — saves ~44% GPU fill rate on retina
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     container.appendChild(renderer.domElement);
 
-    const count = 500;
+    // ✅ Reduce particle count on lower-end devices
+    const count = navigator.hardwareConcurrency <= 4 ? 250 : 500;
     const geo = new THREE.BufferGeometry();
-    const pos = new Float32Array(count * 3);
-    const col = new Float32Array(count * 3);
+    const pos   = new Float32Array(count * 3);
+    const col   = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
 
     const palette = [
-      new THREE.Color('#10b981'), // emerald-500
-      new THREE.Color('#059669'), // emerald-600
-      new THREE.Color('#34d399'), // emerald-400
-      new THREE.Color('#6ee7b7'), // emerald-300
-      new THREE.Color('#a3a3a3'), // neutral-400
-      new THREE.Color('#d4d4d4'), // neutral-300
+      new THREE.Color('#10b981'),
+      new THREE.Color('#059669'),
+      new THREE.Color('#34d399'),
+      new THREE.Color('#6ee7b7'),
+      new THREE.Color('#a3a3a3'),
+      new THREE.Color('#d4d4d4'),
     ];
 
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
-      const r = 15 + Math.random() * 20;
+      const r     = 15 + Math.random() * 20;
       const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      pos[i3] = r * Math.sin(phi) * Math.cos(theta);
+      const phi   = Math.acos(2 * Math.random() - 1);
+      pos[i3]     = r * Math.sin(phi) * Math.cos(theta);
       pos[i3 + 1] = r * Math.sin(phi) * Math.sin(theta);
       pos[i3 + 2] = r * Math.cos(phi);
-      const c = palette[Math.floor(Math.random() * palette.length)];
-      col[i3] = c.r; col[i3 + 1] = c.g; col[i3 + 2] = c.b;
-      sizes[i] = 0.5 + Math.random() * 2;
+      const c     = palette[Math.floor(Math.random() * palette.length)];
+      col[i3]     = c.r;
+      col[i3 + 1] = c.g;
+      col[i3 + 2] = c.b;
+      sizes[i]    = 0.5 + Math.random() * 2;
     }
 
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+    geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
 
     const mat = new THREE.ShaderMaterial({
-      uniforms: { uTime: { value: 0 }, uPixelRatio: { value: renderer.getPixelRatio() } },
+      uniforms: {
+        uTime:       { value: 0 },
+        uPixelRatio: { value: renderer.getPixelRatio() },
+      },
       vertexShader: `
         attribute float size;
-        uniform float uTime; uniform float uPixelRatio;
+        uniform float uTime;
+        uniform float uPixelRatio;
         varying vec3 vColor;
         void main() {
           vColor = color;
@@ -78,44 +100,105 @@ export function HeroScene({ className }: { className?: string }) {
           float a = 1.0 - smoothstep(0.3, 0.5, d);
           gl_FragColor = vec4(vColor, a * 0.4);
         }`,
-      transparent: true, vertexColors: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      transparent:  true,
+      vertexColors: true,
+      depthWrite:   false,
+      blending:     THREE.AdditiveBlending,
     });
 
     const particles = new THREE.Points(geo, mat);
     scene.add(particles);
 
-    const tGeo = new THREE.TorusKnotGeometry(6, 2, 100, 16);
-    const tMat = new THREE.MeshBasicMaterial({ color: 0x10b981, wireframe: true, transparent: true, opacity: 0.04 });
+    // ✅ Reduce torus geometry segments — 100,16 → 60,12 saves ~40% vertices
+    const tGeo = new THREE.TorusKnotGeometry(6, 2, 60, 12);
+    const tMat = new THREE.MeshBasicMaterial({
+      color:       0x10b981,
+      wireframe:   true,
+      transparent: true,
+      opacity:     0.04,
+    });
     const torus = new THREE.Mesh(tGeo, tMat);
     scene.add(torus);
 
     const mouse = { x: 0, y: 0 };
-    const onMouse = (e: MouseEvent) => { mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1; };
-    window.addEventListener('mousemove', onMouse);
-    const onResize = () => { camera.aspect = container.clientWidth / container.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(container.clientWidth, container.clientHeight); };
-    window.addEventListener('resize', onResize);
+
+    // ✅ Use RAF throttle for mouse — not every mousemove event
+    let mousePending = false;
+    const onMouse = (e: MouseEvent) => {
+      if (mousePending) return;
+      mousePending = true;
+      requestAnimationFrame(() => {
+        mouse.x = (e.clientX / window.innerWidth)  * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        mousePending = false;
+      });
+    };
+
+    // ✅ ResizeObserver instead of window resize — more accurate
+    const onResize = () => {
+      if (!container) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    };
+
+    const resizeObserver = new ResizeObserver(onResize);
+    resizeObserver.observe(container);
+
+    window.addEventListener('mousemove', onMouse, { passive: true });
 
     const clock = new THREE.Clock();
+
     const animate = () => {
       const t = clock.getElapsedTime();
       mat.uniforms.uTime.value = t;
+
       particles.rotation.y = t * 0.05 + mouse.x * 0.3;
       particles.rotation.x = mouse.y * 0.2;
-      torus.rotation.x = t * 0.15; torus.rotation.y = t * 0.1; torus.rotation.z = t * 0.05;
+
+      torus.rotation.x = t * 0.15;
+      torus.rotation.y = t * 0.1;
+      torus.rotation.z = t * 0.05;
+
+      // ✅ Smooth lerp factor — same as before
       camera.position.x += (mouse.x * 3 - camera.position.x) * 0.02;
       camera.position.y += (mouse.y * 2 - camera.position.y) * 0.02;
       camera.lookAt(scene.position);
+
       renderer.render(scene, camera);
       animRef.current = requestAnimationFrame(animate);
     };
+
     animate();
 
     return () => {
-      cancelAnimationFrame(animRef.current); window.removeEventListener('mousemove', onMouse); window.removeEventListener('resize', onResize);
-      renderer.dispose(); geo.dispose(); mat.dispose(); tGeo.dispose(); tMat.dispose();
-      if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
+      cancelAnimationFrame(animRef.current);
+      window.removeEventListener('mousemove', onMouse);
+      resizeObserver.disconnect(); // ✅ Disconnect observer
+
+      // ✅ Full GPU memory cleanup
+      renderer.dispose();
+      geo.dispose();
+      mat.dispose();
+      tGeo.dispose();
+      tMat.dispose();
+
+      // ✅ Force WebGL context loss to free VRAM immediately
+      const gl = renderer.getContext();
+      const ext = gl.getExtension('WEBGL_lose_context');
+      ext?.loseContext();
+
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
     };
   }, []);
 
-  return <div ref={containerRef} className={cn('absolute inset-0 w-full h-full', className)} aria-hidden="true" />;
+  return (
+    <div
+      ref={containerRef}
+      className={cn('absolute inset-0 w-full h-full', className)}
+      aria-hidden="true"
+    />
+  );
 }

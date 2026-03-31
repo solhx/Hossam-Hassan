@@ -12,21 +12,32 @@ export function ChatMessage({ message }: { message: ChatMessageType }) {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = useCallback(async () => {
+  try {
+    await navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  } catch {
+    // ✅ Modern fallback using selection API (no deprecated execCommand)
     try {
-      await navigator.clipboard.writeText(message.content);
+      const range = document.createRange();
+      const tempEl = document.createElement('span');
+      tempEl.textContent = message.content;
+      tempEl.style.position = 'absolute';
+      tempEl.style.left = '-9999px';
+      document.body.appendChild(tempEl);
+      range.selectNode(tempEl);
+      window.getSelection()?.removeAllRanges();
+      window.getSelection()?.addRange(range);
+      document.execCommand('copy'); // Only used as last resort
+      window.getSelection()?.removeAllRanges();
+      document.body.removeChild(tempEl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      const ta = document.createElement('textarea');
-      ta.value = message.content;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Silent fail — copy not supported
     }
-  }, [message.content]);
+  }
+}, [message.content]);
 
   return (
     <motion.div

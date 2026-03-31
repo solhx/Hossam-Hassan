@@ -1,56 +1,77 @@
+// ✅ FIXED — src/lib/rate-limiter.ts
 /**
- * Simple in-memory rate limiter for serverless.
- * In production with multiple instances, use Redis (Upstash) instead.
+ * In-memory rate limiter with sliding window.
+ * Production note: Replace with Upstash Redis for multi-instance deployments.
+ * @see https://upstash.com/docs/redis/sdks/ratelimit-ts/overview
  */
 
 interface RateLimitEntry {
-  count: number;
-  resetTime: number;
+  requests: number[]; // timestamps of requests in current window
 }
 
+// ✅ Use sliding window — more accurate than fixed window
 const store = new Map<string, RateLimitEntry>();
 
-// Clean up expired entries periodically
-setInterval(() => {
-  const now = Date.now();
+// ✅ Inline cleanup instead of setInterval (safe for serverless)
+function cleanup(windowMs: number) {
+  // Only run cleanup 1% of the time to avoid overhead on every request
+  if (Math.random() > 0.01) return;
+  const cutoff = Date.now() - windowMs;
   for (const [key, entry] of store.entries()) {
-    if (now > entry.resetTime) {
-      store.delete(key);
-    }
+    entry.requests = entry.requests.filter((t) => t > cutoff);
+    if (entry.requests.length === 0) store.delete(key);
   }
-}, 60_000);
+  // ✅ Safety valve: if store grows too large, clear oldest entries
+  if (store.size > 5000) {
+    const keys = [...store.keys()];
+    keys.slice(0, 1000).forEach((k) => store.delete(k));
+  }
+}
 
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
-  resetIn: number; // ms
+  resetIn: number; // ms until oldest request expires
 }
 
 export function checkRateLimit(
   identifier: string,
   maxRequests: number,
-  windowMs: number
+  windowMs: number,
 ): RateLimitResult {
   const now = Date.now();
-  const entry = store.get(identifier);
+  const windowStart = now - windowMs;
 
-  if (!entry || now > entry.resetTime) {
-    store.set(identifier, { count: 1, resetTime: now + windowMs });
-    return { allowed: true, remaining: maxRequests - 1, resetIn: windowMs };
+  // ✅ Probabilistic inline cleanup — no setInterval needed
+  cleanup(windowMs);
+
+  let entry = store.get(identifier);
+
+  if (!entry) {
+    entry = { requests: [] };
+    store.set(identifier, entry);
   }
 
-  if (entry.count >= maxRequests) {
+  // ✅ Sliding window: remove requests outside current window
+  entry.requests = entry.requests.filter((t) => t > windowStart);
+
+  if (entry.requests.length >= maxRequests) {
+    // Oldest request in window — that's when a slot opens up
+    const oldestRequest = Math.min(...entry.requests);
     return {
       allowed: false,
       remaining: 0,
-      resetIn: entry.resetTime - now,
+      resetIn: oldestRequest + windowMs - now,
     };
   }
 
-  entry.count++;
+  entry.requests.push(now);
+  const remaining = maxRequests - entry.requests.length;
+  const oldestRequest = Math.min(...entry.requests);
+
   return {
     allowed: true,
-    remaining: maxRequests - entry.count,
-    resetIn: entry.resetTime - now,
+    remaining,
+    resetIn: oldestRequest + windowMs - now,
   };
 }

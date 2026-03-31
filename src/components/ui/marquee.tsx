@@ -24,6 +24,7 @@ export function Marquee({
       {[...Array(2)].map((_, i) => (
         <div
           key={i}
+           aria-hidden={i === 1 ? 'true' : undefined} 
           className={cn(
             "flex shrink-0 gap-[var(--gap)] min-w-full items-center justify-around",
             pauseOnHover && "group-hover:[animation-play-state:paused]"

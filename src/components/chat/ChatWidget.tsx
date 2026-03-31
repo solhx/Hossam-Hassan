@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X } from 'lucide-react';
 import { ChatWindow } from './ChatWindow';
+import { cn } from '@/utils/utils';
 
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,12 +14,9 @@ export function ChatWidget() {
 
   useEffect(() => {
     if (hasInteracted) return;
-    const timer = setTimeout(() => setShowTooltip(true), 5000);
+    const timer     = setTimeout(() => setShowTooltip(true),  5000);
     const hideTimer = setTimeout(() => setShowTooltip(false), 12000);
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(hideTimer);
-    };
+    return () => { clearTimeout(timer); clearTimeout(hideTimer); };
   }, [hasInteracted]);
 
   const handleOpen = () => {
@@ -31,15 +29,22 @@ export function ChatWidget() {
     }
   };
 
-  return (
-    <div className="fixed bottom-20 md:bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+return (
+    <div
+      className={cn(
+        'fixed z-50 flex flex-col items-end gap-3',
+        // ✅ On mobile: right-4 bottom-4 — away from FloatingAppBar (left side)
+        // ✅ On desktop: right-6 bottom-6 — same as before
+        'bottom-4 right-4',
+        'md:bottom-6 md:right-6',
+        // ❌ REMOVED: bottom-20 md:bottom-6
+        // bottom-20 was pushing it too high and covering content
+      )}
+    >
       <AnimatePresence>
         {isOpen && !isMinimized && (
           <ChatWindow
-            onClose={() => {
-              setIsOpen(false);
-              setIsMinimized(false);
-            }}
+            onClose={() => { setIsOpen(false); setIsMinimized(false); }}
             onMinimize={() => setIsMinimized(true)}
           />
         )}
@@ -56,7 +61,8 @@ export function ChatWidget() {
           >
             <button
               onClick={() => setShowTooltip(false)}
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-neutral-100 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 flex items-center justify-center text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer transition-colors"
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-neutral-100 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer transition-colors"
+              aria-label="Dismiss tooltip"
             >
               <X size={10} />
             </button>
@@ -105,14 +111,12 @@ export function ChatWidget() {
           )}
         </AnimatePresence>
 
-        {/* Pulse ring */}
         {!isOpen && !hasInteracted && (
           <div className="absolute inset-0 rounded-2xl">
             <span className="absolute inset-0 rounded-2xl bg-emerald-500/20 animate-[pulse-ring_2s_ease-in-out_infinite]" />
           </div>
         )}
 
-        {/* Online dot */}
         {!isOpen && (
           <motion.div
             className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-300 border-2 border-white dark:border-neutral-900"
@@ -121,7 +125,6 @@ export function ChatWidget() {
           />
         )}
 
-        {/* Minimized badge */}
         {isMinimized && (
           <motion.div
             className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center text-[8px] font-bold text-white border-2 border-white dark:border-neutral-900"

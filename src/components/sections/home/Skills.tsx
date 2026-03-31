@@ -18,11 +18,11 @@ export function Skills() {
 
   return (
     <section id="skills" className="relative py-24 sm:py-32 overflow-hidden">
-      <div className="absolute top-1/2 -translate-y-1/2 w-full pointer-events-none">
-        <VelocityScroll defaultVelocity={2}>
-          REACT • NEXT.JS • TYPESCRIPT • NODE.JS • MONGODB • TAILWIND •
-        </VelocityScroll>
-      </div>
+      <div className="hidden md:block absolute top-1/2 -translate-y-1/2 w-full pointer-events-none">
+  <VelocityScroll defaultVelocity={2}>
+    REACT • NEXT.JS • TYPESCRIPT • NODE.JS • MONGODB • TAILWIND •
+  </VelocityScroll>
+</div>
 
       <div ref={ref} className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
         <SectionHeading
@@ -39,6 +39,7 @@ export function Skills() {
         >
           <button
             onClick={() => setActive('all')}
+              aria-pressed={active === 'all'}
             className={cn(
               'px-4 py-2 text-sm font-medium rounded-xl transition-all cursor-pointer',
               active === 'all'
@@ -52,6 +53,7 @@ export function Skills() {
             <button
               key={cat.id}
               onClick={() => setActive(cat.id)}
+               aria-pressed={active === cat.id} 
               className={cn(
                 'px-4 py-2 text-sm font-medium rounded-xl transition-all cursor-pointer',
                 active === cat.id
@@ -65,9 +67,9 @@ export function Skills() {
         </motion.div>
 
         <motion.div
-          layout
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"
-        >
+  layout
+  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+>
           <AnimatePresence mode="popLayout">
             {filtered.map((skill) => (
               <motion.div

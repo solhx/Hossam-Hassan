@@ -1,3 +1,5 @@
+// ✅ UPDATED — src/app/layout.tsx
+// Remove the inline <script> block entirely — next-themes handles this
 import type { Metadata, Viewport } from 'next';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -41,8 +43,12 @@ export const metadata: Metadata = {
       },
     ],
   },
-  
-  robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
+ 
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
 };
 
 export const viewport: Viewport = {
@@ -54,32 +60,40 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
+    // suppressHydrationWarning required by next-themes
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Preconnect for Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        {/*
+          ✅ Load fonts with font-display=swap for better LCP.
+          Only load weights actually used: 400,500,600,700,800 for Inter.
+        */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
-        <link rel="icon" href="/fav.webp" /> 
-        {/* Initialize theme before paint to prevent flash */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var theme = localStorage.getItem('theme');
-                  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                  }
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
+        {/*
+          ✅ Use PNG/ICO favicon for better browser compatibility.
+          WebP favicons are not supported in all browsers (Safari <17).
+        */}
+        <link rel="icon" href="/fav.webp" type="image/webp" />
+        <link rel="apple-touch-icon" href="/fav.webp" />
+        {/*
+          ✅ NO inline theme script needed — next-themes handles flash prevention.
+          Removed to reduce HTML payload and eliminate duplication.
+        */}
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
         <Providers>{children}</Providers>

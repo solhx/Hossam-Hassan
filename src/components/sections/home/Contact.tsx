@@ -24,9 +24,9 @@ import {
 import { siteConfig, socialLinks } from '@/lib/portfolio-data';
 import { cn } from '@/utils/utils';
 
-const EMAILJS_SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || 'service_xxxxx';
-const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || 'template_xxxxx';
-const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || 'xxxxx';
+const EMAILJS_SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID ;
+const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID ;
+const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ;
 
 type FormStatus = 'idle' | 'sending' | 'success' | 'error';
 
@@ -43,32 +43,40 @@ export function Contact() {
   } = useForm<ContactFormData>({
     defaultValues: { name: '', email: '', subject: '', message: '' },
   });
+const onSubmit = async (data: ContactFormData) => {
+  const result = contactSchema.safeParse(data);
+  if (!result.success) return;
 
-  const onSubmit = async (data: ContactFormData) => {
-    const result = contactSchema.safeParse(data);
-    if (!result.success) return;
+  // ✅ Guard against missing env vars — show clear error instead of silent fail
+  if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
+    console.error('[Contact] EmailJS environment variables are not configured');
+    setStatus('error');
+    setTimeout(() => setStatus('idle'), 5000);
+    return;
+  }
 
-    setStatus('sending');
-    try {
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        {
-          from_name: data.name,
-          from_email: data.email,
-          subject: data.subject,
-          message: data.message,
-        },
-        EMAILJS_PUBLIC_KEY
-      );
-      setStatus('success');
-      reset();
-      setTimeout(() => setStatus('idle'), 5000);
-    } catch {
-      setStatus('error');
-      setTimeout(() => setStatus('idle'), 5000);
-    }
-  };
+  setStatus('sending');
+  try {
+    await emailjs.send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      {
+        from_name:  data.name,
+        from_email: data.email,
+        subject:    data.subject,
+        message:    data.message,
+      },
+      EMAILJS_PUBLIC_KEY,
+    );
+    setStatus('success');
+    reset();
+    setTimeout(() => setStatus('idle'), 5000);
+  } catch (err) {
+    console.error('[Contact] EmailJS send failed:', err);
+    setStatus('error');
+    setTimeout(() => setStatus('idle'), 5000);
+  }
+};
 
   const contactInfo = [
     {

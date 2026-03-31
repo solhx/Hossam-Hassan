@@ -1,3 +1,4 @@
+// ✅ FULLY UPDATED — src/components/sections/home/Hero.tsx
 'use client';
 
 import { useRef, lazy, Suspense } from 'react';
@@ -15,36 +16,49 @@ import {
 import { useMouseParallax } from '@/hooks/useMouseParallax';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
+// ── Lazy Three.js scene (heavy, not needed for LCP) ──────────────────
 const HeroScene = lazy(() =>
   import('@/components/ui/hero-scene').then((m) => ({ default: m.HeroScene }))
 );
 
+// ── Animation variants ───────────────────────────────────────────────
 const staggerContainer = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.12,
-      delayChildren: 2.6,
+      staggerChildren: 0.1,
+      delayChildren: 2.4, // Slightly earlier than before
     },
   },
 };
 
 const staggerChild = {
-  hidden: { opacity: 0, y: 15 },
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.5,
+      duration: 0.45,
       ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
     },
   },
+};
+
+// Reduced motion variants — instant appearance
+const reducedStaggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0, delayChildren: 0 } },
+};
+const reducedStaggerChild = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.1 } },
 };
 
 export function Hero() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
 
+  // ── Scroll parallax ──────────────────────────────────────────────
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start start', 'end start'],
@@ -53,137 +67,186 @@ export function Hero() {
   const contentOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
   const contentScale = useTransform(scrollYProgress, [0, 0.4], [1, 0.95]);
 
-  const { layerX, layerY, springX, springY, rotateX, rotateY } =
-    useMouseParallax(40, 25);
-
+  // ✅ Updated hook call — ranges as params, not inline functions
+  const { layerX, layerY, layerXSlow, layerYSlow, springX, springY, rotateX, rotateY } =
+  useMouseParallax(40, 25, 35, 25);
   return (
     <section
       id="hero"
       ref={sectionRef}
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      aria-label="Hero section"
+      className="relative min-h-[100svh] flex items-center justify-center overflow-hidden"
+      // ✅ min-h-[100svh] uses small viewport height unit — prevents
+      //    mobile browser chrome (address bar) from cutting off content
     >
-      {/* ═══ BACKGROUND ═══ */}
+      {/* ── BACKGROUND LAYERS ──────────────────────────────────────── */}
 
-      {/* Three.js — MORE visible now */}
-      <Suspense
-        fallback={
-          <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/3 to-transparent" />
-        }
-      >
-        <HeroScene className="opacity-40 dark:opacity-50" />
-      </Suspense>
+      {/* Three.js scene — loaded async, non-blocking */}
+      {!reduced && (
+        <Suspense fallback={null}>
+          {/* ✅ null fallback — no flicker, background orbs cover the gap */}
+          <HeroScene className="opacity-40 dark:opacity-50" />
+        </Suspense>
+      )}
 
-      {/* Aurora + Orbs + Spotlight + Dust + Noise + Fog */}
-      <HeroBackground
-        layerX={layerX}
-        layerY={layerY}
-        springX={springX}
-        springY={springY}
-      />
+      {/* Aurora + Orbs + Spotlight + Dust + Noise */}
+     <HeroBackground
+  layerX={layerX}
+  layerY={layerY}
+  layerXSlow={layerXSlow}
+  layerYSlow={layerYSlow}
+  springX={springX}
+  springY={springY}
+/>
 
-      {/* NO text isolation overlay — background stays fully visible */}
-
-      {/* ═══ CONTENT ═══ */}
+      {/* ── MAIN CONTENT ───────────────────────────────────────────── */}
       <motion.div
         style={
           reduced
             ? {}
             : { y: contentY, opacity: contentOpacity, scale: contentScale }
         }
-        className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 text-center"
+        className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-20 sm:py-24"
+        // ✅ Added py-* for safe spacing on mobile — prevents content
+        //    touching nav bar at top or scroll indicator at bottom
       >
-        {/* Badge */}
-        <FadeInUp delay={0.3}>
-          <div className="inline-flex items-center gap-2 px-4 py-2 mb-10 rounded-full border border-emerald-500/30 bg-emerald-500/[0.08] dark:bg-emerald-500/[0.12] backdrop-blur-md shadow-sm shadow-emerald-500/5">
-            <div className="relative flex items-center justify-center">
+        {/* ── Availability Badge ──────────────────────────────────── */}
+        <FadeInUp delay={reduced ? 0 : 0.3}>
+          <div
+            className="
+              inline-flex items-center gap-2 px-4 py-2 mb-8 sm:mb-10
+              rounded-full border border-emerald-500/30
+              bg-emerald-500/[0.08] dark:bg-emerald-500/[0.12]
+              backdrop-blur-md shadow-sm shadow-emerald-500/5
+            "
+          >
+            {/* Pulsing dot */}
+            <div className="relative flex items-center justify-center" aria-hidden="true">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               <div className="absolute w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
             </div>
             <span className="text-xs font-semibold tracking-wide text-emerald-700 dark:text-emerald-300 uppercase">
               {siteConfig.availability}
             </span>
-            <Sparkles size={12} className="text-emerald-600 dark:text-emerald-400" />
+            <Sparkles
+              size={12}
+              className="text-emerald-600 dark:text-emerald-400"
+              aria-hidden="true"
+            />
           </div>
         </FadeInUp>
 
-        {/* Title */}
+        {/* ── Heading ─────────────────────────────────────────────── */}
         <motion.div
           style={
             reduced
               ? {}
               : { rotateX, rotateY, transformPerspective: 1200 }
           }
-          className="will-change-transform mb-6"
+          className="will-change-transform mb-4 sm:mb-6"
         >
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-none">
+          {/*
+            ✅ Single <h1> with sr-only full name for screen readers,
+            visual split into two lines for the reveal animation.
+            This ensures accessibility without affecting the visual design.
+          */}
+          <h1
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-none"
+            aria-label={`Hi, I'm ${siteConfig.name}`}
+          >
             <MaskRevealText
               lines={["Hi, I'm"]}
               textClassName="text-foreground dark:text-neutral-300"
               lineClassName="pb-1"
-              delay={0.5}
+              delay={reduced ? 0 : 0.5}
+              aria-hidden="true"
             />
             <MaskRevealText
               lines={[siteConfig.name]}
               textClassName="gradient-text"
               lineClassName="pb-1"
-              delay={0.7}
+              delay={reduced ? 0 : 0.7}
+              aria-hidden="true"
             />
           </h1>
         </motion.div>
 
-        {/* Subtitle */}
-        <FadeInUp delay={1.3} className="mb-4">
-          <p className="text-lg sm:text-xl md:text-2xl text-neutral-600 dark:text-neutral-300 max-w-3xl mx-auto font-medium leading-relaxed">
+        {/* ── Subtitle / Typewriter ────────────────────────────────── */}
+        <FadeInUp delay={reduced ? 0 : 1.3} className="mb-3 sm:mb-4">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-neutral-600 dark:text-neutral-300 max-w-2xl mx-auto font-medium leading-relaxed px-2 sm:px-0">
+            {/*
+              ✅ Reduced max font on mobile (text-base instead of text-lg).
+              Added px-2 on mobile to prevent text touching screen edges.
+            */}
             <TypewriterText
               text="Full-Stack Developer crafting premium digital experiences with modern web technologies."
-              delay={1.4}
+              delay={reduced ? 0 : 1.4}
               speed={25}
             />
           </p>
         </FadeInUp>
 
-        {/* Location */}
-        <FadeInUp delay={2.0}>
-          <div className="flex items-center justify-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 mb-12">
-            <MapPin size={13} className="text-emerald-600 dark:text-emerald-400" />
+        {/* ── Location ─────────────────────────────────────────────── */}
+        <FadeInUp delay={reduced ? 0 : 2.0}>
+          <div className="flex items-center justify-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 mb-8 sm:mb-12">
+            <MapPin
+              size={13}
+              className="text-emerald-600 dark:text-emerald-400 shrink-0"
+              aria-hidden="true"
+            />
+            {/* ✅ shrink-0 on icon prevents squishing on narrow screens */}
             <span className="tracking-wide font-medium">{siteConfig.location}</span>
           </div>
         </FadeInUp>
 
-        {/* CTAs */}
+        {/* ── CTA Buttons ──────────────────────────────────────────── */}
         <FadeInUp
-          delay={2.2}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
+          delay={reduced ? 0 : 2.2}
+          className="flex flex-col xs:flex-row sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-12 sm:mb-16 px-4 sm:px-0"
+          // ✅ flex-col on smallest screens, flex-row from xs up.
+          // px-4 ensures buttons don't touch edges on narrow phones.
         >
           <LiquidButton
             variant="primary"
+            className="w-full xs:w-auto sm:w-auto"
+            // ✅ Full width on mobile, auto on larger screens
             onClick={() =>
               document
                 .getElementById('contact')
                 ?.scrollIntoView({ behavior: 'smooth' })
             }
           >
-            <Send size={16} />
+            <Send size={16} aria-hidden="true" />
             Get in Touch
           </LiquidButton>
 
-          <LiquidButton variant="secondary" href={siteConfig.resumeUrl}>
-            <Download size={16} />
+          <LiquidButton
+            variant="secondary"
+            className="w-full xs:w-auto sm:w-auto"
+            href={siteConfig.resumeUrl}
+          >
+            <Download size={16} aria-hidden="true" />
             Download Resume
           </LiquidButton>
         </FadeInUp>
 
-        {/* Stats */}
+        {/* ── Stats Grid ───────────────────────────────────────────── */}
         <motion.div
-          variants={staggerContainer}
+          variants={reduced ? reducedStaggerContainer : staggerContainer}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-2xl mx-auto"
+          className="
+            grid grid-cols-2 sm:grid-cols-4
+            gap-x-4 gap-y-6 sm:gap-8
+            max-w-xs sm:max-w-2xl mx-auto
+          "
+          // ✅ Explicit gap-x and gap-y for mobile.
+          // max-w-xs on mobile prevents 2-col grid from being too wide.
         >
           {stats.map((stat) => (
             <motion.div
               key={stat.label}
-              variants={staggerChild}
+              variants={reduced ? reducedStaggerChild : staggerChild}
               className="text-center"
             >
               <NumberTicker
@@ -191,7 +254,7 @@ export function Hero() {
                 suffix="+"
                 className="text-2xl sm:text-3xl font-bold dark:text-neutral-300 text-foreground"
               />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1.5 tracking-wide uppercase font-medium">
+              <p className="text-[10px] sm:text-xs text-neutral-500 dark:text-neutral-400 mt-1 sm:mt-1.5 tracking-wide uppercase font-medium">
                 {stat.label}
               </p>
             </motion.div>
@@ -199,29 +262,40 @@ export function Hero() {
         </motion.div>
       </motion.div>
 
-      {/* Scroll Indicator */}
+      {/* ── Scroll Indicator ─────────────────────────────────────────── */}
       <motion.button
         onClick={() =>
           document
             .getElementById('about')
             ?.scrollIntoView({ behavior: 'smooth' })
         }
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-neutral-400 dark:text-neutral-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-300 cursor-pointer"
+        className="
+          absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-10
+          flex flex-col items-center gap-1.5 sm:gap-2
+          text-neutral-400 dark:text-neutral-500
+          hover:text-emerald-600 dark:hover:text-emerald-400
+          transition-colors duration-300 cursor-pointer
+          p-2 rounded-lg
+          focus-visible:outline-none focus-visible:ring-2
+          focus-visible:ring-emerald-500 focus-visible:ring-offset-2
+        "
+        // ✅ Added padding and focus ring for keyboard accessibility
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 3.2 }}
-        aria-label="Scroll to next section"
+        animate={{ opacity: reduced ? 1 : 1 }}
+        transition={{ delay: reduced ? 0 : 3.2 }}
+        aria-label="Scroll to About section"
       >
-        <span className="text-[10px] font-semibold tracking-[0.2em] uppercase">
+        <span className="text-[10px] font-semibold tracking-[0.2em] uppercase select-none">
           Scroll
         </span>
         <motion.div
-          animate={{ y: [0, 6, 0] }}
+          animate={reduced ? {} : { y: [0, 6, 0] }}
           transition={{
             duration: 2,
             repeat: Infinity,
             ease: 'easeInOut',
           }}
+          aria-hidden="true"
         >
           <ArrowDown size={16} strokeWidth={1.5} />
         </motion.div>

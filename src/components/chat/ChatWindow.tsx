@@ -257,21 +257,17 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
             'text-neutral-900 dark:text-neutral-100',
             'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
           )}
-          disabled={isLoading && !input}
-          maxLength={500}
+        
+          maxLength={2000}
         />
-        {input.length > 400 && (
-          <span
-            className={cn(
-              'text-[10px] tabular-nums',
-              input.length > 480
-                ? 'text-red-500'
-                : 'text-neutral-400 dark:text-neutral-500',
-            )}
-          >
-            {input.length}/500
-          </span>
-        )}
+       {input.length > 1600 && ( // ✅ Was 400, update for new maxLength
+  <span className={cn(
+    'text-[10px] tabular-nums flex-shrink-0',
+    input.length > 1900 ? 'text-red-500' : 'text-neutral-400 dark:text-neutral-500',
+  )}>
+    {input.length}/2000
+  </span>
+)}
         {isLoading ? (
           <button
             type="button"

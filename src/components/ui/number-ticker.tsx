@@ -24,28 +24,29 @@ export function NumberTicker({
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
-    if (!isInView) return;
+  if (!isInView) return;
 
-    let startTime: number;
-    let animationFrame: number;
+  const startTime = performance.now(); // ✅ More accurate than Date.now()
+  let animationFrame: number;
 
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / (duration * 1000), 1);
+  const animate = (timestamp: number) => {
+    const progress = Math.min(
+      (timestamp - startTime) / (duration * 1000),
+      1,
+    );
+    const eased = 1 - Math.pow(1 - progress, 3);
+    setDisplayValue(Math.floor(eased * value));
 
-      // Ease out cubic
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplayValue(Math.floor(eased * value));
+    if (progress < 1) {
+      animationFrame = requestAnimationFrame(animate);
+    } else {
+      setDisplayValue(value); // ✅ Ensure exact final value
+    }
+  };
 
-      if (progress < 1) {
-        animationFrame = requestAnimationFrame(animate);
-      }
-    };
-
-    animationFrame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [isInView, value, duration]);
-
+  animationFrame = requestAnimationFrame(animate);
+  return () => cancelAnimationFrame(animationFrame);
+}, [isInView, value, duration]);
   return (
     <motion.span
       ref={ref}

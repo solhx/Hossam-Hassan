@@ -113,30 +113,34 @@ export function TypewriterText({
   const [isDone, setIsDone] = useState(false);
   const reduced = useReducedMotion();
 
-  useEffect(() => {
-    if (reduced) {
-      setDisplayedText(text);
-      setIsDone(true);
-      return;
-    }
+useEffect(() => {
+  if (reduced) {
+    setDisplayedText(text);
+    setIsDone(true);
+    return;
+  }
 
-    const startTimeout = setTimeout(() => {
-      let index = 0;
-      const interval = setInterval(() => {
-        if (index < text.length) {
-          setDisplayedText(text.slice(0, index + 1));
-          index++;
-        } else {
-          clearInterval(interval);
-          setIsDone(true);
-        }
-      }, speed);
+  let intervalId: ReturnType<typeof setInterval> | null = null;
 
-      return () => clearInterval(interval);
-    }, delay * 1000);
+  const timeoutId = setTimeout(() => {
+    let index = 0;
+    intervalId = setInterval(() => {
+      if (index < text.length) {
+        setDisplayedText(text.slice(0, index + 1));
+        index++;
+      } else {
+        if (intervalId) clearInterval(intervalId);
+        setIsDone(true);
+      }
+    }, speed);
+  }, delay * 1000);
 
-    return () => clearTimeout(startTimeout);
-  }, [text, delay, speed, reduced]);
+  // ✅ Both timeout AND interval are properly cleaned up
+  return () => {
+    clearTimeout(timeoutId);
+    if (intervalId) clearInterval(intervalId);
+  };
+}, [text, delay, speed, reduced]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -202,6 +206,14 @@ export function LiquidButton({
   const content = (
     <motion.div
       ref={ref}
+        role={onClick ? 'button' : undefined}
+  tabIndex={onClick ? 0 : undefined}
+  onKeyDown={onClick ? (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick();
+    }
+  } : undefined}
       className={cn(
         'group relative inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl font-semibold text-sm tracking-wide overflow-hidden cursor-pointer transition-shadow duration-500',
         isPrimary

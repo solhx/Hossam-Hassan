@@ -8,21 +8,52 @@ import { LightGrid } from '@/components/ui/light-grid';
 import { siteConfig } from '@/lib/portfolio-data';
 
 const highlights = [
-  { icon: <Code2 size={22} />, title: 'Clean Code Advocate', description: 'Writing maintainable, scalable, and well-documented code is my passion.' },
-  { icon: <Rocket size={22} />, title: 'Performance First', description: 'Every millisecond matters. I optimize for speed, accessibility, and SEO.' },
-  { icon: <Coffee size={22} />, title: 'Continuous Learner', description: 'Always exploring new technologies, patterns, and best practices.' },
-  { icon: <Heart size={22} />, title: 'User-Centric Design', description: 'Building interfaces that delight users with smooth interactions.' },
-  { icon: <Terminal size={22} />, title: 'Full-Stack Mindset', description: 'From database design to pixel-perfect UIs, I handle the full stack.' },
-  { icon: <Globe size={22} />, title: 'Open Source', description: 'Giving back to the community through open-source contributions.' },
+  {
+    icon: <Code2 size={22} />,
+    title: 'Clean Code Advocate',
+    description: 'Writing maintainable, scalable, and well-documented code is my passion.',
+  },
+  {
+    icon: <Rocket size={22} />,
+    title: 'Performance First',
+    description: 'Every millisecond matters. I optimize for speed, accessibility, and SEO.',
+  },
+  {
+    icon: <Coffee size={22} />,
+    title: 'Continuous Learner',
+    description: 'Always exploring new technologies, patterns, and best practices.',
+  },
+  {
+    icon: <Heart size={22} />,
+    title: 'User-Centric Design',
+    description: 'Building interfaces that delight users with smooth interactions.',
+  },
+  {
+    icon: <Terminal size={22} />,
+    title: 'Full-Stack Mindset',
+    description: 'From database design to pixel-perfect UIs, I handle the full stack.',
+  },
+  {
+    icon: <Globe size={22} />,
+    title: 'Open Source',
+    description: 'Giving back to the community through open-source contributions.',
+  },
 ];
 
 export function AboutMe() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  // ✅ FIX: One ref attached to the section element
+  // useInView watches the section — when it enters viewport, all animations fire
+  const sectionRef = useRef<HTMLElement>(null);
+  const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
 
   return (
-    <section id="about" className="relative py-24 sm:py-32 overflow-hidden">
+    <section
+      id="about"
+      ref={sectionRef}  // ✅ FIX: sectionRef attached here — useInView now works
+      className="relative py-24 sm:py-32 overflow-hidden"
+    >
       <LightGrid />
+
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
         <SectionHeading
           badge="About Me"
@@ -30,8 +61,8 @@ export function AboutMe() {
           subtitle="Full-Stack Developer based in Cairo, Egypt, with 5+ years of experience."
         />
 
+        {/* ✅ FIX: ref={sectionRef} removed here — section element holds it */}
         <motion.div
-          ref={ref}
           initial={{ opacity: 0, y: 40 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7 }}
@@ -81,7 +112,8 @@ export function AboutMe() {
                 <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-100 mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                   {item.title}
                 </h3>
-                <p className="text-sm text-neutral-500 leading-relaxed">
+                {/* ✅ FIX: Added dark:text-neutral-400 for proper dark mode contrast */}
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
                   {item.description}
                 </p>
               </div>

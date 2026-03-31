@@ -15,7 +15,7 @@ const iconMap: Record<string, React.ReactNode> = {
 
 export function Footer() {
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+     document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -55,15 +55,16 @@ export function Footer() {
           </div>
 
           {/* Back to top */}
-          <motion.button
-            onClick={scrollToTop}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-foreground hover:bg-emerald-500/10 transition-all cursor-pointer"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <ArrowUp size={16} />
-            Back to top
-          </motion.button>
+        <motion.button
+  onClick={scrollToTop}
+  aria-label="Back to top of page" // ✅ Added
+  className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-foreground hover:bg-emerald-500/10 transition-all cursor-pointer"
+  whileHover={{ scale: 1.05 }}
+  whileTap={{ scale: 0.95 }}
+>
+  <ArrowUp size={16} aria-hidden="true" />
+  Back to top
+</motion.button>
         </div>
 
         {/* Bottom row */}

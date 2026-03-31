@@ -1,10 +1,11 @@
+// ✅ FIXED — src/components/ui/hero-background.tsx
 'use client';
 
 import { memo, useEffect, useRef, useCallback } from 'react';
 import { motion, type MotionValue } from 'framer-motion';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
-/* ── Layer 1: Aurora Ribbons — BOLD ── */
+/* ── Layer 1: Aurora Ribbons ── */
 
 interface RibbonConfig {
   gradient: string;
@@ -26,7 +27,11 @@ const ribbons: RibbonConfig[] = [
     darkGradient:
       'linear-gradient(90deg, transparent 5%, rgba(16,185,129,0.35), rgba(6,182,212,0.30), transparent 95%)',
     className: 'w-[140%] h-[6px] top-[22%] -left-[20%]',
-    animate: { x: [-100, 100, -100], rotate: [-2, 2, -2], scaleX: [1, 1.3, 1] },
+    animate: {
+      x: [-100, 100, -100],
+      rotate: [-2, 2, -2],
+      scaleX: [1, 1.3, 1],
+    },
     duration: 18,
   },
   {
@@ -35,7 +40,11 @@ const ribbons: RibbonConfig[] = [
     darkGradient:
       'linear-gradient(90deg, transparent 5%, rgba(139,92,246,0.30), rgba(16,185,129,0.35), transparent 95%)',
     className: 'w-[120%] h-[4px] top-[38%] -left-[10%]',
-    animate: { x: [80, -120, 80], rotate: [1, -1.5, 1], scaleX: [1.1, 0.9, 1.1] },
+    animate: {
+      x: [80, -120, 80],
+      rotate: [1, -1.5, 1],
+      scaleX: [1.1, 0.9, 1.1],
+    },
     duration: 22,
   },
   {
@@ -44,7 +53,11 @@ const ribbons: RibbonConfig[] = [
     darkGradient:
       'linear-gradient(90deg, transparent 5%, rgba(6,182,212,0.35), rgba(139,92,246,0.28), transparent 95%)',
     className: 'w-[160%] h-[3px] top-[58%] -left-[30%]',
-    animate: { x: [-60, 140, -60], rotate: [-1, 3, -1], scaleX: [0.8, 1.2, 0.8] },
+    animate: {
+      x: [-60, 140, -60],
+      rotate: [-1, 3, -1],
+      scaleX: [0.8, 1.2, 0.8],
+    },
     duration: 25,
   },
   {
@@ -53,7 +66,11 @@ const ribbons: RibbonConfig[] = [
     darkGradient:
       'linear-gradient(90deg, transparent 5%, rgba(16,185,129,0.28), rgba(6,182,212,0.35), rgba(139,92,246,0.22), transparent 95%)',
     className: 'w-[130%] h-[4px] top-[73%] -left-[15%]',
-    animate: { x: [50, -80, 50], rotate: [2, -2, 2], scaleX: [1, 1.4, 1] },
+    animate: {
+      x: [50, -80, 50],
+      rotate: [2, -2, 2],
+      scaleX: [1, 1.4, 1],
+    },
     duration: 20,
   },
   {
@@ -62,11 +79,16 @@ const ribbons: RibbonConfig[] = [
     darkGradient:
       'linear-gradient(90deg, transparent 5%, rgba(16,185,129,0.25), rgba(139,92,246,0.20), transparent 95%)',
     className: 'w-[150%] h-[2px] top-[48%] -left-[25%]',
-    animate: { x: [-80, 60, -80], rotate: [-1.5, 1, -1.5], scaleX: [0.9, 1.2, 0.9] },
+    animate: {
+      x: [-80, 60, -80],
+      rotate: [-1.5, 1, -1.5],
+      scaleX: [0.9, 1.2, 0.9],
+    },
     duration: 16,
   },
 ];
 
+// ✅ Now accepts MotionValue<number> directly — no function calls
 function AuroraRibbons({
   layerX,
   layerY,
@@ -86,9 +108,7 @@ function AuroraRibbons({
         <motion.div
           key={i}
           className={`absolute ${ribbon.className} will-change-transform`}
-          style={{
-            background: `var(--aurora-ribbon-${i})`,
-          }}
+          style={{ background: `var(--aurora-ribbon-${i})` }}
           animate={reduced ? {} : ribbon.animate}
           transition={{
             duration: ribbon.duration,
@@ -96,29 +116,30 @@ function AuroraRibbons({
             ease: 'easeInOut',
           }}
         >
-          {/* Glow halo — MUCH more visible now */}
           <div
             className="absolute inset-[-8px] blur-[60px] opacity-80"
-            style={{
-              background: `var(--aurora-ribbon-${i})`,
-            }}
+            style={{ background: `var(--aurora-ribbon-${i})` }}
           />
         </motion.div>
       ))}
 
       <style>{`
         :root {
-          ${ribbons.map((r, i) => `--aurora-ribbon-${i}: ${r.gradient};`).join('\n          ')}
+          ${ribbons
+            .map((r, i) => `--aurora-ribbon-${i}: ${r.gradient};`)
+            .join('\n          ')}
         }
         .dark {
-          ${ribbons.map((r, i) => `--aurora-ribbon-${i}: ${r.darkGradient};`).join('\n          ')}
+          ${ribbons
+            .map((r, i) => `--aurora-ribbon-${i}: ${r.darkGradient};`)
+            .join('\n          ')}
         }
       `}</style>
     </motion.div>
   );
 }
 
-/* ── Layer 2: Floating Light Orbs — STRONGER ── */
+/* ── Layer 2: Floating Light Orbs ── */
 
 interface OrbConfig {
   size: string;
@@ -135,7 +156,11 @@ const lightOrbs: OrbConfig[] = [
     position: 'top-[-20%] left-[-15%]',
     lightColor: 'rgba(16,185,129,0.12)',
     darkColor: 'rgba(16,185,129,0.18)',
-    animate: { x: [0, 80, -40, 0], y: [0, -50, 40, 0], scale: [1, 1.15, 0.9, 1] },
+    animate: {
+      x: [0, 80, -40, 0],
+      y: [0, -50, 40, 0],
+      scale: [1, 1.15, 0.9, 1],
+    },
     duration: 22,
   },
   {
@@ -143,7 +168,11 @@ const lightOrbs: OrbConfig[] = [
     position: 'top-[25%] right-[-15%]',
     lightColor: 'rgba(6,182,212,0.10)',
     darkColor: 'rgba(6,182,212,0.15)',
-    animate: { x: [0, -70, 50, 0], y: [0, 40, -60, 0], scale: [1, 0.85, 1.12, 1] },
+    animate: {
+      x: [0, -70, 50, 0],
+      y: [0, 40, -60, 0],
+      scale: [1, 0.85, 1.12, 1],
+    },
     duration: 26,
   },
   {
@@ -151,7 +180,11 @@ const lightOrbs: OrbConfig[] = [
     position: 'bottom-[-15%] left-[20%]',
     lightColor: 'rgba(139,92,246,0.08)',
     darkColor: 'rgba(139,92,246,0.14)',
-    animate: { x: [0, 50, -70, 0], y: [0, -40, 30, 0], scale: [1, 1.08, 0.88, 1] },
+    animate: {
+      x: [0, 50, -70, 0],
+      y: [0, -40, 30, 0],
+      scale: [1, 1.08, 0.88, 1],
+    },
     duration: 24,
   },
   {
@@ -159,11 +192,16 @@ const lightOrbs: OrbConfig[] = [
     position: 'top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2',
     lightColor: 'rgba(16,185,129,0.06)',
     darkColor: 'rgba(16,185,129,0.10)',
-    animate: { x: [0, 30, -30, 0], y: [0, -20, 20, 0], scale: [1, 1.1, 0.95, 1] },
+    animate: {
+      x: [0, 30, -30, 0],
+      y: [0, -20, 20, 0],
+      scale: [1, 1.1, 0.95, 1],
+    },
     duration: 20,
   },
 ];
 
+// ✅ Now accepts MotionValue<number> directly
 function FloatingOrbs({
   layerX,
   layerY,
@@ -183,9 +221,7 @@ function FloatingOrbs({
         <motion.div
           key={i}
           className={`absolute rounded-full ${orb.size} ${orb.position} blur-[100px] will-change-transform`}
-          style={{
-            background: `var(--hero-orb-${i})`,
-          }}
+          style={{ background: `var(--hero-orb-${i})` }}
           animate={reduced ? {} : orb.animate}
           transition={{
             duration: orb.duration,
@@ -196,17 +232,21 @@ function FloatingOrbs({
       ))}
       <style>{`
         :root {
-          ${lightOrbs.map((o, i) => `--hero-orb-${i}: ${o.lightColor};`).join('\n          ')}
+          ${lightOrbs
+            .map((o, i) => `--hero-orb-${i}: ${o.lightColor};`)
+            .join('\n          ')}
         }
         .dark {
-          ${lightOrbs.map((o, i) => `--hero-orb-${i}: ${o.darkColor};`).join('\n          ')}
+          ${lightOrbs
+            .map((o, i) => `--hero-orb-${i}: ${o.darkColor};`)
+            .join('\n          ')}
         }
       `}</style>
     </motion.div>
   );
 }
 
-/* ── Layer 3: Spotlight — STRONGER ── */
+/* ── Layer 3: Spotlight ── */
 
 function Spotlight({
   springX,
@@ -227,18 +267,14 @@ function Spotlight({
       aria-hidden="true"
     >
       <style>{`
-        :root {
-          --spotlight-color: rgba(16, 185, 129, 0.06);
-        }
-        .dark {
-          --spotlight-color: rgba(16, 185, 129, 0.10);
-        }
+        :root  { --spotlight-color: rgba(16, 185, 129, 0.06); }
+        .dark  { --spotlight-color: rgba(16, 185, 129, 0.10); }
       `}</style>
     </motion.div>
   );
 }
 
-/* ── Layer 4: Mesh Noise — slightly more visible ── */
+/* ── Layer 4: Mesh Noise ── */
 
 function MeshNoise() {
   return (
@@ -254,12 +290,11 @@ function MeshNoise() {
   );
 }
 
-/* ── Layer 5: Depth Fog — MINIMAL, only edges ── */
+/* ── Layer 5: Depth Fog ── */
 
 function DepthFog() {
   return (
     <>
-      {/* Very light top fade — just enough to blend with navbar */}
       <div
         className="absolute top-0 left-0 right-0 h-[20%] pointer-events-none"
         aria-hidden="true"
@@ -269,7 +304,6 @@ function DepthFog() {
           opacity: 0.3,
         }}
       />
-      {/* Bottom fade — blends into next section */}
       <div
         className="absolute bottom-0 left-0 right-0 h-[25%] pointer-events-none"
         aria-hidden="true"
@@ -283,7 +317,7 @@ function DepthFog() {
   );
 }
 
-/* ── Layer 6: Dust Particles — MORE and BRIGHTER ── */
+/* ── Layer 6: Dust Particles ── */
 
 function DustParticles() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -312,11 +346,11 @@ function DustParticles() {
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
-    let width = canvas.parentElement?.clientWidth ?? window.innerWidth;
+    let width  = canvas.parentElement?.clientWidth  ?? window.innerWidth;
     let height = canvas.parentElement?.clientHeight ?? window.innerHeight;
-    const dpr = Math.min(window.devicePixelRatio, 2);
+    const dpr  = Math.min(window.devicePixelRatio, 2);
 
-    canvas.width = width * dpr;
+    canvas.width  = width  * dpr;
     canvas.height = height * dpr;
     ctx.scale(dpr, dpr);
 
@@ -329,12 +363,9 @@ function DustParticles() {
         p.x += p.vx;
         p.y += p.vy;
 
-        if (p.y < -10) {
-          p.y = height + 10;
-          p.x = Math.random() * width;
-        }
-        if (p.x < -10) p.x = width + 10;
-        if (p.x > width + 10) p.x = -10;
+        if (p.y < -10)           { p.y = height + 10; p.x = Math.random() * width; }
+        if (p.x < -10)           p.x = width + 10;
+        if (p.x > width + 10)    p.x = -10;
 
         p.opacity += p.opacityDir;
         if (p.opacity >= 0.5 || p.opacity <= 0.05) p.opacityDir *= -1;
@@ -351,16 +382,16 @@ function DustParticles() {
     animate();
 
     const onResize = () => {
-      width = canvas.parentElement?.clientWidth ?? window.innerWidth;
+      width  = canvas.parentElement?.clientWidth  ?? window.innerWidth;
       height = canvas.parentElement?.clientHeight ?? window.innerHeight;
-      canvas.width = width * dpr;
+      canvas.width  = width  * dpr;
       canvas.height = height * dpr;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(dpr, dpr);
       particles = initParticles(width, height);
     };
-    window.addEventListener('resize', onResize);
 
+    window.addEventListener('resize', onResize);
     return () => {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('resize', onResize);
@@ -380,24 +411,30 @@ function DustParticles() {
 
 /* ── Composed Export ── */
 
+// ✅ UPDATED — accepts MotionValue<number> directly (no more function calls)
 interface HeroBackgroundProps {
-  layerX: (range: number) => MotionValue<number>;
-  layerY: (range: number) => MotionValue<number>;
-  springX: MotionValue<number>;
-  springY: MotionValue<number>;
+  layerX:     MotionValue<number>;
+  layerY:     MotionValue<number>;
+  layerXSlow: MotionValue<number>;
+  layerYSlow: MotionValue<number>;
+  springX:    MotionValue<number>;
+  springY:    MotionValue<number>;
 }
 
 export const HeroBackground = memo(function HeroBackground({
   layerX,
   layerY,
+  layerXSlow,
+  layerYSlow,
   springX,
   springY,
 }: HeroBackgroundProps) {
   return (
     <>
-      <FloatingOrbs layerX={layerX(35)} layerY={layerY(25)} />
-      <AuroraRibbons layerX={layerX(20)} layerY={layerY(12)} />
-      <Spotlight springX={springX} springY={springY} />
+      {/* ✅ Pass pre-computed values — orbs move faster, ribbons slower */}
+      <FloatingOrbs  layerX={layerX}     layerY={layerY}     />
+      <AuroraRibbons layerX={layerXSlow} layerY={layerYSlow} />
+      <Spotlight     springX={springX}   springY={springY}   />
       <DustParticles />
       <MeshNoise />
       <DepthFog />

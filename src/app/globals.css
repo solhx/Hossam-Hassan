@@ -425,3 +425,38 @@ body {
 .border-white\/8 {
   border-color: rgba(255, 255, 255, 0.08);
 }
+/* ✅ ADDITIONS to globals.css */
+
+/* ── Custom xs breakpoint (320px–479px phones) ── */
+@custom-media --xs (min-width: 480px);
+
+/* ── Firefox scrollbar support ── */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 185, 129, 0.2) transparent;
+}
+
+/* ── Existing WebKit scrollbar (keep as-is) ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.35);
+}
+
+/* ── Focus visible styles (global accessibility) ── */
+:focus-visible {
+  outline: 2px solid rgba(16, 185, 129, 0.7);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Improve tap target sizes on mobile ── */
+@media (max-width: 640px) {
+  button, a, [role="button"] {
+    min-height: 44px; /* Apple HIG minimum tap target */
+  }
+}

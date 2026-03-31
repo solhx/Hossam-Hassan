@@ -44,7 +44,7 @@ export function BackgroundBeams({ className, beamCount = 8 }: { className?: stri
       const r = canvas.getBoundingClientRect();
       mouseRef.current = { x: e.clientX - r.left, y: e.clientY - r.top };
     };
-    canvas.addEventListener('mousemove', handleMouse);
+  window.addEventListener('mousemove', handleMouse, { passive: true });
 
     const animate = () => {
       const w = canvas.offsetWidth;
@@ -86,8 +86,14 @@ export function BackgroundBeams({ className, beamCount = 8 }: { className?: stri
     };
     animRef.current = requestAnimationFrame(animate);
 
-    return () => { cancelAnimationFrame(animRef.current); window.removeEventListener('resize', resize); canvas.removeEventListener('mousemove', handleMouse); };
+    return () => { cancelAnimationFrame(animRef.current); window.removeEventListener('resize', resize); window.removeEventListener('mousemove', handleMouse);};
   }, [initBeams]);
 
-  return <canvas ref={canvasRef} className={cn('absolute inset-0 w-full h-full pointer-events-auto', className)} />;
+  return <canvas
+  ref={canvasRef}
+  className={cn(
+    'absolute inset-0 w-full h-full pointer-events-none', // ✅ Never blocks
+    className
+  )}
+/>
 }
