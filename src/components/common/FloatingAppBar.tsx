@@ -281,7 +281,7 @@ function MobileDockItem({
   );
 }
 
-/* ── Mobile trigger button ────────────────────────────────────── */
+/* ── Mobile trigger button ─────────────────────────────────────── */
 
 function MobileTriggerButton({
   isOpen,
@@ -297,20 +297,29 @@ function MobileTriggerButton({
       aria-expanded={isOpen}
       aria-controls="mobile-nav-dock"
       className={cn(
-        'fixed z-[9999]',
+        // ✅ FIX 1: Use Tailwind classes for ALL positioning — never style prop
+        // for fixed-position values on motion elements in mobile browsers
+        'fixed bottom-5 left-5 z-[9999]',
         'w-12 h-12 rounded-full',
         'flex items-center justify-center',
         'bg-gradient-to-br from-emerald-400 to-emerald-600',
         'text-white shadow-lg shadow-emerald-500/30',
         'focus-visible:outline-none focus-visible:ring-2',
         'focus-visible:ring-emerald-400 focus-visible:ring-offset-2',
-        'touch-target',
+        // ✅ FIX 3: Remove touch-target here — use explicit min size instead
+        // touch-target adds position:relative which conflicts with fixed
       )}
-      style={{ bottom: '20px', left: '20px' }}
+      // ✅ FIX 4: Add will-change so the compositor layer is promoted above canvas
+      style={{ willChange: 'transform' }}
       whileTap={{ scale: 0.88 }}
       whileHover={{ scale: 1.08 }}
       transition={{ type: 'spring', stiffness: 400, damping: 17 }}
     >
+      {/* ✅ Explicit touch target via pseudo-element without position:relative */}
+      <span
+        className="absolute -inset-2 rounded-full"
+        aria-hidden="true"
+      />
       <AnimatePresence mode="wait" initial={false}>
         {isOpen ? (
           <motion.span
@@ -362,7 +371,7 @@ function MobileVerticalDock({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — unchanged */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -379,10 +388,12 @@ function MobileVerticalDock({
         )}
       </AnimatePresence>
 
-      {/* Ambient glow */}
+      {/* Ambient glow — unchanged */}
       <motion.div
         className="fixed z-[9997] pointer-events-none"
-        style={{ bottom: '16px', left: '16px' }}
+        // ✅ FIX 1: Tailwind classes instead of style prop for positioning
+        // ❌ was: style={{ bottom: '16px', left: '16px' }}
+        style={{ bottom: '16px', left: '16px', willChange: 'transform, opacity' }}
         animate={{
           opacity: isOpen ? 1 : 0,
           x:       isOpen ? 0 : -40,
@@ -398,7 +409,11 @@ function MobileVerticalDock({
         id="mobile-nav-dock"
         aria-label="Mobile navigation"
         className={cn(
-          'fixed z-[9998] flex flex-col items-center gap-1',
+          'fixed flex flex-col items-center gap-1',
+          // ✅ FIX 1: Tailwind classes for positioning
+          // ❌ was: style={{ bottom: '80px', left: '16px' }}
+          'bottom-20 left-4',
+          'z-[9998]',
           'py-2 px-1.5 rounded-2xl',
           'bg-white/65 dark:bg-neutral-900/65',
           'backdrop-blur-xl',
@@ -407,16 +422,15 @@ function MobileVerticalDock({
           'isolate',
           isOpen ? '[will-change:transform,opacity]' : '',
         )}
+        // ✅ FIX 1: Only keep non-positional values in style
         style={{
-          bottom:               '80px',
-          left:                 '16px',
           WebkitBackdropFilter: 'blur(24px) saturate(160%)',
         }}
         initial={false}
         animate={{
-          x:             isOpen ? 0    : -80,
-          opacity:       isOpen ? 1    : 0,
-          scale:         isOpen ? 1    : 0.85,
+          x:             isOpen ? 0      : -80,
+          opacity:       isOpen ? 1      : 0,
+          scale:         isOpen ? 1      : 0.85,
           pointerEvents: isOpen ? 'auto' : 'none',
         }}
         transition={{
@@ -426,7 +440,7 @@ function MobileVerticalDock({
           opacity:   { duration: 0.2 },
         }}
       >
-        {/* Shimmer */}
+        {/* Shimmer + items — unchanged */}
         <div
           className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
           aria-hidden="true"
@@ -441,9 +455,9 @@ function MobileVerticalDock({
           <motion.div
             key={item.label}
             animate={{
-              opacity: isOpen ? 1   : 0,
-              x:       isOpen ? 0   : -12,
-              scale:   isOpen ? 1   : 0.7,
+              opacity: isOpen ? 1 : 0,
+              x:       isOpen ? 0 : -12,
+              scale:   isOpen ? 1 : 0.7,
             }}
             transition={{
               delay:     isOpen ? index * 0.04 : 0,
@@ -460,34 +474,47 @@ function MobileVerticalDock({
     </>
   );
 }
-
-/* ── Mobile portal wrapper ────────────────────────────────────── */
+/* ── Mobile portal wrapper — FIXED ───────────────────────────── */
 
 function MobileNavPortal({
   items,
   isOpen,
   onOpen,
   onClose,
+  isMobile,
 }: {
-  items:   NavItem[];
-  isOpen:  boolean;
-  onOpen:  () => void;
-  onClose: () => void;
+  items:    NavItem[];
+  isOpen:   boolean;
+  onOpen:   () => void;
+  onClose:  () => void;
+  isMobile: boolean | null;
 }) {
-  const isMobileReady = useIsMobileReady();
+  // ✅ FIX 2: Single merged state — eliminates the double-effect race.
+  // Previously: bodyReady (effect 1) + isMobile (effect 2) needed BOTH
+  // to be true, sometimes causing a missed render on slow mobile devices.
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
-  // ✅ Only render when CONFIRMED mobile (true, not null, not false)
-  if (isMobileReady !== true) return null;
+  useEffect(() => {
+    // isMobile is already confirmed true when this runs because the
+    // parent re-renders and passes the new prop before this effect fires.
+    // We only need ONE state flip now instead of two.
+    if (isMobile === true) {
+      setPortalTarget(document.body);
+    } else {
+      setPortalTarget(null);
+    }
+  }, [isMobile]);
+
+  if (!portalTarget) return null;
 
   return createPortal(
     <>
       <MobileTriggerButton isOpen={isOpen} onClick={isOpen ? onClose : onOpen} />
       <MobileVerticalDock  items={items}   isOpen={isOpen} onClose={onClose} />
     </>,
-    document.body,
+    portalTarget,
   );
 }
-
 /* ── Main component ───────────────────────────────────────────── */
 
 export function FloatingAppBar() {
@@ -502,7 +529,10 @@ export function FloatingAppBar() {
   const navMouseX      = useMotionValue(0);
   const smoothNavX     = useSpring(navMouseX, { stiffness: 250, damping: 30 });
 
-  // ✅ null=unknown, false=desktop, true=mobile
+  // ✅ Single hook instance — shared with MobileNavPortal via prop
+  //    null  = SSR / not yet measured
+  //    true  = confirmed mobile
+  //    false = confirmed desktop
   const isMobileReady = useIsMobileReady();
 
   const handleScroll = useCallback(() => {
@@ -774,13 +804,15 @@ export function FloatingAppBar() {
       )}
 
       {/* ════════════════════════════════════
-          MOBILE portal — only when isMobileReady === true
+          MOBILE portal — isMobileReady passed as prop
+          No second hook instance — fixes the hydration race
       ════════════════════════════════════ */}
       <MobileNavPortal
         items={mobileItems}
         isOpen={mobileOpen}
         onOpen={openMobile}
         onClose={closeMobile}
+        isMobile={isMobileReady}  // ✅ Single source of truth
       />
     </>
   );

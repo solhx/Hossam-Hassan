@@ -282,9 +282,10 @@ body {
    44px hit area without changing their visual size.
 ═══════════════════════════════════════════════════════════════ */
 
-.touch-target {
+.touch-target-relative {
   position: relative;
 }
+.touch-target-relative::before,
 .touch-target::before {
   content:    '';
   position:   absolute;
