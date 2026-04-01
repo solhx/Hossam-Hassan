@@ -41,14 +41,15 @@
   --animate-shimmer-sweep: shimmer-sweep 2.5s ease-in-out infinite;  
 }
 
-*,
-*::before,
-*::after {
-   border-color: var(--color-border);
+
+[data-theme-transitioning] *,
+[data-theme-transitioning] *::before,
+[data-theme-transitioning] *::after {
   transition:
-    background-color 0.25s ease,
-    border-color     0.2s  ease,
-    color            0.15s ease !important;
+    background-color 0.3s ease,
+    color            0.3s ease,
+    border-color     0.25s ease,
+    fill             0.3s ease !important;
 }
 
 canvas,
@@ -458,6 +459,19 @@ body {
 ::view-transition-new(root) {
   animation:      none;
   mix-blend-mode: normal;
+}
+
+/* ✅ ADD THESE — fixes clipping and stacking on mobile */
+::view-transition-image-pair(root) {
+  isolation: isolate;
+}
+
+::view-transition-new(root) {
+  z-index: 1;
+}
+
+::view-transition-old(root) {
+  z-index: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════

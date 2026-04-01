@@ -1,8 +1,7 @@
 'use client';
 
 import { Moon, Sun } from 'lucide-react';
-import React, { useRef, useCallback, memo, useState, useEffect } from 'react';
-
+import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { flushSync } from 'react-dom';
 import { cn } from '@/utils/utils';
@@ -34,15 +33,12 @@ export const ToggleTheme = React.memo(function ToggleTheme({
   ...props
 }: ToggleThemeProps) {
   const { resolvedTheme, setTheme } = useTheme();
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const buttonRef    = useRef<HTMLButtonElement>(null);
   const flipStyleRef = useRef<HTMLStyleElement | null>(null);
 
   const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
-  // isDark is only meaningful after mount — defaults to false (safe)
   const isDark = mounted ? resolvedTheme === 'dark' : false;
 
   const applyThemeChange = useCallback(() => {
@@ -70,7 +66,7 @@ export const ToggleTheme = React.memo(function ToggleTheme({
             },
             {
               duration,
-              easing: 'ease-in-out',
+              easing:        'ease-in-out',
               pseudoElement: '::view-transition-new(root)',
             },
           );
@@ -79,71 +75,51 @@ export const ToggleTheme = React.memo(function ToggleTheme({
           document.documentElement.animate(
             [
               { opacity: 0, transform: 'scale(0.8) rotate(5deg)' },
-              { opacity: 1, transform: 'scale(1) rotate(0deg)' },
+              { opacity: 1, transform: 'scale(1) rotate(0deg)'   },
             ],
             {
-              duration: duration * 1.2,
-              easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+              duration:      duration * 1.2,
+              easing:        'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
               pseudoElement: '::view-transition-new(root)',
             },
           );
         },
         'swipe-left': () => {
           document.documentElement.animate(
-            {
-              clipPath: [
-                `inset(0 0 0 ${viewportWidth}px)`,
-                `inset(0 0 0 0)`,
-              ],
-            },
+            { clipPath: [`inset(0 0 0 ${viewportWidth}px)`, `inset(0 0 0 0)`] },
             {
               duration,
-              easing: 'cubic-bezier(0.2, 0, 0, 1)',
+              easing:        'cubic-bezier(0.2, 0, 0, 1)',
               pseudoElement: '::view-transition-new(root)',
             },
           );
         },
         'swipe-right': () => {
           document.documentElement.animate(
-            {
-              clipPath: [
-                `inset(0 ${viewportWidth}px 0 0)`,
-                `inset(0 0 0 0)`,
-              ],
-            },
+            { clipPath: [`inset(0 ${viewportWidth}px 0 0)`, `inset(0 0 0 0)`] },
             {
               duration,
-              easing: 'cubic-bezier(0.2, 0, 0, 1)',
+              easing:        'cubic-bezier(0.2, 0, 0, 1)',
               pseudoElement: '::view-transition-new(root)',
             },
           );
         },
         'swipe-up': () => {
           document.documentElement.animate(
-            {
-              clipPath: [
-                `inset(${viewportHeight}px 0 0 0)`,
-                `inset(0 0 0 0)`,
-              ],
-            },
+            { clipPath: [`inset(${viewportHeight}px 0 0 0)`, `inset(0 0 0 0)`] },
             {
               duration,
-              easing: 'cubic-bezier(0.2, 0, 0, 1)',
+              easing:        'cubic-bezier(0.2, 0, 0, 1)',
               pseudoElement: '::view-transition-new(root)',
             },
           );
         },
         'swipe-down': () => {
           document.documentElement.animate(
-            {
-              clipPath: [
-                `inset(0 0 ${viewportHeight}px 0)`,
-                `inset(0 0 0 0)`,
-              ],
-            },
+            { clipPath: [`inset(0 0 ${viewportHeight}px 0)`, `inset(0 0 0 0)`] },
             {
               duration,
-              easing: 'cubic-bezier(0.2, 0, 0, 1)',
+              easing:        'cubic-bezier(0.2, 0, 0, 1)',
               pseudoElement: '::view-transition-new(root)',
             },
           );
@@ -157,8 +133,8 @@ export const ToggleTheme = React.memo(function ToggleTheme({
               ],
             },
             {
-              duration: duration * 1.5,
-              easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+              duration:      duration * 1.5,
+              easing:        'cubic-bezier(0.4, 0, 0.2, 1)',
               pseudoElement: '::view-transition-new(root)',
             },
           );
@@ -167,8 +143,8 @@ export const ToggleTheme = React.memo(function ToggleTheme({
           document.documentElement.animate(
             { opacity: [0, 1] },
             {
-              duration: duration * 0.5,
-              easing: 'ease-in-out',
+              duration:      duration * 0.5,
+              easing:        'ease-in-out',
               pseudoElement: '::view-transition-new(root)',
             },
           );
@@ -180,8 +156,8 @@ export const ToggleTheme = React.memo(function ToggleTheme({
               { transform: 'scale(1)',   opacity: 1 },
             ],
             {
-              duration: duration * 1.2,
-              easing: 'cubic-bezier(0.19, 1, 0.22, 1)',
+              duration:      duration * 1.2,
+              easing:        'cubic-bezier(0.19, 1, 0.22, 1)',
               pseudoElement: '::view-transition-new(root)',
             },
           );
@@ -191,8 +167,8 @@ export const ToggleTheme = React.memo(function ToggleTheme({
               { transform: 'scale(1.05)', opacity: 0 },
             ],
             {
-              duration: duration * 1.2,
-              easing: 'cubic-bezier(0.19, 1, 0.22, 1)',
+              duration:      duration * 1.2,
+              easing:        'cubic-bezier(0.19, 1, 0.22, 1)',
               pseudoElement: '::view-transition-old(root)',
             },
           );
@@ -222,29 +198,27 @@ export const ToggleTheme = React.memo(function ToggleTheme({
           flipStyleRef.current = styleElement;
           setTimeout(() => {
             styleElement.remove();
-            if (flipStyleRef.current === styleElement) {
-              flipStyleRef.current = null;
-            }
+            if (flipStyleRef.current === styleElement) flipStyleRef.current = null;
           }, duration + 100);
         },
         'split-vertical': () => {
           document.documentElement.animate(
             [{ opacity: 0 }, { opacity: 1 }],
             {
-              duration: duration * 0.75,
-              easing: 'ease-in',
+              duration:      duration * 0.75,
+              easing:        'ease-in',
               pseudoElement: '::view-transition-new(root)',
             },
           );
           document.documentElement.animate(
             [
-              { clipPath: 'inset(0 0 0 0)',    transform: 'none' },
-              { clipPath: 'inset(0 40% 0 40%)', transform: 'scale(1.2)' },
-              { clipPath: 'inset(0 50% 0 50%)', transform: 'scale(1)' },
+              { clipPath: 'inset(0 0 0 0)',     transform: 'none'      },
+              { clipPath: 'inset(0 40% 0 40%)', transform: 'scale(1.2)'},
+              { clipPath: 'inset(0 50% 0 50%)', transform: 'scale(1)'  },
             ],
             {
-              duration: duration * 1.5,
-              easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+              duration:      duration * 1.5,
+              easing:        'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
               pseudoElement: '::view-transition-old(root)',
             },
           );
@@ -258,8 +232,8 @@ export const ToggleTheme = React.memo(function ToggleTheme({
               ],
             },
             {
-              duration: duration * 1.5,
-              easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+              duration:      duration * 1.5,
+              easing:        'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
               pseudoElement: '::view-transition-new(root)',
             },
           );
@@ -275,30 +249,51 @@ export const ToggleTheme = React.memo(function ToggleTheme({
   const toggleTheme = useCallback(async () => {
     if (!buttonRef.current) return;
 
-    if (
-      !document.startViewTransition ||
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    ) {
-      applyThemeChange();
-      return;
-    }
+    const prefersReduced = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
 
-    const transition = document.startViewTransition(() => {
-      flushSync(applyThemeChange);
-    });
-
-    await transition.ready;
-
+    // ── Read button position NOW — before any transition starts ──────
+    // This is the key fix: getBoundingClientRect() must be called
+    // BEFORE startViewTransition() takes the page snapshot.
+    // Calling it after transition.ready gives stale coordinates on mobile.
     const { top, left, width, height } =
       buttonRef.current.getBoundingClientRect();
     const x = left + width / 2;
-    const y = top + height / 2;
+    const y = top  + height / 2;
     const maxRadius = Math.hypot(
       Math.max(left, window.innerWidth  - left),
       Math.max(top,  window.innerHeight - top),
     );
 
-    runAnimation(x, y, maxRadius);
+    // ── Fallback: no View Transition API or reduced motion ────────────
+    // Browsers: Firefox Android, Safari iOS < 18
+    // Uses CSS class to trigger smooth color transition from globals.css
+    if (!document.startViewTransition || prefersReduced) {
+      // Signal globals.css transition block to animate color changes
+      document.documentElement.setAttribute('data-theme-transitioning', '');
+      applyThemeChange();
+      setTimeout(() => {
+        document.documentElement.removeAttribute('data-theme-transitioning');
+      }, 350);
+      return;
+    }
+
+    // ── Full View Transition animation ────────────────────────────────
+    // Supported: Chrome Android 111+, Safari iOS 18+, Samsung Internet 23+
+    const transition = document.startViewTransition(() => {
+      flushSync(applyThemeChange);
+    });
+
+    // transition.ready resolves when the pseudo-elements are created
+    // and the animation can begin. Wrap in try/catch — rejects if a
+    // second transition interrupts this one (safe to ignore).
+    try {
+      await transition.ready;
+      runAnimation(x, y, maxRadius);
+    } catch {
+      // Transition was interrupted — theme was still applied correctly
+    }
   }, [applyThemeChange, runAnimation]);
 
   return (
@@ -306,7 +301,6 @@ export const ToggleTheme = React.memo(function ToggleTheme({
       ref={buttonRef}
       onClick={toggleTheme}
       type="button"
-      // ✅ aria-label also uses mounted guard — consistent with icon shown
       aria-label={
         mounted
           ? `Switch to ${isDark ? 'light' : 'dark'} mode`
@@ -319,15 +313,7 @@ export const ToggleTheme = React.memo(function ToggleTheme({
       )}
       {...props}
     >
-      {/*
-        ✅ KEY FIX:
-        Before mounted: render Moon icon with opacity-0
-        → Server and client both render the same invisible icon
-        → Zero hydration mismatch
-        → Icon fades in after mount with the correct theme icon
-      */}
       {!mounted ? (
-        // Invisible placeholder — same size as real icon, no layout shift
         <Moon
           className="text-neutral-500 dark:text-neutral-300 opacity-0"
           size={18}
@@ -349,4 +335,5 @@ export const ToggleTheme = React.memo(function ToggleTheme({
     </button>
   );
 });
+
 ToggleTheme.displayName = 'ToggleTheme';
