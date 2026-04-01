@@ -1,7 +1,7 @@
-// ✅ FULLY UPDATED — src/components/sections/home/Hero.tsx
+// src/components/sections/home/Hero.tsx
 'use client';
 
-import { useRef, lazy, Suspense } from 'react';
+import { useRef, lazy, Suspense, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowDown, MapPin, Sparkles, Download, Send } from 'lucide-react';
 import { NumberTicker } from '@/components/ui/number-ticker';
@@ -16,7 +16,12 @@ import {
 import { useMouseParallax } from '@/hooks/useMouseParallax';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
-// ── Lazy Three.js scene (heavy, not needed for LCP) ──────────────────
+// ── Lazy Three.js scene ──────────────────────────────────────────────
+// ✅ The lazy() call is defined at module level (required by React).
+// But the actual import() only fires when the component is rendered.
+// Since we gate rendering with {isDesktop && ...}, mobile devices
+// never render HeroScene, so import() never fires on mobile.
+// Result: Three.js bundle (~600KB) is never downloaded on mobile.
 const HeroScene = lazy(() =>
   import('@/components/ui/hero-scene').then((m) => ({ default: m.HeroScene }))
 );
@@ -27,7 +32,7 @@ const staggerContainer = {
   visible: {
     transition: {
       staggerChildren: 0.1,
-      delayChildren: 2.4, // Slightly earlier than before
+      delayChildren: 2.4,
     },
   },
 };
@@ -44,7 +49,6 @@ const staggerChild = {
   },
 };
 
-// Reduced motion variants — instant appearance
 const reducedStaggerContainer = {
   hidden: {},
   visible: { transition: { staggerChildren: 0, delayChildren: 0 } },
@@ -56,48 +60,109 @@ const reducedStaggerChild = {
 
 export function Hero() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const reduced = useReducedMotion();
+  const reduced    = useReducedMotion();
+
+  // ── Phase 1: SSR + hydration → isDesktop = false (HeroScene not rendered)
+  // ── Phase 2: After mount → read window.innerWidth → set isDesktop
+  // ── Phase 3: If desktop → HeroScene lazy-loads and renders
+  // ── Result:  Mobile devices never trigger the Three.js import()
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // ✅ Controls whether HeroScene is mounted.
+  // When hero scrolls out of view, HeroScene unmounts → RAF loop stops.
+  // When hero scrolls back into view, HeroScene remounts → RAF resumes.
+  const [heroVisible, setHeroVisible] = useState(true);
+
+  useEffect(() => {
+    // ✅ window is only available after mount — safe for SSR
+    const desktop = window.innerWidth >= 768;
+    setIsDesktop(desktop);
+
+    // ✅ No need to set up observer on mobile — HeroScene never renders there
+    if (!desktop) return;
+
+    // ✅ IntersectionObserver watches the hero <section> element.
+    // When the section is completely scrolled out of the viewport,
+    // entry.isIntersecting becomes false → setHeroVisible(false) →
+    // HeroScene unmounts → its useEffect cleanup runs → RAF loop stops.
+    // This saves continuous GPU work while user reads other sections.
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setHeroVisible(entry.isIntersecting);
+      },
+      {
+        // threshold: 0 = trigger the moment ANY part of the section
+        // enters or leaves the viewport. Most responsive setting.
+        threshold: 0,
+      }
+    );
+
+    const section = sectionRef.current;
+    if (section) observer.observe(section);
+
+    return () => {
+      if (section) observer.unobserve(section);
+      observer.disconnect();
+    };
+  }, []);
 
   // ── Scroll parallax ──────────────────────────────────────────────
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start start', 'end start'],
   });
-  const contentY = useTransform(scrollYProgress, [0, 1], [0, 150]);
+  const contentY       = useTransform(scrollYProgress, [0, 1], [0, 150]);
   const contentOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
-  const contentScale = useTransform(scrollYProgress, [0, 0.4], [1, 0.95]);
+  const contentScale   = useTransform(scrollYProgress, [0, 0.4], [1, 0.95]);
 
-  // ✅ Updated hook call — ranges as params, not inline functions
-  const { layerX, layerY, layerXSlow, layerYSlow, springX, springY, rotateX, rotateY } =
-  useMouseParallax(40, 25, 35, 25);
+  const {
+    layerX,
+    layerY,
+    layerXSlow,
+    layerYSlow,
+    springX,
+    springY,
+    rotateX,
+    rotateY,
+  } = useMouseParallax(40, 25, 35, 25);
+
   return (
     <section
       id="hero"
       ref={sectionRef}
       aria-label="Hero section"
       className="relative min-h-[100svh] flex items-center justify-center overflow-hidden"
-      // ✅ min-h-[100svh] uses small viewport height unit — prevents
-      //    mobile browser chrome (address bar) from cutting off content
     >
       {/* ── BACKGROUND LAYERS ──────────────────────────────────────── */}
 
-      {/* Three.js scene — loaded async, non-blocking */}
-      {!reduced && (
+      {/*
+        THREE.JS SCENE — three conditions must all be true to render:
+        1. !reduced   → user has not requested reduced motion
+        2. isDesktop  → window.innerWidth >= 768 (set after mount)
+        3. heroVisible → hero section is in the viewport
+
+        On mobile: isDesktop = false → HeroScene never renders →
+        lazy import() never fires → Three.js bundle never downloads.
+
+        On desktop when scrolled away: heroVisible = false →
+        HeroScene unmounts → its cleanup() runs → RAF loop stops →
+        zero GPU usage while user reads other sections.
+      */}
+      {!reduced && isDesktop && heroVisible && (
         <Suspense fallback={null}>
-          {/* ✅ null fallback — no flicker, background orbs cover the gap */}
           <HeroScene className="opacity-40 dark:opacity-50" />
         </Suspense>
       )}
 
       {/* Aurora + Orbs + Spotlight + Dust + Noise */}
-     <HeroBackground
-  layerX={layerX}
-  layerY={layerY}
-  layerXSlow={layerXSlow}
-  layerYSlow={layerYSlow}
-  springX={springX}
-  springY={springY}
-/>
+      <HeroBackground
+        layerX={layerX}
+        layerY={layerY}
+        layerXSlow={layerXSlow}
+        layerYSlow={layerYSlow}
+        springX={springX}
+        springY={springY}
+      />
 
       {/* ── MAIN CONTENT ───────────────────────────────────────────── */}
       <motion.div
@@ -107,8 +172,6 @@ export function Hero() {
             : { y: contentY, opacity: contentOpacity, scale: contentScale }
         }
         className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-20 sm:py-24"
-        // ✅ Added py-* for safe spacing on mobile — prevents content
-        //    touching nav bar at top or scroll indicator at bottom
       >
         {/* ── Availability Badge ──────────────────────────────────── */}
         <FadeInUp delay={reduced ? 0 : 0.3}>
@@ -120,7 +183,6 @@ export function Hero() {
               backdrop-blur-md shadow-sm shadow-emerald-500/5
             "
           >
-            {/* Pulsing dot */}
             <div className="relative flex items-center justify-center" aria-hidden="true">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               <div className="absolute w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
@@ -145,11 +207,6 @@ export function Hero() {
           }
           className="will-change-transform mb-4 sm:mb-6"
         >
-          {/*
-            ✅ Single <h1> with sr-only full name for screen readers,
-            visual split into two lines for the reveal animation.
-            This ensures accessibility without affecting the visual design.
-          */}
           <h1
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-none"
             aria-label={`Hi, I'm ${siteConfig.name}`}
@@ -174,10 +231,6 @@ export function Hero() {
         {/* ── Subtitle / Typewriter ────────────────────────────────── */}
         <FadeInUp delay={reduced ? 0 : 1.3} className="mb-3 sm:mb-4">
           <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-neutral-600 dark:text-neutral-300 max-w-2xl mx-auto font-medium leading-relaxed px-2 sm:px-0">
-            {/*
-              ✅ Reduced max font on mobile (text-base instead of text-lg).
-              Added px-2 on mobile to prevent text touching screen edges.
-            */}
             <TypewriterText
               text="Full-Stack Developer crafting premium digital experiences with modern web technologies."
               delay={reduced ? 0 : 1.4}
@@ -194,7 +247,6 @@ export function Hero() {
               className="text-emerald-600 dark:text-emerald-400 shrink-0"
               aria-hidden="true"
             />
-            {/* ✅ shrink-0 on icon prevents squishing on narrow screens */}
             <span className="tracking-wide font-medium">{siteConfig.location}</span>
           </div>
         </FadeInUp>
@@ -203,13 +255,10 @@ export function Hero() {
         <FadeInUp
           delay={reduced ? 0 : 2.2}
           className="flex flex-col xs:flex-row sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-12 sm:mb-16 px-4 sm:px-0"
-          // ✅ flex-col on smallest screens, flex-row from xs up.
-          // px-4 ensures buttons don't touch edges on narrow phones.
         >
           <LiquidButton
             variant="primary"
             className="w-full xs:w-auto sm:w-auto"
-            // ✅ Full width on mobile, auto on larger screens
             onClick={() =>
               document
                 .getElementById('contact')
@@ -240,8 +289,6 @@ export function Hero() {
             gap-x-4 gap-y-6 sm:gap-8
             max-w-xs sm:max-w-2xl mx-auto
           "
-          // ✅ Explicit gap-x and gap-y for mobile.
-          // max-w-xs on mobile prevents 2-col grid from being too wide.
         >
           {stats.map((stat) => (
             <motion.div
@@ -279,9 +326,8 @@ export function Hero() {
           focus-visible:outline-none focus-visible:ring-2
           focus-visible:ring-emerald-500 focus-visible:ring-offset-2
         "
-        // ✅ Added padding and focus ring for keyboard accessibility
         initial={{ opacity: 0 }}
-        animate={{ opacity: reduced ? 1 : 1 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: reduced ? 0 : 3.2 }}
         aria-label="Scroll to About section"
       >
@@ -291,9 +337,9 @@ export function Hero() {
         <motion.div
           animate={reduced ? {} : { y: [0, 6, 0] }}
           transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
+            duration:  2,
+            repeat:    Infinity,
+            ease:      'easeInOut',
           }}
           aria-hidden="true"
         >

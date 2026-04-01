@@ -153,7 +153,10 @@
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
-
+@keyframes shimmer-sweep-vertical {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(500%); }
+}
 @keyframes pulse-ring {
   0%   { transform: scale(0.85); opacity: 1; }
   100% { transform: scale(1.8);  opacity: 0; }
@@ -239,6 +242,7 @@ html {
 }
 
 body {
+    transition: background-color 0ms, color 0ms;
   background:  var(--color-background);
   color:       var(--color-foreground);
   font-family: var(--font-sans);
@@ -327,6 +331,9 @@ body {
   backdrop-filter:         blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid oklch(0.922 0 0);
+    transition: 
+    background-color 400ms ease,
+    border-color 400ms ease;
 }
 .dark .glass {
   background: oklch(0.205 0 0 / 60%);
@@ -338,6 +345,9 @@ body {
   backdrop-filter:         blur(40px);
   -webkit-backdrop-filter: blur(40px);
   border: 1px solid oklch(0.922 0 0);
+    transition: 
+    background-color 400ms ease,
+    border-color 400ms ease;
 }
 .dark .glass-strong {
   background: oklch(0.145 0 0 / 85%);

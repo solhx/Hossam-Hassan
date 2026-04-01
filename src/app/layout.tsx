@@ -123,19 +123,7 @@ export default function RootLayout({
         )}
       >
         {/* ✅ Skip-to-content — visually hidden until focused (WCAG 2.4.1) */}
-        <a
-          href="#main-content"
-          className={cn(
-            'fixed top-4 left-4 z-[9999] px-4 py-2 rounded-lg',
-            'bg-emerald-500 text-white text-sm font-semibold',
-            '-translate-y-[150%] focus:translate-y-0',
-            'transition-transform duration-200',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white',
-          )}
-        >
-          Skip to main content
-        </a>
-
+       
         <Providers>{children}</Providers>
         <Analytics />
         <SpeedInsights />

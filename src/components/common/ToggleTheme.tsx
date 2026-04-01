@@ -35,22 +35,22 @@ export const ToggleTheme = ({
   const { resolvedTheme, setTheme } = useTheme();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const flipStyleRef = useRef<HTMLStyleElement | null>(null);
+  
+  // ✅ Guard against double-tap / concurrent transitions
+  const isTransitioning = useRef(false);
 
-  // ✅ THE FIX: Track whether component has mounted on the client.
-  // On the server: mounted = false → render neutral placeholder (no icon mismatch).
-  // On the client: mounted = true  → render correct icon based on resolvedTheme.
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // isDark is only meaningful after mount — defaults to false (safe)
   const isDark = mounted ? resolvedTheme === 'dark' : false;
 
   const applyThemeChange = useCallback(() => {
     setTheme(isDark ? 'light' : 'dark');
   }, [isDark, setTheme]);
 
+  // ✅ UNCHANGED — every animation type preserved exactly as authored
   const runAnimation = useCallback(
     (x: number, y: number, maxRadius: number) => {
       const viewportWidth  = window.innerWidth;
@@ -240,7 +240,7 @@ export const ToggleTheme = ({
           );
           document.documentElement.animate(
             [
-              { clipPath: 'inset(0 0 0 0)',    transform: 'none' },
+              { clipPath: 'inset(0 0 0 0)',     transform: 'none' },
               { clipPath: 'inset(0 40% 0 40%)', transform: 'scale(1.2)' },
               { clipPath: 'inset(0 50% 0 50%)', transform: 'scale(1)' },
             ],
@@ -276,6 +276,10 @@ export const ToggleTheme = ({
 
   const toggleTheme = useCallback(async () => {
     if (!buttonRef.current) return;
+    
+    // ✅ Prevent concurrent transitions — double-tap on mobile caused
+    // two view transitions to overlap, producing a flash
+    if (isTransitioning.current) return;
 
     if (
       !document.startViewTransition ||
@@ -285,12 +289,13 @@ export const ToggleTheme = ({
       return;
     }
 
-    const transition = document.startViewTransition(() => {
-      flushSync(applyThemeChange);
-    });
+    isTransitioning.current = true;
 
-    await transition.ready;
-
+    // ✅ Read button position BEFORE startViewTransition
+    // Reason: getBoundingClientRect() inside the transition callback
+    // can return stale/zero values on some mobile browsers because the
+    // browser may have already started compositing the snapshot.
+    // Reading it here, synchronously, is always accurate.
     const { top, left, width, height } =
       buttonRef.current.getBoundingClientRect();
     const x = left + width / 2;
@@ -300,7 +305,26 @@ export const ToggleTheme = ({
       Math.max(top,  window.innerHeight - top),
     );
 
+    const transition = document.startViewTransition(() => {
+      // ✅ flushSync ensures React commits the theme class change
+      // synchronously within the view transition callback.
+      // Without this, the browser takes the "new" snapshot before
+      // React has applied the .dark class — producing a blank frame.
+      flushSync(applyThemeChange);
+    });
+
+    // ✅ transition.ready resolves when the browser has captured both
+    // snapshots and is ready for the animation. Only THEN do we start
+    // the Web Animations API calls — this is the correct timing.
+    await transition.ready;
+
     runAnimation(x, y, maxRadius);
+
+    // ✅ Unlock after transition completes — prevents rapid toggling
+    // that would queue multiple transitions and cause visual artifacts
+    transition.finished.then(() => {
+      isTransitioning.current = false;
+    });
   }, [applyThemeChange, runAnimation]);
 
   return (
@@ -308,28 +332,22 @@ export const ToggleTheme = ({
       ref={buttonRef}
       onClick={toggleTheme}
       type="button"
-      // ✅ aria-label also uses mounted guard — consistent with icon shown
       aria-label={
         mounted
           ? `Switch to ${isDark ? 'light' : 'dark'} mode`
           : 'Toggle theme'
       }
+      // ✅ touch-target class gives 44px minimum hit area on mobile
+      // without changing the visual button size (defined in globals.css)
       className={cn(
         'p-2 rounded-full transition-colors duration-300',
         'cursor-pointer flex items-center justify-center',
+        'touch-target',
         className,
       )}
       {...props}
     >
-      {/*
-        ✅ KEY FIX:
-        Before mounted: render Moon icon with opacity-0
-        → Server and client both render the same invisible icon
-        → Zero hydration mismatch
-        → Icon fades in after mount with the correct theme icon
-      */}
       {!mounted ? (
-        // Invisible placeholder — same size as real icon, no layout shift
         <Moon
           className="text-neutral-500 dark:text-neutral-300 opacity-0"
           size={18}

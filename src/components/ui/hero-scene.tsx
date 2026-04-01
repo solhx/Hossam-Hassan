@@ -1,4 +1,4 @@
-// ✅ FIXED — src/components/ui/hero-scene.tsx
+// src/components/ui/hero-scene.tsx
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -7,18 +7,22 @@ import { cn, prefersReducedMotion } from '@/utils/utils';
 
 export function HeroScene({ className }: { className?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const animRef = useRef<number>(0);
+  const animRef      = useRef<number>(0);
 
   useEffect(() => {
     if (prefersReducedMotion()) return;
+
     const container = containerRef.current;
     if (!container) return;
 
-    // ✅ Skip Three.js on mobile — too heavy, battery drain
+    // ✅ This component is only mounted when isDesktop = true (set in Hero.tsx).
+    // The check here is a secondary safety net in case the component is
+    // used elsewhere without the desktop gate.
     const isMobile = window.innerWidth < 768;
     if (isMobile) return;
 
-    const scene = new THREE.Scene();
+    // ── Scene setup ────────────────────────────────────────────────
+    const scene  = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
       60,
       container.clientWidth / container.clientHeight,
@@ -28,18 +32,17 @@ export function HeroScene({ className }: { className?: string }) {
     camera.position.z = 30;
 
     const renderer = new THREE.WebGLRenderer({
-      alpha: true,
-      antialias: false, // ✅ Disable antialias — big perf win, barely visible
+      alpha:           true,
+      antialias:       false,       // ✅ Disabled — big perf win, barely visible
       powerPreference: 'high-performance',
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    // ✅ Cap at 1.5 instead of 2 — saves ~44% GPU fill rate on retina
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // ✅ Cap at 1.5
     container.appendChild(renderer.domElement);
 
-    // ✅ Reduce particle count on lower-end devices
+    // ── Particles ──────────────────────────────────────────────────
     const count = navigator.hardwareConcurrency <= 4 ? 250 : 500;
-    const geo = new THREE.BufferGeometry();
+    const geo   = new THREE.BufferGeometry();
     const pos   = new Float32Array(count * 3);
     const col   = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
@@ -54,7 +57,7 @@ export function HeroScene({ className }: { className?: string }) {
     ];
 
     for (let i = 0; i < count; i++) {
-      const i3 = i * 3;
+      const i3    = i * 3;
       const r     = 15 + Math.random() * 20;
       const theta = Math.random() * Math.PI * 2;
       const phi   = Math.acos(2 * Math.random() - 1);
@@ -68,8 +71,8 @@ export function HeroScene({ className }: { className?: string }) {
       sizes[i]    = 0.5 + Math.random() * 2;
     }
 
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+    geo.setAttribute('position', new THREE.BufferAttribute(pos,   3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(col,   3));
     geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
 
     const mat = new THREE.ShaderMaterial({
@@ -109,7 +112,8 @@ export function HeroScene({ className }: { className?: string }) {
     const particles = new THREE.Points(geo, mat);
     scene.add(particles);
 
-    // ✅ Reduce torus geometry segments — 100,16 → 60,12 saves ~40% vertices
+    // ── Torus knot ─────────────────────────────────────────────────
+    // ✅ Reduced segments: 100,16 → 60,12 saves ~40% vertices
     const tGeo = new THREE.TorusKnotGeometry(6, 2, 60, 12);
     const tMat = new THREE.MeshBasicMaterial({
       color:       0x10b981,
@@ -120,21 +124,22 @@ export function HeroScene({ className }: { className?: string }) {
     const torus = new THREE.Mesh(tGeo, tMat);
     scene.add(torus);
 
+    // ── Mouse tracking ─────────────────────────────────────────────
     const mouse = { x: 0, y: 0 };
 
-    // ✅ Use RAF throttle for mouse — not every mousemove event
+    // ✅ RAF throttle — not every mousemove event
     let mousePending = false;
     const onMouse = (e: MouseEvent) => {
       if (mousePending) return;
       mousePending = true;
       requestAnimationFrame(() => {
-        mouse.x = (e.clientX / window.innerWidth)  * 2 - 1;
-        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        mouse.x      = (e.clientX / window.innerWidth)  * 2 - 1;
+        mouse.y      = -(e.clientY / window.innerHeight) * 2 + 1;
         mousePending = false;
       });
     };
 
-    // ✅ ResizeObserver instead of window resize — more accurate
+    // ── Resize handling ────────────────────────────────────────────
     const onResize = () => {
       if (!container) return;
       camera.aspect = container.clientWidth / container.clientHeight;
@@ -142,39 +147,49 @@ export function HeroScene({ className }: { className?: string }) {
       renderer.setSize(container.clientWidth, container.clientHeight);
     };
 
+    // ✅ ResizeObserver — more accurate than window resize event
     const resizeObserver = new ResizeObserver(onResize);
     resizeObserver.observe(container);
 
     window.addEventListener('mousemove', onMouse, { passive: true });
 
+    // ── Render loop ────────────────────────────────────────────────
     const clock = new THREE.Clock();
 
     const animate = () => {
-      const t = clock.getElapsedTime();
-      mat.uniforms.uTime.value = t;
+      // ✅ Skip rendering when the browser tab is hidden.
+      // document.hidden = true when user switches to another tab.
+      // This saves GPU entirely — no draw calls, no shader execution.
+      // The IntersectionObserver in Hero.tsx handles the "scrolled away"
+      // case; this handles the "tab is backgrounded" case.
+      if (!document.hidden) {
+        const t = clock.getElapsedTime();
+        mat.uniforms.uTime.value = t;
 
-      particles.rotation.y = t * 0.05 + mouse.x * 0.3;
-      particles.rotation.x = mouse.y * 0.2;
+        particles.rotation.y = t * 0.05 + mouse.x * 0.3;
+        particles.rotation.x = mouse.y * 0.2;
 
-      torus.rotation.x = t * 0.15;
-      torus.rotation.y = t * 0.1;
-      torus.rotation.z = t * 0.05;
+        torus.rotation.x = t * 0.15;
+        torus.rotation.y = t * 0.1;
+        torus.rotation.z = t * 0.05;
 
-      // ✅ Smooth lerp factor — same as before
-      camera.position.x += (mouse.x * 3 - camera.position.x) * 0.02;
-      camera.position.y += (mouse.y * 2 - camera.position.y) * 0.02;
-      camera.lookAt(scene.position);
+        camera.position.x += (mouse.x * 3 - camera.position.x) * 0.02;
+        camera.position.y += (mouse.y * 2 - camera.position.y) * 0.02;
+        camera.lookAt(scene.position);
 
-      renderer.render(scene, camera);
+        renderer.render(scene, camera);
+      }
+
       animRef.current = requestAnimationFrame(animate);
     };
 
     animate();
 
+    // ── Cleanup ────────────────────────────────────────────────────
     return () => {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('mousemove', onMouse);
-      resizeObserver.disconnect(); // ✅ Disconnect observer
+      resizeObserver.disconnect();
 
       // ✅ Full GPU memory cleanup
       renderer.dispose();
@@ -184,7 +199,7 @@ export function HeroScene({ className }: { className?: string }) {
       tMat.dispose();
 
       // ✅ Force WebGL context loss to free VRAM immediately
-      const gl = renderer.getContext();
+      const gl  = renderer.getContext();
       const ext = gl.getExtension('WEBGL_lose_context');
       ext?.loseContext();
 
