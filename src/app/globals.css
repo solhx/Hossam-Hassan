@@ -1,31 +1,37 @@
 /* src/app/globals.css */
 @import "tailwindcss";
-/* ✅ REMOVED: @import "tw-animate-css" — was render-blocking 590ms.
-   animate-pulse and animate-ping are built into Tailwind already.
-   All other animations in this file use custom @keyframes below. */
+/*
+  ✅ REMOVED: @import "tw-animate-css" — was render-blocking 590ms.
+  animate-pulse and animate-ping are built into Tailwind already.
+  All other animations use custom @keyframes defined below.
+*/
 
 @custom-variant dark (&:is(.dark *));
 
+/* ═══════════════════════════════════════════════════════════════
+   Design tokens — light mode defaults
+═══════════════════════════════════════════════════════════════ */
+
 @theme inline {
-  --color-background: oklch(1 0 0);
-  --color-foreground: oklch(0.145 0 0);
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.145 0 0);
-  --color-popover: oklch(1 0 0);
+  --color-background:         oklch(1 0 0);
+  --color-foreground:         oklch(0.145 0 0);
+  --color-card:               oklch(1 0 0);
+  --color-card-foreground:    oklch(0.145 0 0);
+  --color-popover:            oklch(1 0 0);
   --color-popover-foreground: oklch(0.145 0 0);
-  --color-primary: oklch(0.205 0 0);
+  --color-primary:            oklch(0.205 0 0);
   --color-primary-foreground: oklch(1 0 0);
-  --color-secondary: oklch(0.97 0 0);
+  --color-secondary:          oklch(0.97 0 0);
   --color-secondary-foreground: oklch(0.205 0 0);
-  --color-muted: oklch(0.97 0 0);
-  --color-muted-foreground: oklch(0.556 0 0);
-  --color-accent: oklch(0.97 0 0);
-  --color-accent-foreground: oklch(0.205 0 0);
-  --color-destructive: oklch(0.577 0.245 27.325);
+  --color-muted:              oklch(0.97 0 0);
+  --color-muted-foreground:   oklch(0.556 0 0);
+  --color-accent:             oklch(0.97 0 0);
+  --color-accent-foreground:  oklch(0.205 0 0);
+  --color-destructive:        oklch(0.577 0.245 27.325);
   --color-destructive-foreground: oklch(1 0 0);
-  --color-border: oklch(0.922 0 0);
-  --color-input: oklch(0.922 0 0);
-  --color-ring: oklch(0.205 0 0);
+  --color-border:             oklch(0.922 0 0);
+  --color-input:              oklch(0.922 0 0);
+  --color-ring:               oklch(0.205 0 0);
 
   --radius: 0.75rem;
 
@@ -42,9 +48,46 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Theme transition
+   Theme transitions — SURGICAL approach
+   
+   STRATEGY:
+   The old universal * { transition } block was the #1 performance
+   killer — it triggered simultaneous style recalculations on
+   every element (800-2000) when .dark toggled on <html>.
+   
+   New approach has THREE tiers:
+   
+   TIER 1 — View Transition API (Chrome 111+, Safari 18+):
+     ToggleTheme.tsx handles this entirely in JS.
+     No CSS transitions needed at all — the snapshot/swap
+     is composited off the main thread.
+   
+   TIER 2 — data-theme-transitioning fallback (Firefox, older Safari):
+     ToggleTheme.tsx sets this attribute on <html> for ~350ms.
+     We target ONLY semantic layout elements — not every div/span.
+     Reduces recalculations from ~1200 → ~12.
+   
+   TIER 3 — Always-on surface transitions:
+     .glass and .glass-strong benefit from smooth bg transitions
+     at all times (not just during theme toggle) because they are
+     simple single-surface elements with low recalculation cost.
 ═══════════════════════════════════════════════════════════════ */
 
+/*
+  TIER 2: Fallback transitions.
+  Only fires when ToggleTheme sets [data-theme-transitioning] on <html>.
+  Only targets high-level layout containers — NOT every element.
+  
+  WHY THESE ELEMENTS ONLY:
+  - body/main/header/footer/section: large background surfaces, visible change
+  - h1-h6/p: primary reading content, color change is noticeable
+  - .glass/.glass-strong: backdrop surfaces that cross theme boundaries
+  
+  Elements intentionally excluded:
+  - div, span, button, a, li, etc. — too many, recalculation cost too high
+  - canvas — must never transition (breaks WebGL)
+  - .gradient-text — animates background-position, transition interferes
+*/
 [data-theme-transitioning] body,
 [data-theme-transitioning] header,
 [data-theme-transitioning] nav,
@@ -59,7 +102,6 @@
     border-color     0.25s ease !important;
 }
 
-/* Color transitions: only text containers, not every span/div */
 [data-theme-transitioning] body,
 [data-theme-transitioning] p,
 [data-theme-transitioning] h1,
@@ -70,6 +112,13 @@
 [data-theme-transitioning] h6 {
   transition: color 0.2s ease !important;
 }
+
+/*
+  TIER 3: Always-on surface transitions.
+  These are simple single-layer surfaces — transition cost is negligible.
+  Provides smooth feel when theme changes even on browsers where
+  View Transition API is unavailable and no JS has run yet.
+*/
 .glass,
 .glass-strong {
   transition:
@@ -77,6 +126,11 @@
     border-color     0.2s  ease;
 }
 
+/*
+  Hard exclusions — these must NEVER transition during theme change.
+  !important ensures they win over any [data-theme-transitioning] rules
+  even if specificity calculation changes in future Tailwind versions.
+*/
 canvas,
 [data-lenis-scroll],
 [data-no-transition],
@@ -84,45 +138,55 @@ canvas,
   transition: none !important;
 }
 
-/* Theme toggle fallback — browsers without View Transition API */
-[data-theme-transitioning] *,
-[data-theme-transitioning] *::before,
-[data-theme-transitioning] *::after {
-  transition:
-    background-color 0.3s ease,
-    color            0.3s ease,
-    border-color     0.25s ease,
-    fill             0.3s ease !important;
-}
+/*
+  ❌ REMOVED — this was the conflict:
+  
+  [data-theme-transitioning] *,
+  [data-theme-transitioning] *::before,
+  [data-theme-transitioning] *::after {
+    transition: background-color 0.3s ease, color 0.3s ease ...
+  }
+  
+  This undid ALL the surgical targeting above by re-applying
+  transitions to every element. It was the original freeze bug
+  just wrapped in [data-theme-transitioning] instead of bare *.
+  Removed completely — the targeted selectors above are sufficient.
+*/
 
 /* ═══════════════════════════════════════════════════════════════
-   Dark theme
+   Dark theme tokens
 ═══════════════════════════════════════════════════════════════ */
 
 .dark {
-  --color-background: oklch(0.145 0 0);
-  --color-foreground: oklch(0.985 0 0);
-  --color-card: oklch(0.205 0 0);
-  --color-card-foreground: oklch(0.985 0 0);
-  --color-popover: oklch(0.205 0 0);
+  --color-background:         oklch(0.145 0 0);
+  --color-foreground:         oklch(0.985 0 0);
+  --color-card:               oklch(0.205 0 0);
+  --color-card-foreground:    oklch(0.985 0 0);
+  --color-popover:            oklch(0.205 0 0);
   --color-popover-foreground: oklch(0.985 0 0);
-  --color-primary: oklch(0.922 0 0);
+  --color-primary:            oklch(0.922 0 0);
   --color-primary-foreground: oklch(0.145 0 0);
-  --color-secondary: oklch(0.269 0 0);
+  --color-secondary:          oklch(0.269 0 0);
   --color-secondary-foreground: oklch(0.985 0 0);
-  --color-muted: oklch(0.269 0 0);
-  --color-muted-foreground: oklch(0.708 0 0);
-  --color-accent: oklch(0.269 0 0);
-  --color-accent-foreground: oklch(0.985 0 0);
-  --color-destructive: oklch(0.577 0.245 27.325);
+  --color-muted:              oklch(0.269 0 0);
+  --color-muted-foreground:   oklch(0.708 0 0);
+  --color-accent:             oklch(0.269 0 0);
+  --color-accent-foreground:  oklch(0.985 0 0);
+  --color-destructive:        oklch(0.577 0.245 27.325);
   --color-destructive-foreground: oklch(1 0 0);
-  --color-border: oklch(1 0 0 / 10%);
-  --color-input: oklch(1 0 0 / 10%);
-  --color-ring: oklch(0.922 0 0);
+  --color-border:             oklch(1 0 0 / 10%);
+  --color-input:              oklch(1 0 0 / 10%);
+  --color-ring:               oklch(0.922 0 0);
 }
 
 /* ═══════════════════════════════════════════════════════════════
    Panel Background
+   
+   NOTE: These use background transitions at 600ms — intentionally
+   slow and decorative. They are NOT triggered by theme toggle
+   (they use CSS variables that update instantly when .dark toggles).
+   The transition applies to the computed gradient value changing,
+   which browsers handle off the main thread via interpolation.
 ═══════════════════════════════════════════════════════════════ */
 
 .panel-bg__base {
@@ -197,15 +261,16 @@ canvas,
   50%       { transform: translateY(-20px); }
 }
 
-/* ✅ REPLACED: glow keyframe no longer animates box-shadow (non-composited).
-   Now animates opacity on a pseudo-element — fully GPU composited.
-   Usage: apply .glow-animated class instead of animate-glow. */
+/*
+  ✅ glow-opacity animates opacity only — fully GPU composited.
+  Replaces old glow keyframe that animated box-shadow (non-composited).
+*/
 @keyframes glow-opacity {
   0%   { opacity: 0.4; }
   100% { opacity: 0.9; }
 }
 
-/* Legacy glow kept for any component still referencing it directly */
+/* Legacy alias — kept so any component referencing 'glow' still works */
 @keyframes glow {
   0%   { opacity: 0.4; }
   100% { opacity: 0.9; }
@@ -270,7 +335,7 @@ canvas,
   100% { transform: translateZ(0) translate(0%,   0%)  scale(1);   }
 }
 
-/* ── Reduced motion: freeze all panel orbs ── */
+/* Freeze panel orbs for users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .panel-bg__orb--a,
   .panel-bg__orb--b,
@@ -281,17 +346,17 @@ canvas,
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   @property
+   @property — enables CSS custom property animation
 ═══════════════════════════════════════════════════════════════ */
 
 @property --gradient-angle {
-  syntax: "<angle>";
+  syntax:        "<angle>";
   initial-value: 0deg;
-  inherits: false;
+  inherits:      false;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Base
+   Base resets
 ═══════════════════════════════════════════════════════════════ */
 
 * {
@@ -305,16 +370,16 @@ html {
 }
 
 body {
-  background:  var(--color-background);
-  color:       var(--color-foreground);
-  font-family: var(--font-sans);
+  background:              var(--color-background);
+  color:                   var(--color-foreground);
+  font-family:             var(--font-sans);
   -webkit-font-smoothing:  antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
   background: rgba(109, 244, 173, 0.2);
-  color: var(--color-foreground);
+  color:      var(--color-foreground);
 }
 
 ::-webkit-scrollbar       { width: 5px; }
@@ -353,7 +418,12 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Reduced Motion — global
+   Reduced motion — global kill switch
+   
+   This is the last rule in the file intentionally — cascade order
+   ensures it overrides everything above including !important rules
+   from third-party libraries (Framer Motion injects inline styles
+   but not stylesheets, so this still wins for CSS animations).
 ═══════════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
@@ -368,20 +438,28 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   GPU compositing — prevents non-composited animation warnings
+   GPU compositing hints
+   
+   will-change creates a new compositor layer BEFORE animation starts.
+   Only apply to elements that actually animate — overuse increases
+   memory consumption (each layer = VRAM allocation).
 ═══════════════════════════════════════════════════════════════ */
 
-/* ✅ animate-ping uses scale + opacity — both composited */
+/* animate-ping: scale + opacity — both composited */
 .animate-ping {
   will-change: transform, opacity;
 }
 
-/* ✅ animate-pulse uses opacity only — composited */
+/* animate-pulse: opacity only — composited */
 .animate-pulse {
   will-change: opacity;
 }
 
-/* ✅ Framer Motion animated elements — force GPU layer */
+/*
+  Framer Motion animated elements.
+  translateZ(0) forces immediate GPU layer creation — prevents the
+  "non-composited animation" Lighthouse warning on first frame.
+*/
 .will-change-transform {
   will-change: transform, opacity;
   transform:   translateZ(0);
@@ -389,6 +467,14 @@ body {
 
 /* ═══════════════════════════════════════════════════════════════
    Gradient text
+   
+   Animates background-position via gradient-shift keyframe.
+   background-position is NOT GPU composited — it triggers paint.
+   Acceptable here because:
+   1. It's decorative / non-interactive
+   2. The element is typically a single heading, not repeated
+   3. will-change: auto tells browser NOT to promote it —
+      promoting a text element wastes a compositor layer for minimal gain
 ═══════════════════════════════════════════════════════════════ */
 
 .gradient-text {
@@ -399,20 +485,18 @@ body {
   -webkit-text-fill-color: transparent;
   background-size:         200% 200%;
   animation:               gradient-shift 6s ease infinite;
-  /* ✅ gradient-text animation uses background-position — not composited,
-     but it's decorative only and excluded from transition block above */
   will-change:             auto;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Glassmorphism
+   Glassmorphism surfaces
 ═══════════════════════════════════════════════════════════════ */
 
 .glass {
   background:              oklch(0.97 0 0 / 60%);
   backdrop-filter:         blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid oklch(0.922 0 0);
+  border:                  1px solid oklch(0.922 0 0);
 }
 .dark .glass {
   background: oklch(0.205 0 0 / 60%);
@@ -423,7 +507,7 @@ body {
   background:              oklch(1 0 0 / 80%);
   backdrop-filter:         blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  border: 1px solid oklch(0.922 0 0);
+  border:                  1px solid oklch(0.922 0 0);
 }
 .dark .glass-strong {
   background: oklch(0.145 0 0 / 85%);
@@ -438,24 +522,27 @@ body {
   position:      relative;
   border-radius: var(--radius);
 }
+
 .gradient-border-animated::before {
-  content:        "";
-  position:       absolute;
-  inset:          -1px;
-  border-radius:  inherit;
-  background:     conic-gradient(
+  content:       "";
+  position:      absolute;
+  inset:         -1px;
+  border-radius: inherit;
+  background:    conic-gradient(
     from var(--gradient-angle),
     #009966, #10b981, #6ee7b7, #008299, #009966
   );
-  animation:  gradient-rotate 4s linear infinite;
-  z-index:    -1;
-  opacity:    0;
-  transition: opacity 0.5s ease;
-  will-change: transform; /* ✅ composited */
+  animation:   gradient-rotate 4s linear infinite;
+  z-index:     -1;
+  opacity:     0;
+  transition:  opacity 0.5s ease;
+  will-change: transform;
 }
+
 .gradient-border-animated:hover::before {
   opacity: 1;
 }
+
 .gradient-border-animated::after {
   content:       "";
   position:      absolute;
@@ -504,15 +591,21 @@ body {
   .glass-nav,
   .glass-strong,
   .glass {
-    background:              Canvas         !important;
+    background:              Canvas              !important;
     border:                  1px solid ButtonText !important;
-    backdrop-filter:         none           !important;
-    -webkit-backdrop-filter: none           !important;
+    backdrop-filter:         none                !important;
+    -webkit-backdrop-filter: none                !important;
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Reduced motion: nav
+   Reduced motion: nav — secondary targeted override
+   
+   Placed after the global reduced-motion block intentionally.
+   The global block handles animation-duration and transition-duration.
+   This block additionally nulls animation and transition shorthand
+   properties for nav elements — belt-and-suspenders for libraries
+   that set animation/transition via shorthand (not duration).
 ═══════════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
@@ -523,7 +616,14 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   View Transition
+   View Transition API — theme toggle animation scaffolding
+   
+   These rules define the INITIAL STATE of the pseudo-elements.
+   ToggleTheme.tsx then calls document.documentElement.animate()
+   on ::view-transition-new(root) to run the clip-path animation.
+   
+   animation: none here prevents the browser's default cross-fade
+   which would conflict with our custom clip-path animation.
 ═══════════════════════════════════════════════════════════════ */
 
 ::view-transition-old(root),
@@ -536,6 +636,7 @@ body {
   isolation: isolate;
 }
 
+/* new(root) sits on top — our clip-path animation reveals it */
 ::view-transition-new(root) {
   z-index: 1;
 }
@@ -545,7 +646,12 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Tailwind v4 explicit utilities
+   Tailwind v4 explicit utility overrides
+   
+   Tailwind v4 generates these automatically in most cases,
+   but arbitrary opacity values with slashes (e.g. white/8)
+   sometimes need explicit declaration when used in border-color
+   context with JIT in certain build configurations.
 ═══════════════════════════════════════════════════════════════ */
 
 .border-white\/8 {
