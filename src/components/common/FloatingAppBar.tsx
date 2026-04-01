@@ -28,8 +28,8 @@ import {
   Menu,
   X,
 } from 'lucide-react';
-import Link          from 'next/link';
-import { cn }        from '@/utils/utils';
+import Link           from 'next/link';
+import { cn }         from '@/utils/utils';
 import { ToggleTheme } from '@/components/common/ToggleTheme';
 
 /* ── Types ──────────────────────────────────────────────────────── */
@@ -70,7 +70,7 @@ function IconContainer({
   onClick?:       () => void;
   isThemeToggle?: boolean;
 }) {
-  const ref     = useRef<HTMLDivElement>(null);
+  const ref               = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
 
   const distance = useTransform(mouseX, (val) => {
@@ -201,7 +201,6 @@ const MobileDockItem = React.memo(function MobileDockItem({
 }) {
   const handleClick = useCallback(() => {
     item.onClick?.();
-    // Close dock after navigation on mobile for better UX
     if (item.href?.startsWith('#')) {
       setTimeout(onClose, 150);
     }
@@ -218,12 +217,6 @@ const MobileDockItem = React.memo(function MobileDockItem({
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500',
   );
 
-  /*
-    FIX: Item animation variants defined outside render
-    Each item staggers in when dock opens, staggers out when it closes.
-    Using variants (not inline animate objects) is more performant —
-    Framer Motion can batch variant updates.
-  */
   const itemVariants = {
     hidden: {
       opacity: 0,
@@ -246,7 +239,7 @@ const MobileDockItem = React.memo(function MobileDockItem({
       x:          -12,
       scale:      0.8,
       transition: {
-        delay:    (8 - index) * 0.025, // reverse stagger on exit
+        delay:    (8 - index) * 0.025,
         duration: 0.15,
       },
     },
@@ -265,8 +258,14 @@ const MobileDockItem = React.memo(function MobileDockItem({
     return (
       <motion.div variants={itemVariants} className="flex flex-col items-center gap-1">
         <div className={baseClasses}>
+          {/*
+            ✅ FIXED: was animationType="fade-in-out"
+            Now uses "circle-spread" — same animation as desktop.
+            The canvas fallback in ToggleTheme.tsx ensures this works
+            on ALL browsers including Firefox Android and Safari iOS 17.
+          */}
           <ToggleTheme
-            animationType="fade-in-out"
+            animationType="circle-spread"
             className="!p-0 w-full h-full rounded-2xl bg-transparent"
           />
         </div>
@@ -313,17 +312,7 @@ const MobileDockItem = React.memo(function MobileDockItem({
   );
 });
 
-/* ── Mobile Dock — NEW toggle-based design ──────────────────────── */
-
-/*
-  BEFORE: Always rendered, translated off-screen, infinite shimmer loop
-  AFTER:  
-  - Circular FAB (Floating Action Button) always visible
-  - Dock panel only MOUNTED when open (saves memory + animation cost)
-  - AnimatePresence unmounts dock when closed (no offscreen animations)
-  - Backdrop closes dock when tapped outside
-  - Proper ARIA: aria-expanded, aria-controls, role="dialog"
-*/
+/* ── Mobile Dock ────────────────────────────────────────────────── */
 
 const MobileDock = React.memo(function MobileDock({
   items,
@@ -337,12 +326,10 @@ const MobileDock = React.memo(function MobileDock({
   const toggleOpen = useCallback(() => setIsOpen((prev) => !prev), []);
   const closeDoc   = useCallback(() => setIsOpen(false), []);
 
-  // Close dock when navbar hides (user scrolled down fast)
   useEffect(() => {
     if (!navVisible) setIsOpen(false);
   }, [navVisible]);
 
-  // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -352,7 +339,6 @@ const MobileDock = React.memo(function MobileDock({
     return () => document.removeEventListener('keydown', handler);
   }, [isOpen, closeDoc]);
 
-  // Prevent body scroll when dock is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -383,19 +369,15 @@ const MobileDock = React.memo(function MobileDock({
       scale:   0.9,
     },
     visible: {
-      x:          0,
-      opacity:    1,
-      scale:      1,
+      x:               0,
+      opacity:         1,
+      scale:           1,
       transition: {
-        type:       'spring' as const,
-        stiffness:  350,
-        damping:    30,
-        /*
-          staggerChildren here staggers the ITEMS inside the dock.
-          The dock container itself animates first, then items follow.
-        */
-        staggerChildren:  0.04,
-        delayChildren:    0.08,
+        type:            'spring' as const,
+        stiffness:       350,
+        damping:         30,
+        staggerChildren: 0.04,
+        delayChildren:   0.08,
       },
     },
     exit: {
@@ -411,7 +393,7 @@ const MobileDock = React.memo(function MobileDock({
 
   return (
     <>
-      {/* ── Backdrop — closes dock when tapped outside ── */}
+      {/* Backdrop */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -427,7 +409,7 @@ const MobileDock = React.memo(function MobileDock({
         )}
       </AnimatePresence>
 
-      {/* ── FAB — always visible, toggles the dock ── */}
+      {/* FAB */}
       <AnimatePresence mode="wait">
         {navVisible && (
           <motion.button
@@ -444,11 +426,6 @@ const MobileDock = React.memo(function MobileDock({
               'shadow-lg shadow-black/20 dark:shadow-black/40',
               'focus-visible:outline-none focus-visible:ring-2',
               'focus-visible:ring-emerald-500 focus-visible:ring-offset-2',
-              /*
-                Two visual states:
-                - Closed: glass pill with Menu icon
-                - Open:   emerald fill with X icon
-              */
               isOpen
                 ? 'bg-emerald-500 text-white border border-emerald-400'
                 : [
@@ -470,15 +447,14 @@ const MobileDock = React.memo(function MobileDock({
               {isOpen ? <X size={18} /> : <Menu size={18} />}
             </motion.div>
 
-            {/* Pulse ring — only when closed, draws attention */}
             {!isOpen && (
               <motion.div
                 className="absolute inset-0 rounded-full border-2 border-emerald-500/40"
                 animate={{ scale: [1, 1.5], opacity: [0.6, 0] }}
                 transition={{
-                  duration:   2,
-                  repeat:     Infinity,
-                  ease:       'easeOut',
+                  duration:    2,
+                  repeat:      Infinity,
+                  ease:        'easeOut',
                   repeatDelay: 1,
                 }}
                 aria-hidden="true"
@@ -488,21 +464,7 @@ const MobileDock = React.memo(function MobileDock({
         )}
       </AnimatePresence>
 
-      {/* ── Dock panel — ONLY mounted when open ── */}
-      {/*
-        WHY AnimatePresence + conditional mount (not just animate visibility):
-        When closed, the component is UNMOUNTED from the DOM.
-        This means:
-        - Zero Framer Motion subscriptions running
-        - Zero requestAnimationFrame loops
-        - Zero GPU layers
-        - Memory freed immediately
-        
-        vs the old approach (translate off-screen):
-        - All animations still running
-        - GPU layers still allocated
-        - Framer Motion still tracking spring values
-      */}
+      {/* Dock panel — only mounted when open */}
       <AnimatePresence>
         {isOpen && (
           <motion.nav
@@ -523,15 +485,10 @@ const MobileDock = React.memo(function MobileDock({
               'backdrop-blur-2xl',
               'border border-white/30 dark:border-white/[0.10]',
               'shadow-2xl shadow-black/15 dark:shadow-black/50',
-              /*
-                margin-bottom accounts for FAB height (48px) + gap (8px)
-                so dock appears above the FAB button
-              */
               'mb-16',
             )}
             style={{ WebkitBackdropFilter: 'blur(24px) saturate(160%)' }}
           >
-            {/* Ambient glow behind dock */}
             <div
               className="absolute inset-0 rounded-3xl pointer-events-none overflow-hidden"
               aria-hidden="true"
@@ -539,7 +496,6 @@ const MobileDock = React.memo(function MobileDock({
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-16 bg-emerald-500/10 dark:bg-emerald-500/15 blur-2xl rounded-full" />
             </div>
 
-            {/* Nav items — use motion.div with inherited variants */}
             {items.map((item, index) => (
               <MobileDockItem
                 key={item.label}
@@ -595,10 +551,6 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
     document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  /*
-    FIX: Compute glassClasses with useMemo — was recomputing cn() on
-    every render including scroll events (every ~16ms while scrolling)
-  */
   const glassClasses = useMemo(() => cn(
     'rounded-full overflow-visible isolate [will-change:transform,opacity]',
     'border transition-[background-color,border-color,box-shadow] duration-700 ease-out',
@@ -628,7 +580,7 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
 
   return (
     <>
-      {/* ── Desktop ambient glow ── */}
+      {/* Desktop ambient glow */}
       <motion.div
         className="fixed bottom-6 left-1/2 z-40 hidden md:block pointer-events-none"
         initial={{ x: '-50%', opacity: 0 }}
@@ -647,7 +599,7 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
         />
       </motion.div>
 
-      {/* ── Desktop navbar ── */}
+      {/* Desktop navbar */}
       <motion.nav
         ref={navRef}
         aria-label="Main navigation"
@@ -683,17 +635,11 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 28 }}
       >
-        {/* Shimmer sweep — desktop only, paused when not hovered */}
+        {/* Shimmer — only when hovered */}
         <div
           className="absolute inset-0 rounded-full overflow-hidden pointer-events-none"
           aria-hidden="true"
         >
-          {/*
-            FIX: Shimmer only animates when navHovered.
-            When not hovered, animate prop is empty object {} — 
-            Framer Motion pauses the animation entirely.
-            Previously ran Infinity regardless of visibility.
-          */}
           <motion.div
             className="absolute top-0 h-full w-1/4 bg-gradient-to-r from-transparent via-white/[0.07] dark:via-white/[0.04] to-transparent skew-x-[-20deg]"
             animate={navHovered ? { x: ['-100%', '500%'] } : {}}
@@ -844,7 +790,7 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
         </motion.div>
       </motion.nav>
 
-      {/* ── Mobile Dock — NEW toggle-based ── */}
+      {/* Mobile Dock */}
       <MobileDock items={mobileItems} navVisible={visible} />
     </>
   );

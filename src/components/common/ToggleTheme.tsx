@@ -27,6 +27,121 @@ interface ToggleThemeProps extends React.ComponentPropsWithoutRef<'button'> {
   animationType?: AnimationType;
 }
 
+/* ── Canvas circle-spread fallback ───────────────────────────────── */
+
+function runCanvasCircleSpread(
+  x:        number,
+  y:        number,
+  duration: number,
+  onStart:  () => void,
+): Promise<void> {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const dpr    = Math.min(window.devicePixelRatio, 2);
+    const W      = window.innerWidth;
+    const H      = window.innerHeight;
+
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+
+    Object.assign(canvas.style, {
+      position:      'fixed',
+      inset:         '0',
+      width:         `${W}px`,
+      height:        `${H}px`,
+      zIndex:        '999999',
+      pointerEvents: 'none',
+      willChange:    'transform',
+      transform:     'translateZ(0)',
+    });
+
+    /*
+      FIX: get context BEFORE the null check, then narrow the type
+      with a proper if-guard. TypeScript can track the narrowing
+      through the closure ONLY if we use a const with a definite
+      non-null type inside the guarded block.
+      
+      We cast to CanvasRenderingContext2D after the null check
+      so every use inside frame() is typed as non-null.
+    */
+    const rawCtx = canvas.getContext('2d');
+
+    if (!rawCtx) {
+      // Canvas 2D not available — apply theme instantly
+      onStart();
+      resolve();
+      return;
+    }
+
+    // After this point ctx is guaranteed non-null
+    // We assign to a new const so TypeScript tracks the narrowing
+    // across the frame() closure without re-checking each time
+    const ctx: CanvasRenderingContext2D = rawCtx;
+
+    ctx.scale(dpr, dpr);
+
+    // Read old background color BEFORE applying new theme
+    const oldBgComputed = getComputedStyle(document.body).backgroundColor;
+
+    // Fallback color if getComputedStyle returns empty string
+    const isDarkNow     = document.documentElement.classList.contains('dark');
+    const fallbackColor = isDarkNow ? '#171717' : '#ffffff';
+    const fillColor     = oldBgComputed || fallbackColor;
+
+    // Fill canvas with old background — covers entire viewport
+    ctx.fillStyle = fillColor;
+    ctx.fillRect(0, 0, W, H);
+
+    // Mount canvas on top of page
+    document.body.appendChild(canvas);
+
+    // Apply new theme instantly underneath the canvas
+    onStart();
+
+    const maxRadius = Math.hypot(
+      Math.max(x, W - x),
+      Math.max(y, H - y),
+    );
+
+    const startTime = performance.now();
+
+    const easeInOut = (t: number): number =>
+      t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+    function frame(now: number) {
+      const elapsed  = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased    = easeInOut(progress);
+      const radius   = eased * maxRadius;
+
+      // ctx is CanvasRenderingContext2D here — no null check needed
+      ctx.clearRect(0, 0, W, H);
+
+      // Redraw old background covering full viewport
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle                = fillColor;
+      ctx.fillRect(0, 0, W, H);
+
+      // Cut expanding circle hole to reveal new theme beneath
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (progress < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        canvas.remove();
+        resolve();
+      }
+    }
+
+    requestAnimationFrame(frame);
+  });
+}
+
+/* ── Component ───────────────────────────────────────────────────── */
+
 export const ToggleTheme = React.memo(function ToggleTheme({
   className,
   duration      = 400,
@@ -46,7 +161,7 @@ export const ToggleTheme = React.memo(function ToggleTheme({
     setTheme(isDark ? 'light' : 'dark');
   }, [isDark, setTheme]);
 
-  /* ── Animation configs ────────────────────────────────────────── */
+  /* ── View Transition animation configs ───────────────────────── */
 
   const runAnimation = useCallback(
     (x: number, y: number, maxRadius: number) => {
@@ -280,12 +395,11 @@ export const ToggleTheme = React.memo(function ToggleTheme({
       '(prefers-reduced-motion: reduce)',
     ).matches;
 
-    /*
-      ── Read button position BEFORE startViewTransition ─────────────
-      getBoundingClientRect() must be called before the snapshot is
-      taken. Calling it after transition.ready gives stale coordinates
-      on some mobile browsers.
-    */
+    if (prefersReduced) {
+      applyThemeChange();
+      return;
+    }
+
     const { top, left, width, height } =
       buttonRef.current.getBoundingClientRect();
     const x = left + width / 2;
@@ -295,60 +409,43 @@ export const ToggleTheme = React.memo(function ToggleTheme({
       Math.max(top,  window.innerHeight - top),
     );
 
-    /*
-      ── Fallback: no View Transition API or reduced motion ───────────
-      Covers:
-      - Firefox (all platforms) — no View Transition support yet
-      - Safari iOS < 18
-      - Any browser with prefers-reduced-motion: reduce set
-      
-      Uses CSS transition via data-theme-transitioning attribute
-      which triggers the surgical selectors in globals.css.
-      No clip-path, no animation — just smooth color transition
-      on semantic elements only.
-    */
-    if (!document.startViewTransition || prefersReduced) {
-      document.documentElement.setAttribute('data-theme-transitioning', '');
-      applyThemeChange();
-      setTimeout(() => {
-        document.documentElement.removeAttribute('data-theme-transitioning');
-      }, 350);
+    // Path 1: View Transition API — Chrome/Edge/Safari 18+
+    if (document.startViewTransition) {
+      const transition = document.startViewTransition(() => {
+        flushSync(applyThemeChange);
+      });
+      try {
+        await transition.ready;
+        runAnimation(x, y, maxRadius);
+      } catch {
+        // Interrupted — theme still applied
+      }
       return;
     }
 
-    /*
-      ── Full View Transition — ALL devices that support it ───────────
-      This runs on:
-      - Chrome desktop + Android 111+
-      - Safari desktop + iOS 18+
-      - Samsung Internet 23+
-      - Edge 111+
-      
-      Mobile devices that support the API get the SAME animation
-      as desktop — the circle-spread expanding from the button position.
-      
-      The View Transition API composites the snapshot off the main
-      thread, so the clip-path animation runs on the GPU regardless
-      of device. Modern mid-range Android phones (Snapdragon 700+)
-      and all iPhones handle this without frame drops.
-    */
-    const transition = document.startViewTransition(() => {
-      flushSync(applyThemeChange);
-    });
-
-    /*
-      transition.ready resolves when pseudo-elements are created
-      and animation can begin. Wrap in try/catch — rejects if a
-      second transition interrupts this one (safe to ignore,
-      theme was still applied correctly).
-    */
-    try {
-      await transition.ready;
-      runAnimation(x, y, maxRadius);
-    } catch {
-      // Transition interrupted — theme applied correctly
+    // Path 2: Canvas fallback — Firefox, Safari iOS 17-, all others
+    if (animationType === 'none') {
+      applyThemeChange();
+      return;
     }
-  }, [applyThemeChange, runAnimation]);
+
+    if (animationType === 'fade-in-out') {
+      document.body.style.transition = 'opacity 0.2s ease';
+      document.body.style.opacity    = '0';
+      setTimeout(() => {
+        applyThemeChange();
+        document.body.style.opacity = '1';
+        setTimeout(() => {
+          document.body.style.transition = '';
+        }, 200);
+      }, 150);
+      return;
+    }
+
+    // All other types — canvas circle-spread
+    await runCanvasCircleSpread(x, y, duration, applyThemeChange);
+
+  }, [applyThemeChange, runAnimation, animationType, duration]);
 
   /* ── Render ───────────────────────────────────────────────────── */
 
