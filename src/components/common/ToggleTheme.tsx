@@ -1,3 +1,4 @@
+// src/components/common/ToggleTheme.tsx
 'use client';
 
 import { Moon, Sun } from 'lucide-react';
@@ -19,16 +20,17 @@ type AnimationType =
   | 'split-vertical'
   | 'swipe-right'
   | 'swipe-down'
-  | 'wave-ripple';
+  | 'wave-ripple'
+  | 'mobile-fade'; // ← NEW: lightweight mobile animation type
 
 interface ToggleThemeProps extends React.ComponentPropsWithoutRef<'button'> {
-  duration?: number;
+  duration?:      number;
   animationType?: AnimationType;
 }
 
 export const ToggleTheme = React.memo(function ToggleTheme({
   className,
-  duration = 400,
+  duration      = 400,
   animationType = 'circle-spread',
   ...props
 }: ToggleThemeProps) {
@@ -44,6 +46,8 @@ export const ToggleTheme = React.memo(function ToggleTheme({
   const applyThemeChange = useCallback(() => {
     setTheme(isDark ? 'light' : 'dark');
   }, [isDark, setTheme]);
+
+  /* ── Desktop animation configs ────────────────────────────────── */
 
   const runAnimation = useCallback(
     (x: number, y: number, maxRadius: number) => {
@@ -86,7 +90,12 @@ export const ToggleTheme = React.memo(function ToggleTheme({
         },
         'swipe-left': () => {
           document.documentElement.animate(
-            { clipPath: [`inset(0 0 0 ${viewportWidth}px)`, `inset(0 0 0 0)`] },
+            {
+              clipPath: [
+                `inset(0 0 0 ${viewportWidth}px)`,
+                `inset(0 0 0 0)`,
+              ],
+            },
             {
               duration,
               easing:        'cubic-bezier(0.2, 0, 0, 1)',
@@ -96,7 +105,12 @@ export const ToggleTheme = React.memo(function ToggleTheme({
         },
         'swipe-right': () => {
           document.documentElement.animate(
-            { clipPath: [`inset(0 ${viewportWidth}px 0 0)`, `inset(0 0 0 0)`] },
+            {
+              clipPath: [
+                `inset(0 ${viewportWidth}px 0 0)`,
+                `inset(0 0 0 0)`,
+              ],
+            },
             {
               duration,
               easing:        'cubic-bezier(0.2, 0, 0, 1)',
@@ -106,7 +120,12 @@ export const ToggleTheme = React.memo(function ToggleTheme({
         },
         'swipe-up': () => {
           document.documentElement.animate(
-            { clipPath: [`inset(${viewportHeight}px 0 0 0)`, `inset(0 0 0 0)`] },
+            {
+              clipPath: [
+                `inset(${viewportHeight}px 0 0 0)`,
+                `inset(0 0 0 0)`,
+              ],
+            },
             {
               duration,
               easing:        'cubic-bezier(0.2, 0, 0, 1)',
@@ -116,7 +135,12 @@ export const ToggleTheme = React.memo(function ToggleTheme({
         },
         'swipe-down': () => {
           document.documentElement.animate(
-            { clipPath: [`inset(0 0 ${viewportHeight}px 0)`, `inset(0 0 0 0)`] },
+            {
+              clipPath: [
+                `inset(0 0 ${viewportHeight}px 0)`,
+                `inset(0 0 0 0)`,
+              ],
+            },
             {
               duration,
               easing:        'cubic-bezier(0.2, 0, 0, 1)',
@@ -212,9 +236,9 @@ export const ToggleTheme = React.memo(function ToggleTheme({
           );
           document.documentElement.animate(
             [
-              { clipPath: 'inset(0 0 0 0)',     transform: 'none'      },
-              { clipPath: 'inset(0 40% 0 40%)', transform: 'scale(1.2)'},
-              { clipPath: 'inset(0 50% 0 50%)', transform: 'scale(1)'  },
+              { clipPath: 'inset(0 0 0 0)',     transform: 'none'       },
+              { clipPath: 'inset(0 40% 0 40%)', transform: 'scale(1.2)' },
+              { clipPath: 'inset(0 50% 0 50%)', transform: 'scale(1)'   },
             ],
             {
               duration:      duration * 1.5,
@@ -246,50 +270,155 @@ export const ToggleTheme = React.memo(function ToggleTheme({
     [duration, animationType],
   );
 
+  /* ── Mobile animation — lightweight fade + scale ──────────────────
+    
+    WHY a separate mobile animation path:
+    
+    clip-path animations (circle-spread, wave-ripple, swipe-*)
+    on mobile require the browser to:
+    1. Snapshot the ENTIRE viewport as a texture (old state)
+    2. Render the new state beneath it
+    3. Animate the clip mask across all ~2M+ pixels per frame
+    
+    On a 390×844 iPhone screen at 3x DPR = 1170×2532 real pixels.
+    Clipping that at 60fps = massive GPU fill-rate pressure.
+    
+    The mobile-fade animation uses ONLY opacity — the cheapest
+    possible compositor property. The scale adds perceived smoothness
+    without any clip calculation. Total GPU cost: near zero.
+    
+    Duration is shorter (280ms vs 400ms) because mobile users
+    expect snappier responses and the animation covers less area.
+  ────────────────────────────────────────────────────────────────── */
+
+  const runMobileAnimation = useCallback(async () => {
+    if (!document.startViewTransition) return false;
+
+    const mobileDuration = Math.min(duration, 280);
+
+    const transition = document.startViewTransition(() => {
+      flushSync(applyThemeChange);
+    });
+
+    try {
+      await transition.ready;
+
+      // New state fades + scales up from 97% → 100%
+      // Cheap: opacity + transform only — both composited
+      document.documentElement.animate(
+        [
+          { opacity: 0, transform: 'scale(0.97)' },
+          { opacity: 1, transform: 'scale(1)'    },
+        ],
+        {
+          duration:      mobileDuration,
+          easing:        'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+          pseudoElement: '::view-transition-new(root)',
+          fill:          'forwards',
+        },
+      );
+
+      // Old state fades + scales down — gives depth feeling
+      document.documentElement.animate(
+        [
+          { opacity: 1, transform: 'scale(1)'    },
+          { opacity: 0, transform: 'scale(1.03)' },
+        ],
+        {
+          duration:      mobileDuration * 0.8,
+          easing:        'ease-in',
+          pseudoElement: '::view-transition-old(root)',
+          fill:          'forwards',
+        },
+      );
+
+      return true;
+    } catch {
+      // View transition interrupted — theme still applied
+      return false;
+    }
+  }, [applyThemeChange, duration]);
+
+  /* ── Main toggle handler ──────────────────────────────────────── */
+
   const toggleTheme = useCallback(async () => {
-  if (!buttonRef.current) return;
+    if (!buttonRef.current) return;
 
-  const prefersReduced = window.matchMedia(
-    '(prefers-reduced-motion: reduce)'
-  ).matches;
+    const prefersReduced = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
 
-  // ── Mobile guard ─────────────────────────────────────────────────
-  // View Transition clip-path animations are GPU-expensive on mobile.
-  // On touch devices, use instant swap — it's actually better UX
-  // because the theme change feels immediate and responsive.
-  const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    // Reduced motion: instant swap, no animation at all
+    if (prefersReduced) {
+      applyThemeChange();
+      return;
+    }
 
-  const { top, left, width, height } =
-    buttonRef.current.getBoundingClientRect();
-  const x = left + width / 2;
-  const y = top  + height / 2;
-  const maxRadius = Math.hypot(
-    Math.max(left, window.innerWidth  - left),
-    Math.max(top,  window.innerHeight - top),
-  );
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
-  // ── Fallback: no View Transition API, reduced motion, OR mobile ───
-  if (!document.startViewTransition || prefersReduced || isMobile) {
-    document.documentElement.setAttribute('data-theme-transitioning', '');
-    applyThemeChange();
-    setTimeout(() => {
-      document.documentElement.removeAttribute('data-theme-transitioning');
-    }, 350);
-    return;
-  }
+    /* ── Mobile path ──────────────────────────────────────────────
+      
+      Uses View Transition API if available (Chrome Android 111+,
+      Safari iOS 18+) with the lightweight fade+scale animation.
+      
+      Falls back to CSS transition via data-theme-transitioning
+      for Firefox Android and older Safari iOS.
+    ────────────────────────────────────────────────────────────── */
+    if (isMobile) {
+      if (document.startViewTransition) {
+        // Try the lightweight mobile animation
+        const animated = await runMobileAnimation();
+        if (animated) return;
+      }
 
-  // ── Full View Transition — desktop only ───────────────────────────
-  const transition = document.startViewTransition(() => {
-    flushSync(applyThemeChange);
-  });
+      // CSS fallback for browsers without View Transition API
+      // Uses the surgical selectors in globals.css
+      document.documentElement.setAttribute('data-theme-transitioning', '');
+      applyThemeChange();
+      setTimeout(() => {
+        document.documentElement.removeAttribute('data-theme-transitioning');
+      }, 350);
+      return;
+    }
 
-  try {
-    await transition.ready;
-    runAnimation(x, y, maxRadius);
-  } catch {
-    // Transition interrupted — theme applied correctly
-  }
-}, [applyThemeChange, runAnimation]);
+    /* ── Desktop path ─────────────────────────────────────────────
+      
+      Full View Transition with clip-path animations.
+      Read button position BEFORE startViewTransition takes snapshot.
+    ────────────────────────────────────────────────────────────── */
+    const { top, left, width, height } =
+      buttonRef.current.getBoundingClientRect();
+    const x = left + width / 2;
+    const y = top  + height / 2;
+    const maxRadius = Math.hypot(
+      Math.max(left, window.innerWidth  - left),
+      Math.max(top,  window.innerHeight - top),
+    );
+
+    if (!document.startViewTransition) {
+      // CSS fallback for desktop browsers without View Transition API
+      document.documentElement.setAttribute('data-theme-transitioning', '');
+      applyThemeChange();
+      setTimeout(() => {
+        document.documentElement.removeAttribute('data-theme-transitioning');
+      }, 350);
+      return;
+    }
+
+    const transition = document.startViewTransition(() => {
+      flushSync(applyThemeChange);
+    });
+
+    try {
+      await transition.ready;
+      runAnimation(x, y, maxRadius);
+    } catch {
+      // Transition interrupted — theme applied correctly
+    }
+  }, [applyThemeChange, runAnimation, runMobileAnimation]);
+
+  /* ── Render ───────────────────────────────────────────────────── */
+
   return (
     <button
       ref={buttonRef}
