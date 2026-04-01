@@ -1,8 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/next';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Providers } from '@/components/Providers';
 import { siteConfig } from '@/lib/portfolio-data';
 import { cn } from '@/utils/utils';
@@ -111,9 +109,8 @@ export default function RootLayout({
         {/* ✅ Multi-format favicon for cross-browser support          */}
         {/* favicon.ico  → Safari < 17, IE, older browsers            */}
         {/* fav.webp     → Chrome, Edge, Firefox, Safari 17+          */}
-        <link rel="icon"             href="/favicon.ico" sizes="any" />
-        <link rel="icon"             href="/fav.webp"   type="image/webp" />
-        <link rel="apple-touch-icon" href="/fav.webp" />
+       <link rel="icon"             href="/fav.webp" type="image/webp" sizes="32x32" />
+<link rel="apple-touch-icon" href="/fav.webp" />
         {/* No Google Fonts <link> tags — next/font handles everything */}
       </head>
       <body
@@ -137,8 +134,7 @@ export default function RootLayout({
         </a>
 
         <Providers>{children}</Providers>
-        <Analytics />
-        <SpeedInsights />
+ 
       </body>
     </html>
   );
