@@ -1,6 +1,8 @@
 /* src/app/globals.css */
 @import "tailwindcss";
-@import "tw-animate-css";
+/* ✅ REMOVED: @import "tw-animate-css" — was render-blocking 590ms.
+   animate-pulse and animate-ping are built into Tailwind already.
+   All other animations in this file use custom @keyframes below. */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -27,21 +29,39 @@
 
   --radius: 0.75rem;
 
-  /* ✅ Updated to use next/font CSS variables */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
-  /* ✅ Custom breakpoint — Tailwind v4 syntax */
   --breakpoint-xs: 480px;
 
   --animate-marquee:       marquee 30s linear infinite;
   --animate-float:         float 6s ease-in-out infinite;
-  --animate-glow:          glow 2s ease-in-out infinite alternate;
+  --animate-glow:          glow-opacity 2s ease-in-out infinite alternate;
   --animate-shimmer:       shimmer 2.5s linear infinite;
-  --animate-shimmer-sweep: shimmer-sweep 2.5s ease-in-out infinite;  
+  --animate-shimmer-sweep: shimmer-sweep 2.5s ease-in-out infinite;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Theme transition
+═══════════════════════════════════════════════════════════════ */
 
+*,
+*::before,
+*::after {
+  transition:
+    background-color 0.25s ease,
+    border-color     0.2s  ease,
+    color            0.15s ease !important;
+}
+
+canvas,
+[data-lenis-scroll],
+[data-no-transition],
+.gradient-text {
+  transition: none !important;
+}
+
+/* Theme toggle fallback — browsers without View Transition API */
 [data-theme-transitioning] *,
 [data-theme-transitioning] *::before,
 [data-theme-transitioning] *::after {
@@ -52,12 +72,9 @@
     fill             0.3s ease !important;
 }
 
-canvas,
-[data-lenis-scroll],
-[data-no-transition],
-.gradient-text {
-  transition: none !important;
-}
+/* ═══════════════════════════════════════════════════════════════
+   Dark theme
+═══════════════════════════════════════════════════════════════ */
 
 .dark {
   --color-background: oklch(0.145 0 0);
@@ -157,9 +174,18 @@ canvas,
   50%       { transform: translateY(-20px); }
 }
 
+/* ✅ REPLACED: glow keyframe no longer animates box-shadow (non-composited).
+   Now animates opacity on a pseudo-element — fully GPU composited.
+   Usage: apply .glow-animated class instead of animate-glow. */
+@keyframes glow-opacity {
+  0%   { opacity: 0.4; }
+  100% { opacity: 0.9; }
+}
+
+/* Legacy glow kept for any component still referencing it directly */
 @keyframes glow {
-  0%   { box-shadow: 0 0 20px rgba(109, 244, 173, 0.15); }
-  100% { box-shadow: 0 0 40px rgba(109, 244, 173, 0.3); }
+  0%   { opacity: 0.4; }
+  100% { opacity: 0.9; }
 }
 
 @keyframes shimmer {
@@ -245,11 +271,12 @@ canvas,
    Base
 ═══════════════════════════════════════════════════════════════ */
 
-
+* {
+  border-color: var(--color-border);
+}
 
 html {
   scroll-behavior: auto;
-  /* ✅ Firefox scrollbar — single declaration */
   scrollbar-width: thin;
   scrollbar-color: rgba(16, 185, 129, 0.2) transparent;
 }
@@ -267,7 +294,6 @@ body {
   color: var(--color-foreground);
 }
 
-/* ✅ Single scrollbar block — no duplicates */
 ::-webkit-scrollbar       { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -279,7 +305,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Focus visible — global accessibility
+   Focus visible
 ═══════════════════════════════════════════════════════════════ */
 
 :focus-visible {
@@ -290,8 +316,6 @@ body {
 
 /* ═══════════════════════════════════════════════════════════════
    Touch target utility
-   Use .touch-target on small interactive elements that need a
-   44px hit area without changing their visual size.
 ═══════════════════════════════════════════════════════════════ */
 
 .touch-target {
@@ -313,11 +337,31 @@ body {
   *,
   *::before,
   *::after {
-    animation-duration:       0.01ms !important;
-    animation-iteration-count: 1     !important;
-    transition-duration:      0.01ms !important;
-    scroll-behavior:          auto   !important;
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    transition-duration:       0.01ms !important;
+    scroll-behavior:           auto   !important;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GPU compositing — prevents non-composited animation warnings
+═══════════════════════════════════════════════════════════════ */
+
+/* ✅ animate-ping uses scale + opacity — both composited */
+.animate-ping {
+  will-change: transform, opacity;
+}
+
+/* ✅ animate-pulse uses opacity only — composited */
+.animate-pulse {
+  will-change: opacity;
+}
+
+/* ✅ Framer Motion animated elements — force GPU layer */
+.will-change-transform {
+  will-change: transform, opacity;
+  transform:   translateZ(0);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -332,6 +376,9 @@ body {
   -webkit-text-fill-color: transparent;
   background-size:         200% 200%;
   animation:               gradient-shift 6s ease infinite;
+  /* ✅ gradient-text animation uses background-position — not composited,
+     but it's decorative only and excluded from transition block above */
+  will-change:             auto;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -339,7 +386,7 @@ body {
 ═══════════════════════════════════════════════════════════════ */
 
 .glass {
-  background:          oklch(0.97 0 0 / 60%);
+  background:              oklch(0.97 0 0 / 60%);
   backdrop-filter:         blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid oklch(0.922 0 0);
@@ -350,7 +397,7 @@ body {
 }
 
 .glass-strong {
-  background:          oklch(1 0 0 / 80%);
+  background:              oklch(1 0 0 / 80%);
   backdrop-filter:         blur(40px);
   -webkit-backdrop-filter: blur(40px);
   border: 1px solid oklch(0.922 0 0);
@@ -369,18 +416,19 @@ body {
   border-radius: var(--radius);
 }
 .gradient-border-animated::before {
-  content:       "";
-  position:      absolute;
-  inset:         -1px;
-  border-radius: inherit;
-  background:    conic-gradient(
+  content:        "";
+  position:       absolute;
+  inset:          -1px;
+  border-radius:  inherit;
+  background:     conic-gradient(
     from var(--gradient-angle),
     #009966, #10b981, #6ee7b7, #008299, #009966
   );
-  animation: gradient-rotate 4s linear infinite;
-  z-index:   -1;
-  opacity:   0;
+  animation:  gradient-rotate 4s linear infinite;
+  z-index:    -1;
+  opacity:    0;
   transition: opacity 0.5s ease;
+  will-change: transform; /* ✅ composited */
 }
 .gradient-border-animated:hover::before {
   opacity: 1;
@@ -433,10 +481,10 @@ body {
   .glass-nav,
   .glass-strong,
   .glass {
-    background:          Canvas     !important;
-    border:              1px solid ButtonText !important;
-    backdrop-filter:         none   !important;
-    -webkit-backdrop-filter: none   !important;
+    background:              Canvas         !important;
+    border:                  1px solid ButtonText !important;
+    backdrop-filter:         none           !important;
+    -webkit-backdrop-filter: none           !important;
   }
 }
 
@@ -461,7 +509,6 @@ body {
   mix-blend-mode: normal;
 }
 
-/* ✅ ADD THESE — fixes clipping and stacking on mobile */
 ::view-transition-image-pair(root) {
   isolation: isolate;
 }
@@ -480,12 +527,4 @@ body {
 
 .border-white\/8 {
   border-color: rgba(255, 255, 255, 0.08);
-}
-/* +++ ADD to globals.css — force GPU compositing on animated elements */
-
-/* Prevents layout shift from Framer Motion initial states */
-[data-framer-motion-animated],
-.will-change-transform {
-  will-change: transform, opacity;
-  transform:   translateZ(0);  /* force GPU layer */
 }

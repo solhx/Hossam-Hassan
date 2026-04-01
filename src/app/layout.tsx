@@ -4,8 +4,10 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import { Providers } from '@/components/Providers';
 import { siteConfig } from '@/lib/portfolio-data';
 import { cn } from '@/utils/utils';
-import './globals.css';
 
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
+import './globals.css';
 // ✅ next/font — zero layout shift, automatic subsetting, no render blocking
 const inter = Inter({
   subsets:          ['latin'],
@@ -142,7 +144,8 @@ export default function RootLayout({
         </a>
 
         <Providers>{children}</Providers>
- 
+    <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
