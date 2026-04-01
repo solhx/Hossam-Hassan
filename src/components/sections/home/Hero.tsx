@@ -27,7 +27,7 @@ const staggerContainer = {
   visible: {
     transition: {
       staggerChildren: 0.1,
-      delayChildren: 2.4,
+      delayChildren:   2.4,
     },
   },
 };
@@ -36,51 +36,66 @@ const staggerChild = {
   hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
-    y: 0,
+    y:       0,
     transition: {
       duration: 0.45,
-      ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
+      ease:     [0.16, 1, 0.3, 1] as [number, number, number, number],
     },
   },
 };
 
 // Reduced motion variants — instant appearance
 const reducedStaggerContainer = {
-  hidden: {},
+  hidden:  {},
   visible: { transition: { staggerChildren: 0, delayChildren: 0 } },
 };
 const reducedStaggerChild = {
-  hidden: { opacity: 0 },
+  hidden:  { opacity: 0 },
   visible: { opacity: 1, transition: { duration: 0.1 } },
 };
 
 const Hero = React.memo(function Hero() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const reduced = useReducedMotion();
+  const reduced    = useReducedMotion();
 
   // ── Hydration-safe mobile/scene detection ────────────────────────
   // useState(false) ensures server and first client render BOTH
   // render <HeroFallback> — zero hydration mismatch possible.
   // useEffect runs after hydration, then swaps to HeroScene on desktop.
-  const [showScene, setShowScene] = useState(false);
+  const [showScene,      setShowScene]      = useState(false);
+  const [showBackground, setShowBackground] = useState(false);
 
   useEffect(() => {
     const isMobile = window.innerWidth < 768;
+
+    // ── Three.js scene — desktop only ──────────────────────────────
     if (!isMobile && !reduced) {
       setShowScene(true);
+    }
+
+    // ── HeroBackground — defer until after LCP content paints ──────
+    // requestIdleCallback fires when main thread is free.
+    // setTimeout fallback for Safari which lacks requestIdleCallback.
+    const scheduleBackground = () => setShowBackground(true);
+
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(scheduleBackground, { timeout: 1500 });
+      return () => cancelIdleCallback(id);
+    } else {
+      const id = setTimeout(scheduleBackground, 300);
+      return () => clearTimeout(id);
     }
   }, [reduced]);
 
   // ── Scroll parallax ──────────────────────────────────────────────
   const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ['start start', 'end start'],
+    target:  sectionRef,
+    offset:  ['start start', 'end start'],
   });
-  const contentY       = useTransform(scrollYProgress, [0, 1], [0, 150]);
+  const contentY       = useTransform(scrollYProgress, [0, 1],   [0, 150]);
   const contentOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
   const contentScale   = useTransform(scrollYProgress, [0, 0.4], [1, 0.95]);
 
-  // ✅ Updated hook call — ranges as params, not inline functions
   const {
     layerX,
     layerY,
@@ -98,8 +113,6 @@ const Hero = React.memo(function Hero() {
       ref={sectionRef}
       aria-label="Hero section"
       className="relative min-h-[100svh] flex items-center justify-center overflow-hidden"
-      // ✅ min-h-[100svh] uses small viewport height unit — prevents
-      //    mobile browser chrome (address bar) from cutting off content
     >
       {/* ── BACKGROUND LAYERS ──────────────────────────────────────── */}
 
@@ -107,9 +120,10 @@ const Hero = React.memo(function Hero() {
         ✅ Hydration-safe pattern:
         - showScene starts as false on BOTH server and client
         - After hydration, useEffect sets showScene=true on desktop only
-        - Server: <HeroFallback />
+        - Server:              <HeroFallback />
         - Client first render: <HeroFallback /> ← matches server ✅
-        - Client after effect: <HeroScene /> (desktop) or <HeroFallback /> (mobile)
+        - Client after effect: <HeroScene />    (desktop)
+                               <HeroFallback /> (mobile)
       */}
       {showScene ? (
         <Suspense fallback={<HeroFallback />}>
@@ -119,15 +133,21 @@ const Hero = React.memo(function Hero() {
         <HeroFallback />
       )}
 
-      {/* Aurora + Orbs + Spotlight + Dust + Noise */}
-      <HeroBackground
-        layerX={layerX}
-        layerY={layerY}
-        layerXSlow={layerXSlow}
-        layerYSlow={layerYSlow}
-        springX={springX}
-        springY={springY}
-      />
+      {/*
+        ✅ HeroBackground deferred via requestIdleCallback / setTimeout.
+        Does NOT render during initial paint — removes it from the
+        critical rendering path, directly improving LCP on mobile.
+      */}
+      {showBackground && (
+        <HeroBackground
+          layerX={layerX}
+          layerY={layerY}
+          layerXSlow={layerXSlow}
+          layerYSlow={layerYSlow}
+          springX={springX}
+          springY={springY}
+        />
+      )}
 
       {/* ── MAIN CONTENT ───────────────────────────────────────────── */}
       <motion.div
@@ -137,8 +157,6 @@ const Hero = React.memo(function Hero() {
             : { y: contentY, opacity: contentOpacity, scale: contentScale }
         }
         className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-20 sm:py-24"
-        // ✅ Added py-* for safe spacing on mobile — prevents content
-        //    touching nav bar at top or scroll indicator at bottom
       >
         {/* ── Availability Badge ──────────────────────────────────── */}
         <FadeInUp delay={reduced ? 0 : 0.3}>
@@ -178,11 +196,6 @@ const Hero = React.memo(function Hero() {
           }
           className="will-change-transform mb-4 sm:mb-6"
         >
-          {/*
-            ✅ Single <h1> with sr-only full name for screen readers,
-            visual split into two lines for the reveal animation.
-            This ensures accessibility without affecting the visual design.
-          */}
           <h1
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-none"
             aria-label={`Hi, I'm ${siteConfig.name}`}
@@ -207,10 +220,6 @@ const Hero = React.memo(function Hero() {
         {/* ── Subtitle / Typewriter ────────────────────────────────── */}
         <FadeInUp delay={reduced ? 0 : 1.3} className="mb-3 sm:mb-4">
           <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-neutral-600 dark:text-neutral-300 max-w-2xl mx-auto font-medium leading-relaxed px-2 sm:px-0">
-            {/*
-              ✅ Reduced max font on mobile (text-base instead of text-lg).
-              Added px-2 on mobile to prevent text touching screen edges.
-            */}
             <TypewriterText
               text="Full-Stack Developer crafting premium digital experiences with modern web technologies."
               delay={reduced ? 0 : 1.4}
@@ -227,7 +236,6 @@ const Hero = React.memo(function Hero() {
               className="text-emerald-600 dark:text-emerald-400 shrink-0"
               aria-hidden="true"
             />
-            {/* ✅ shrink-0 on icon prevents squishing on narrow screens */}
             <span className="tracking-wide font-medium">
               {siteConfig.location}
             </span>
@@ -238,13 +246,10 @@ const Hero = React.memo(function Hero() {
         <FadeInUp
           delay={reduced ? 0 : 2.2}
           className="flex flex-col xs:flex-row sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-12 sm:mb-16 px-4 sm:px-0"
-          // ✅ flex-col on smallest screens, flex-row from xs up.
-          // px-4 ensures buttons don't touch edges on narrow phones.
         >
           <LiquidButton
             variant="primary"
             className="w-full xs:w-auto sm:w-auto"
-            // ✅ Full width on mobile, auto on larger screens
             onClick={() =>
               document
                 .getElementById('contact')
@@ -275,8 +280,6 @@ const Hero = React.memo(function Hero() {
             gap-x-4 gap-y-6 sm:gap-8
             max-w-xs sm:max-w-2xl mx-auto
           "
-          // ✅ Explicit gap-x and gap-y for mobile.
-          // max-w-xs on mobile prevents 2-col grid from being too wide.
         >
           {stats.map((stat) => (
             <motion.div
@@ -284,15 +287,28 @@ const Hero = React.memo(function Hero() {
               variants={reduced ? reducedStaggerChild : staggerChild}
               className="text-center"
             >
-              <NumberTicker
-                value={stat.value}
-                suffix="+"
-                className="text-2xl sm:text-3xl font-bold dark:text-neutral-300 text-foreground"
-              />
-              <p className="text-[10px] sm:text-xs text-neutral-500 dark:text-neutral-400 mt-1 sm:mt-1.5 tracking-wide uppercase font-medium">
-                {stat.label}
-              </p>
-            </motion.div>
+              {/*
+                ✅ tabular-nums — monospace number rendering prevents
+                   width jumping as NumberTicker counts up (fixes CLS).
+                ✅ min-width reserves space for final digit count
+                   so surrounding layout never shifts.
+              */}
+               <span
+      style={{
+        minWidth: `${String(stat.value).length + 1}ch`,
+        display:  'inline-block',
+      }}
+    >
+      <NumberTicker
+        value={stat.value}
+        suffix="+"
+        className="text-2xl sm:text-3xl font-bold dark:text-neutral-300 text-foreground"
+      />
+    </span>
+    <p className="text-[10px] sm:text-xs text-neutral-500 dark:text-neutral-400 mt-1 sm:mt-1.5 tracking-wide uppercase font-medium">
+      {stat.label}
+    </p>
+  </motion.div>
           ))}
         </motion.div>
       </motion.div>
@@ -314,7 +330,6 @@ const Hero = React.memo(function Hero() {
           focus-visible:outline-none focus-visible:ring-2
           focus-visible:ring-emerald-500 focus-visible:ring-offset-2
         "
-        // ✅ Added padding and focus ring for keyboard accessibility
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: reduced ? 0 : 3.2 }}
@@ -326,9 +341,9 @@ const Hero = React.memo(function Hero() {
         <motion.div
           animate={reduced ? {} : { y: [0, 6, 0] }}
           transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
+            duration:  2,
+            repeat:    Infinity,
+            ease:      'easeInOut',
           }}
           aria-hidden="true"
         >

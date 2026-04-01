@@ -481,3 +481,11 @@ body {
 .border-white\/8 {
   border-color: rgba(255, 255, 255, 0.08);
 }
+/* +++ ADD to globals.css — force GPU compositing on animated elements */
+
+/* Prevents layout shift from Framer Motion initial states */
+[data-framer-motion-animated],
+.will-change-transform {
+  will-change: transform, opacity;
+  transform:   translateZ(0);  /* force GPU layer */
+}

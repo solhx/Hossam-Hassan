@@ -8,17 +8,20 @@ import './globals.css';
 
 // ✅ next/font — zero layout shift, automatic subsetting, no render blocking
 const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-inter',
-  display: 'swap',
+  subsets:          ['latin'],
+  weight:           ['400', '500', '600', '700', '800'],
+  variable:         '--font-inter',
+  display:          'swap',
+  preload:          true,         
+  adjustFontFallback: true,       
 });
 
 const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-jetbrains',
-  display: 'swap',
+  subsets:          ['latin'],
+  weight:           ['400', '500', '600'],
+  variable:         '--font-jetbrains',
+  display:          'swap',
+  adjustFontFallback: true,        // ✅ same fix for mono font
 });
 
 export const metadata: Metadata = {
@@ -85,7 +88,16 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable}`}
     >
       <head>
-        <script
+       {/* ✅ Preconnect to external origins used by your app */}
+  <link rel="preconnect"    href="https://fonts.googleapis.com" />
+  <link rel="preconnect"    href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+  <link rel="dns-prefetch"  href="https://openrouter.ai" />
+
+  {/* ✅ Preload your LCP image if it's a static asset */}
+  {/* Only add this if your Hero has a background image file */}
+  {/* Skip if LCP element is text — text doesn't need preload */}
+
+     <script
   type="application/ld+json"
   dangerouslySetInnerHTML={{
     __html: JSON.stringify({
@@ -105,14 +117,10 @@ export default function RootLayout({
       ],
     }),
   }}
-/>
-        {/* ✅ Multi-format favicon for cross-browser support          */}
-        {/* favicon.ico  → Safari < 17, IE, older browsers            */}
-        {/* fav.webp     → Chrome, Edge, Firefox, Safari 17+          */}
-       <link rel="icon"             href="/fav.webp" type="image/webp" sizes="32x32" />
-<link rel="apple-touch-icon" href="/fav.webp" />
-        {/* No Google Fonts <link> tags — next/font handles everything */}
-      </head>
+/> 
+  <link rel="icon"             href="/fav.webp" type="image/webp" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/fav.webp" />
+  </head>
       <body
         className={cn(
           'min-h-screen bg-background text-foreground antialiased',
