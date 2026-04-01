@@ -1,5 +1,5 @@
 'use client';
-
+import React from 'react';
 import { motion } from 'framer-motion';
 // ✅ Heart added to the import
 import { Github, Linkedin, Mail, ArrowUp, Heart } from 'lucide-react';
@@ -13,13 +13,12 @@ const iconMap: Record<string, React.ReactNode> = {
   whatsapp:  <IconBrandWhatsapp size={18} />,
 };
 
-export function Footer() {
+const Footer = React.memo(function Footer() {
   const scrollToTop = () => {
-     document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' });
   };
-
   return (
-    <footer className="relative border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30">
+     <footer className="relative border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
 
         {/* Top row */}
@@ -83,4 +82,6 @@ export function Footer() {
       </div>
     </footer>
   );
-}
+});
+Footer.displayName = 'Footer';
+export { Footer };

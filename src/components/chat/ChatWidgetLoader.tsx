@@ -1,6 +1,6 @@
 // src/components/chat/ChatWidgetLoader.tsx
 'use client';
-
+import React from 'react';
 import dynamic from 'next/dynamic';
 
 // ✅ dynamic with ssr: false is allowed here — this IS a Client Component
@@ -12,6 +12,8 @@ const ChatWidget = dynamic(
   }
 );
 
-export function ChatWidgetLoader() {
+const ChatWidgetLoader = React.memo(function ChatWidgetLoader() {
   return <ChatWidget />;
-}
+});
+ChatWidgetLoader.displayName = 'ChatWidgetLoader';
+export { ChatWidgetLoader };

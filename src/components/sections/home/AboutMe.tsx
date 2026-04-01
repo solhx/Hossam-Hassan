@@ -1,5 +1,5 @@
 'use client';
-
+import React from 'react';
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { Code2, Coffee, Rocket, Heart, Terminal, Globe } from 'lucide-react';
@@ -39,8 +39,7 @@ const highlights = [
     description: 'Giving back to the community through open-source contributions.',
   },
 ];
-
-export function AboutMe() {
+const AboutMe = React.memo(function AboutMe() { 
   // ✅ FIX: One ref attached to the section element
   // useInView watches the section — when it enters viewport, all animations fire
   const sectionRef = useRef<HTMLElement>(null);
@@ -123,4 +122,6 @@ export function AboutMe() {
       </div>
     </section>
   );
-}
+});
+AboutMe.displayName = 'AboutMe';
+export { AboutMe };

@@ -1,6 +1,6 @@
 // src/components/sections/home/Experience.tsx
 'use client';
-
+import React from 'react';
 import { useRef, useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import {
@@ -604,7 +604,7 @@ function MobileItem({
    Section
 ───────────────────────────────────────────── */
 
-export function Experience() {
+const Experience = React.memo(function Experience() {
   const headingRef      = useRef<HTMLDivElement>(null);
   const isHeadingInView = useInView(headingRef, { once: true, margin: '-40px' });
 
@@ -657,4 +657,6 @@ export function Experience() {
       </div>
     </section>
   );
-}
+});
+Experience.displayName = 'Experience';
+export { Experience };

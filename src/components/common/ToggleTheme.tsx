@@ -1,7 +1,8 @@
 'use client';
 
 import { Moon, Sun } from 'lucide-react';
-import { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useRef, useCallback, memo, useState, useEffect } from 'react';
+
 import { useTheme } from 'next-themes';
 import { flushSync } from 'react-dom';
 import { cn } from '@/utils/utils';
@@ -26,19 +27,16 @@ interface ToggleThemeProps extends React.ComponentPropsWithoutRef<'button'> {
   animationType?: AnimationType;
 }
 
-export const ToggleTheme = ({
+export const ToggleTheme = React.memo(function ToggleTheme({
   className,
   duration = 400,
   animationType = 'circle-spread',
   ...props
-}: ToggleThemeProps) => {
+}: ToggleThemeProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const flipStyleRef = useRef<HTMLStyleElement | null>(null);
 
-  // ✅ THE FIX: Track whether component has mounted on the client.
-  // On the server: mounted = false → render neutral placeholder (no icon mismatch).
-  // On the client: mounted = true  → render correct icon based on resolvedTheme.
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -350,4 +348,5 @@ export const ToggleTheme = ({
       )}
     </button>
   );
-};
+});
+ToggleTheme.displayName = 'ToggleTheme';

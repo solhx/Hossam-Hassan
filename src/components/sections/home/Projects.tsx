@@ -1,6 +1,6 @@
 // src/components/sections/home/Projects.tsx
 'use client';
-
+import React from 'react';
 import {
   useRef,
   useEffect,
@@ -197,7 +197,7 @@ function CursorFollower({ active }: { active: boolean }) {
 
 /* ─── Root Section ────────────────────────────────────────────── */
 
-export function Projects() {
+const Projects = React.memo(function Projects() {
   const sectionRef = useRef<HTMLElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const panelRefs  = useRef<(HTMLDivElement | undefined)[]>([]);
@@ -222,14 +222,17 @@ export function Projects() {
   );
 
   // ── GSAP pin + scrub ──────────────────────────────────────────
-  useEffect(() => {
-    if (reduced) return;
+ useEffect(() => {
+  if (reduced) return;
 
-    const section = sectionRef.current;
-    const wrapper = wrapperRef.current;
-    if (!section || !wrapper) return;
+  const section = sectionRef.current;
+  const wrapper = wrapperRef.current;
+  if (!section || !wrapper) return;
 
-    const mm = gsap.matchMedia();
+  const mm  = gsap.matchMedia();
+  // ✅ gsap.context() scopes all ScrollTriggers and tweens created
+  // inside — ctx.revert() kills ALL of them in one call, no leaks
+  const ctx = gsap.context(() => {
     let rafId: number;
 
     rafId = requestAnimationFrame(() => {
@@ -241,14 +244,14 @@ export function Projects() {
           index: count - 1,
           ease:  'none',
           scrollTrigger: {
-            id:           'projects-master',
-            trigger:      section,
-            start:        'top top',
-            end:          () => `+=${(count - 1) * window.innerHeight}`,
-            pin:          true,
-            pinSpacing:   true,
+            id:            'projects-master',
+            trigger:       section,
+            start:         'top top',
+            end:           () => `+=${(count - 1) * window.innerHeight}`,
+            pin:           true,
+            pinSpacing:    true,
             anticipatePin: 1,
-            scrub:        0.8,
+            scrub:         0.8,
             snap: {
               snapTo:   1 / (count - 1),
               duration: { min: 0.3, max: 0.5 },
@@ -280,19 +283,23 @@ export function Projects() {
           },
         });
 
-        // ✅ Cleanup returned from matchMedia context
         return () => {
           ScrollTrigger.getById('projects-master')?.kill();
         };
       });
     });
 
+    // Store rafId for cleanup — accessible inside context
     return () => {
       cancelAnimationFrame(rafId);
-      // ✅ Synchronous — safe even if RAF never fired
-      mm.revert();
     };
-  }, [reduced]);
+  }, sectionRef); // ✅ scope context to the section element
+
+  return () => {
+    ctx.revert(); // ✅ kills ALL tweens and ScrollTriggers in context
+    mm.revert();  // ✅ kills matchMedia listeners
+  };
+}, [reduced]);
 
   return (
     <div className="relative">
@@ -384,7 +391,9 @@ export function Projects() {
       </section>
     </div>
   );
-}
+});
+Projects.displayName = 'Projects';
+export { Projects };
 
 /* ─── Panel ───────────────────────────────────────────────────── */
 
@@ -731,15 +740,15 @@ function FlipCard({ project, accent, flipped, onFlip }: FlipCardProps) {
           />
 
           <div className="relative w-full aspect-[16/10] overflow-hidden">
-            <Image
-              src={project.image}
-              alt={project.title}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
-              sizes="(min-width: 1024px) 45vw, 90vw"
-              priority={project.featured}
-              loading={project.featured ? undefined : 'lazy'}
-            />
+           <Image
+  src={project.image}
+  alt={project.title}
+  fill
+  className="object-cover transition-transform duration-700 group-hover:scale-105"
+  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+  priority={project.featured}
+  loading={project.featured ? undefined : 'lazy'}
+/>
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
             {project.featured && (
@@ -783,16 +792,17 @@ function FlipCard({ project, accent, flipped, onFlip }: FlipCardProps) {
             ].join(', '),
           }}
         >
-          <div className="absolute inset-0">
-            <Image
-              src={project.image}
-              alt=""
-              aria-hidden="true"
-              fill
-              className="object-cover scale-110 blur-md"
-              sizes="(min-width: 1024px) 45vw, 90vw"
-              loading="lazy"
-            />
+           <div className="absolute inset-0">
+          <Image
+  src={project.image}
+  alt=""
+  aria-hidden="true"
+  fill
+  className="object-cover scale-110 blur-md"
+  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+  loading="lazy"
+/>
+
             <div className="absolute inset-0 bg-neutral-950/85 dark:bg-[#020c06]/88 backdrop-blur-sm" />
           </div>
 
@@ -1013,14 +1023,14 @@ function MobileCard({
             }}
           >
             <div className="relative w-full aspect-video overflow-hidden">
-              <Image
-                src={project.image}
-                alt={project.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw"
-                loading="lazy"
-              />
+            <Image
+  src={project.image}
+  alt={project.title}
+  fill
+  className="object-cover"
+  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+  loading="lazy"
+/>
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
               {project.featured && (

@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 import { buildSystemPrompt, RATE_LIMIT } from '@/lib/chat-config';
 import { checkRateLimit } from '@/lib/rate-limiter';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-
+export const runtime = 'nodejs';
 export const maxDuration = 30;
 
 interface ChatMessage {

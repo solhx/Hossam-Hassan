@@ -38,7 +38,24 @@
   --animate-float:         float 6s ease-in-out infinite;
   --animate-glow:          glow 2s ease-in-out infinite alternate;
   --animate-shimmer:       shimmer 2.5s linear infinite;
-  --animate-shimmer-sweep: shimmer-sweep 2.5s ease-in-out infinite;
+  --animate-shimmer-sweep: shimmer-sweep 2.5s ease-in-out infinite;  
+}
+
+*,
+*::before,
+*::after {
+   border-color: var(--color-border);
+  transition:
+    background-color 0.25s ease,
+    border-color     0.2s  ease,
+    color            0.15s ease !important;
+}
+
+canvas,
+[data-lenis-scroll],
+[data-no-transition],
+.gradient-text {
+  transition: none !important;
 }
 
 .dark {
@@ -227,9 +244,7 @@
    Base
 ═══════════════════════════════════════════════════════════════ */
 
-* {
-  border-color: var(--color-border);
-}
+
 
 html {
   scroll-behavior: auto;

@@ -1,6 +1,6 @@
 // src/components/common/FloatingAppBar.tsx
 'use client';
-
+import React from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   motion,
@@ -365,7 +365,7 @@ function MobileVerticalDock({
 
 /* ── Main component ───────────────────────────────────────────── */
 
-export function FloatingAppBar() {
+const FloatingAppBar = React.memo(function FloatingAppBar() {
   const [visible,    setVisible]    = useState(true);
   const [scrolled,   setScrolled]   = useState(false);
   const [navHovered, setNavHovered] = useState(false);
@@ -672,4 +672,7 @@ export function FloatingAppBar() {
       <MobileVerticalDock items={mobileItems} visible={visible} />
     </>
   );
-}
+});
+
+FloatingAppBar.displayName = 'FloatingAppBar';
+export { FloatingAppBar };

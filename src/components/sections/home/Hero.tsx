@@ -1,12 +1,12 @@
 // ✅ FULLY UPDATED — src/components/sections/home/Hero.tsx
 'use client';
-
-import { useRef, lazy, Suspense } from 'react';
+import React, { useRef, useState, useEffect, Suspense, lazy } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowDown, MapPin, Sparkles, Download, Send } from 'lucide-react';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { siteConfig, stats } from '@/lib/portfolio-data';
 import { HeroBackground } from '@/components/ui/hero-background';
+import { HeroFallback } from '@/components/ui/HeroFallback';
 import {
   MaskRevealText,
   TypewriterText,
@@ -27,7 +27,7 @@ const staggerContainer = {
   visible: {
     transition: {
       staggerChildren: 0.1,
-      delayChildren: 2.4, // Slightly earlier than before
+      delayChildren: 2.4,
     },
   },
 };
@@ -54,22 +54,44 @@ const reducedStaggerChild = {
   visible: { opacity: 1, transition: { duration: 0.1 } },
 };
 
-export function Hero() {
+const Hero = React.memo(function Hero() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
+
+  // ── Hydration-safe mobile/scene detection ────────────────────────
+  // useState(false) ensures server and first client render BOTH
+  // render <HeroFallback> — zero hydration mismatch possible.
+  // useEffect runs after hydration, then swaps to HeroScene on desktop.
+  const [showScene, setShowScene] = useState(false);
+
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile && !reduced) {
+      setShowScene(true);
+    }
+  }, [reduced]);
 
   // ── Scroll parallax ──────────────────────────────────────────────
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start start', 'end start'],
   });
-  const contentY = useTransform(scrollYProgress, [0, 1], [0, 150]);
+  const contentY       = useTransform(scrollYProgress, [0, 1], [0, 150]);
   const contentOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
-  const contentScale = useTransform(scrollYProgress, [0, 0.4], [1, 0.95]);
+  const contentScale   = useTransform(scrollYProgress, [0, 0.4], [1, 0.95]);
 
   // ✅ Updated hook call — ranges as params, not inline functions
-  const { layerX, layerY, layerXSlow, layerYSlow, springX, springY, rotateX, rotateY } =
-  useMouseParallax(40, 25, 35, 25);
+  const {
+    layerX,
+    layerY,
+    layerXSlow,
+    layerYSlow,
+    springX,
+    springY,
+    rotateX,
+    rotateY,
+  } = useMouseParallax(40, 25, 35, 25);
+
   return (
     <section
       id="hero"
@@ -81,23 +103,31 @@ export function Hero() {
     >
       {/* ── BACKGROUND LAYERS ──────────────────────────────────────── */}
 
-      {/* Three.js scene — loaded async, non-blocking */}
-      {!reduced && (
-        <Suspense fallback={null}>
-          {/* ✅ null fallback — no flicker, background orbs cover the gap */}
+      {/*
+        ✅ Hydration-safe pattern:
+        - showScene starts as false on BOTH server and client
+        - After hydration, useEffect sets showScene=true on desktop only
+        - Server: <HeroFallback />
+        - Client first render: <HeroFallback /> ← matches server ✅
+        - Client after effect: <HeroScene /> (desktop) or <HeroFallback /> (mobile)
+      */}
+      {showScene ? (
+        <Suspense fallback={<HeroFallback />}>
           <HeroScene className="opacity-40 dark:opacity-50" />
         </Suspense>
+      ) : (
+        <HeroFallback />
       )}
 
       {/* Aurora + Orbs + Spotlight + Dust + Noise */}
-     <HeroBackground
-  layerX={layerX}
-  layerY={layerY}
-  layerXSlow={layerXSlow}
-  layerYSlow={layerYSlow}
-  springX={springX}
-  springY={springY}
-/>
+      <HeroBackground
+        layerX={layerX}
+        layerY={layerY}
+        layerXSlow={layerXSlow}
+        layerYSlow={layerYSlow}
+        springX={springX}
+        springY={springY}
+      />
 
       {/* ── MAIN CONTENT ───────────────────────────────────────────── */}
       <motion.div
@@ -121,7 +151,10 @@ export function Hero() {
             "
           >
             {/* Pulsing dot */}
-            <div className="relative flex items-center justify-center" aria-hidden="true">
+            <div
+              className="relative flex items-center justify-center"
+              aria-hidden="true"
+            >
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               <div className="absolute w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
             </div>
@@ -195,7 +228,9 @@ export function Hero() {
               aria-hidden="true"
             />
             {/* ✅ shrink-0 on icon prevents squishing on narrow screens */}
-            <span className="tracking-wide font-medium">{siteConfig.location}</span>
+            <span className="tracking-wide font-medium">
+              {siteConfig.location}
+            </span>
           </div>
         </FadeInUp>
 
@@ -281,7 +316,7 @@ export function Hero() {
         "
         // ✅ Added padding and focus ring for keyboard accessibility
         initial={{ opacity: 0 }}
-        animate={{ opacity: reduced ? 1 : 1 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: reduced ? 0 : 3.2 }}
         aria-label="Scroll to About section"
       >
@@ -302,4 +337,7 @@ export function Hero() {
       </motion.button>
     </section>
   );
-}
+});
+
+Hero.displayName = 'Hero';
+export { Hero };

@@ -16,13 +16,15 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       '(prefers-reduced-motion: reduce)',
     ).matches;
     if (reduced) return;
+const isTouchDevice = 'ontouchstart' in window;
 
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      touchMultiplier: 2,
-      infinite: false,
-    });
+const lenis = new Lenis({
+  duration:        isTouchDevice ? 0   : 1.2,   // no artificial duration on touch
+  easing:          (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+  smoothWheel:     !isTouchDevice,               // smooth only for mouse wheel
+  touchMultiplier: isTouchDevice ? 1 : 2,        // native feel on touch
+  infinite:        false,
+});
 
     lenisRef.current = lenis;
 

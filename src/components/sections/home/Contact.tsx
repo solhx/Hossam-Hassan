@@ -1,6 +1,6 @@
 // src/components/sections/home/Contact.tsx
 'use client';
-
+import React from 'react';
 import { useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -32,7 +32,7 @@ const EMAILJS_PUBLIC_KEY  = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
 
 type FormStatus = 'idle' | 'sending' | 'success' | 'error';
 
-export function Contact() {
+const Contact = React.memo(function Contact() { 
   const ref      = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-80px' });
   const [status, setStatus] = useState<FormStatus>('idle');
@@ -392,4 +392,6 @@ export function Contact() {
       </div>
     </section>
   );
-}
+});
+Contact.displayName = 'Contact';
+export { Contact };

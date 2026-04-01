@@ -1,6 +1,6 @@
 // src/components/sections/home/Skills.tsx
 'use client';
-
+import React from 'react';
 import { useRef, useState } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { SectionHeading } from '@/components/ui/section-heading';
@@ -9,7 +9,7 @@ import { VelocityScroll } from '@/components/ui/velocity-scroll';
 import { skills, skillCategories } from '@/lib/portfolio-data';
 import { cn } from '@/utils/utils';
 
-export function Skills() {
+const Skills = React.memo(function Skills() {
   const ref      = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-80px' });
   const [active, setActive] = useState<string>('all');
@@ -164,4 +164,6 @@ export function Skills() {
       </div>
     </section>
   );
-}
+});
+Skills.displayName = 'Skills';
+export { Skills };
