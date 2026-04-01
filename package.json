@@ -13,6 +13,7 @@
     "@ai-sdk/openai": "^3.0.48",
     "@emailjs/browser": "^4.4.1",
     "@gsap/react": "^2.1.2",
+    "@hookform/resolvers": "^5.2.2",
     "@openrouter/ai-sdk-provider": "^2.3.3",
     "@tabler/icons-react": "^3.36.1",
     "@vercel/analytics": "^1.6.1",

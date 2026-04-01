@@ -1,64 +1,65 @@
 // src/app/page.tsx
-import dynamic from 'next/dynamic';
-import { SmoothScroll } from '@/components/common/SmoothScroll';
-import { FloatingAppBar } from '@/components/common/FloatingAppBar';
-import { Footer } from '@/components/common/Footer';
-import { SectionDivider } from '@/components/sections/home/SectionDivider';
-// ✅ Import the wrapper instead of using dynamic directly
+import { SmoothScroll }     from '@/components/common/SmoothScroll';
+import { FloatingAppBar }   from '@/components/common/FloatingAppBar';
+import { Footer }           from '@/components/common/Footer';
+import { SectionDivider }   from '@/components/sections/home/SectionDivider';
 import { ChatWidgetLoader } from '@/components/chat/ChatWidgetLoader';
+import { ErrorBoundary }    from '@/components/common/ErrorBoundary';
 
-import { Hero } from '@/components/sections/home/Hero'; 
-
-// ── SSR-enabled sections ──────────────────────────────────────────────
-
-const AboutMe = dynamic(
-  () => import('@/components/sections/home/AboutMe').then((m) => ({ default: m.AboutMe })),
-  { ssr: true }
-);
-const Skills = dynamic(
-  () => import('@/components/sections/home/Skills').then((m) => ({ default: m.Skills })),
-  { ssr: true }
-);
-const Experience = dynamic(
-  () => import('@/components/sections/home/Experience').then((m) => ({
-    default: m.Experience,
-  })),
-  { ssr: true }
-);
-const Projects = dynamic(
-  () => import('@/components/sections/home/Projects').then((m) => ({
-    default: m.Projects,
-  })),
-  { ssr: true }
-);
-const Contact = dynamic(
-  () => import('@/components/sections/home/Contact').then((m) => ({
-    default: m.Contact,
-  })),
-  { ssr: true }
-);
+// ✅ Direct imports — dynamic({ ssr: true }) is the default and adds no value.
+// Next.js App Router already code-splits at the route boundary.
+import { Hero }       from '@/components/sections/home/Hero';
+import { AboutMe }    from '@/components/sections/home/AboutMe';
+import { Skills }     from '@/components/sections/home/Skills';
+import { Experience } from '@/components/sections/home/Experience';
+import { Projects }   from '@/components/sections/home/Projects';
+import { Contact }    from '@/components/sections/home/Contact';
 
 export default function HomePage() {
   return (
     <SmoothScroll>
       <FloatingAppBar />
 
-      <main>
-        <Hero />
+      {/* ✅ id="main-content" — target for skip-to-content link */}
+      <main id="main-content">
+        <ErrorBoundary section="hero">
+          <Hero />
+        </ErrorBoundary>
+
         <SectionDivider />
-        <AboutMe />
+
+        <ErrorBoundary section="about">
+          <AboutMe />
+        </ErrorBoundary>
+
         <SectionDivider />
-        <Skills />
+
+        <ErrorBoundary section="skills">
+          <Skills />
+        </ErrorBoundary>
+
         <SectionDivider />
-        <Experience />
+
+        <ErrorBoundary section="experience">
+          <Experience />
+        </ErrorBoundary>
+
         <SectionDivider />
-        <Projects />
+
+        <ErrorBoundary section="projects">
+          <Projects />
+        </ErrorBoundary>
+
         <SectionDivider />
-        <Contact />
+
+        <ErrorBoundary section="contact">
+          <Contact />
+        </ErrorBoundary>
       </main>
 
       <Footer />
-      {/* ✅ Use the wrapper — no ssr: false in Server Component */}
+
+      {/* ✅ ChatWidgetLoader — ssr:false handled inside the loader */}
       <ChatWidgetLoader />
     </SmoothScroll>
   );

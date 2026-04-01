@@ -1,8 +1,10 @@
+// src/components/sections/home/Contact.tsx
 'use client';
 
 import { useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import emailjs from '@emailjs/browser';
 import {
   Send,
@@ -12,10 +14,10 @@ import {
   Mail,
   Clock,
 } from 'lucide-react';
-import { SectionHeading } from '@/components/ui/section-heading';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { SectionHeading }  from '@/components/ui/section-heading';
+import { Button }          from '@/components/ui/button';
+import { Input }           from '@/components/ui/input';
+import { Textarea }        from '@/components/ui/textarea';
 import { BackgroundBeams } from '@/components/ui/background-beams';
 import {
   contactSchema,
@@ -24,14 +26,14 @@ import {
 import { siteConfig, socialLinks } from '@/lib/portfolio-data';
 import { cn } from '@/utils/utils';
 
-const EMAILJS_SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID ;
-const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID ;
-const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ;
+const EMAILJS_SERVICE_ID  = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY  = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
 
 type FormStatus = 'idle' | 'sending' | 'success' | 'error';
 
 export function Contact() {
-  const ref = useRef(null);
+  const ref      = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-80px' });
   const [status, setStatus] = useState<FormStatus>('idle');
 
@@ -39,64 +41,80 @@ export function Contact() {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<ContactFormData>({
+    // ✅ Single source of truth — Zod schema drives all validation
+    // No inline rules needed on register() calls
+    resolver: zodResolver(contactSchema),
     defaultValues: { name: '', email: '', subject: '', message: '' },
   });
-const onSubmit = async (data: ContactFormData) => {
-  const result = contactSchema.safeParse(data);
-  if (!result.success) return;
 
-  // ✅ Guard against missing env vars — show clear error instead of silent fail
-  if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
-    console.error('[Contact] EmailJS environment variables are not configured');
-    setStatus('error');
-    setTimeout(() => setStatus('idle'), 5000);
-    return;
-  }
+  const onSubmit = async (data: ContactFormData) => {
+    // ✅ No safeParse — RHF + zodResolver already validated at this point
 
-  setStatus('sending');
-  try {
-    await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      EMAILJS_TEMPLATE_ID,
-      {
-        from_name:  data.name,
-        from_email: data.email,
-        subject:    data.subject,
-        message:    data.message,
-      },
-      EMAILJS_PUBLIC_KEY,
-    );
-    setStatus('success');
-    reset();
-    setTimeout(() => setStatus('idle'), 5000);
-  } catch (err) {
-    console.error('[Contact] EmailJS send failed:', err);
-    setStatus('error');
-    setTimeout(() => setStatus('idle'), 5000);
-  }
-};
+    if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
+      console.error(
+        '[Contact] EmailJS environment variables are not configured',
+      );
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 5000);
+      return;
+    }
+
+    setStatus('sending');
+    try {
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          from_name:  data.name,
+          from_email: data.email,
+          subject:    data.subject,
+          message:    data.message,
+        },
+        EMAILJS_PUBLIC_KEY,
+      );
+      setStatus('success');
+      reset();
+      setTimeout(() => setStatus('idle'), 5000);
+    } catch (err) {
+      console.error('[Contact] EmailJS send failed:', err);
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 5000);
+    }
+  };
 
   const contactInfo = [
     {
-      icon: <Mail size={18} />,
+      icon:  <Mail   size={18} />,
       label: 'Email',
       value: siteConfig.email,
-      href: `mailto:${siteConfig.email}`,
+      href:  `mailto:${siteConfig.email}`,
     },
-    { icon: <MapPin size={18} />, label: 'Location', value: siteConfig.location },
-    { icon: <Clock size={18} />, label: 'Response Time', value: 'Within 24 hours' },
+    {
+      icon:  <MapPin size={18} />,
+      label: 'Location',
+      value: siteConfig.location,
+    },
+    {
+      icon:  <Clock  size={18} />,
+      label: 'Response Time',
+      value: 'Within 24 hours',
+    },
   ];
 
   return (
     <section
       id="contact"
       ref={ref}
+      aria-label="Contact section"
       className="relative py-24 sm:py-32 overflow-hidden"
     >
       <div className="absolute inset-0 pointer-events-none">
-        <BackgroundBeams beamCount={5} className="opacity-20 pointer-events-none" />
+        <BackgroundBeams
+          beamCount={5}
+          className="opacity-20 pointer-events-none"
+        />
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
@@ -107,7 +125,7 @@ const onSubmit = async (data: ContactFormData) => {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
-          {/* Left — Info */}
+          {/* ── Left — Info ── */}
           <motion.div
             className="lg:col-span-2 space-y-6"
             initial={{ opacity: 0, x: -40 }}
@@ -115,7 +133,7 @@ const onSubmit = async (data: ContactFormData) => {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <div className="rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 space-y-6">
-              <h3 className="text-xl dark:text-neutral-50 font-bold text-foreground">
+              <h3 className="text-xl font-bold text-foreground dark:text-neutral-50">
                 Get in Touch
               </h3>
               <p className="text-sm text-neutral-500 leading-relaxed">
@@ -149,13 +167,14 @@ const onSubmit = async (data: ContactFormData) => {
 
               <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800">
                 <p className="text-xs text-neutral-400 mb-3">Find me on</p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {socialLinks.map((link) => (
                     <motion.a
                       key={link.name}
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label={`Visit Hossam on ${link.name}`}
                       className="px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 transition-all text-xs font-medium"
                       whileHover={{ scale: 1.05, y: -2 }}
                       whileTap={{ scale: 0.95 }}
@@ -168,7 +187,7 @@ const onSubmit = async (data: ContactFormData) => {
             </div>
           </motion.div>
 
-          {/* Right — Form */}
+          {/* ── Right — Form ── */}
           <motion.div
             className="lg:col-span-3"
             initial={{ opacity: 0, x: 40 }}
@@ -177,112 +196,140 @@ const onSubmit = async (data: ContactFormData) => {
           >
             <form
               onSubmit={handleSubmit(onSubmit)}
+              noValidate
+              aria-label="Contact form"
               className="rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 sm:p-8 space-y-5"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Name */}
                 <div>
                   <label
-                    htmlFor="name"
-                    className="block text-sm font-medium dark:text-neutral-100 text-foreground mb-1.5"
+                    htmlFor="contact-name"
+                    className="block text-sm font-medium text-foreground dark:text-neutral-100 mb-1.5"
                   >
                     Name
                   </label>
                   <Input
-                    id="name"
+                    id="contact-name"
                     placeholder="John Doe"
-                    {...register('name', {
-                      required: 'Name is required',
-                      minLength: { value: 2, message: 'Min 2 characters' },
-                    })}
+                    autoComplete="name"
+                    aria-invalid={!!errors.name}
+                    aria-describedby={
+                      errors.name ? 'contact-name-error' : undefined
+                    }
+                    {...register('name')}
                     className={cn(errors.name && 'border-red-500')}
                   />
                   {errors.name && (
-                    <p className="mt-1 text-xs text-red-500">
+                    <p
+                      id="contact-name-error"
+                      role="alert"
+                      className="mt-1 text-xs text-red-500"
+                    >
                       {errors.name.message}
                     </p>
                   )}
                 </div>
+
+                {/* Email */}
                 <div>
                   <label
-                    htmlFor="email"
-                    className="block text-sm font-medium dark:text-neutral-100 text-foreground mb-1.5"
+                    htmlFor="contact-email"
+                    className="block text-sm font-medium text-foreground dark:text-neutral-100 mb-1.5"
                   >
                     Email
                   </label>
                   <Input
-                    id="email"
+                    id="contact-email"
                     type="email"
                     placeholder="john@example.com"
-                    {...register('email', {
-                      required: 'Email is required',
-                      pattern: {
-                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                        message: 'Invalid email',
-                      },
-                    })}
+                    autoComplete="email"
+                    aria-invalid={!!errors.email}
+                    aria-describedby={
+                      errors.email ? 'contact-email-error' : undefined
+                    }
+                    {...register('email')}
                     className={cn(errors.email && 'border-red-500')}
                   />
                   {errors.email && (
-                    <p className="mt-1 text-xs text-red-500">
+                    <p
+                      id="contact-email-error"
+                      role="alert"
+                      className="mt-1 text-xs text-red-500"
+                    >
                       {errors.email.message}
                     </p>
                   )}
                 </div>
               </div>
 
+              {/* Subject */}
               <div>
                 <label
-                  htmlFor="subject"
-                  className="block text-sm font-medium dark:text-neutral-100 text-foreground mb-1.5"
+                  htmlFor="contact-subject"
+                  className="block text-sm font-medium text-foreground dark:text-neutral-100 mb-1.5"
                 >
                   Subject
                 </label>
                 <Input
-                  id="subject"
+                  id="contact-subject"
                   placeholder="Project discussion"
-                  {...register('subject', {
-                    required: 'Subject is required',
-                    minLength: { value: 5, message: 'Min 5 characters' },
-                  })}
+                  aria-invalid={!!errors.subject}
+                  aria-describedby={
+                    errors.subject ? 'contact-subject-error' : undefined
+                  }
+                  {...register('subject')}
                   className={cn(errors.subject && 'border-red-500')}
                 />
                 {errors.subject && (
-                  <p className="mt-1 text-xs text-red-500">
+                  <p
+                    id="contact-subject-error"
+                    role="alert"
+                    className="mt-1 text-xs text-red-500"
+                  >
                     {errors.subject.message}
                   </p>
                 )}
               </div>
 
+              {/* Message */}
               <div>
                 <label
-                  htmlFor="message"
-                  className="block text-sm font-medium dark:text-neutral-100 text-foreground mb-1.5"
+                  htmlFor="contact-message"
+                  className="block text-sm font-medium text-foreground dark:text-neutral-100 mb-1.5"
                 >
                   Message
                 </label>
                 <Textarea
-                  id="message"
+                  id="contact-message"
                   placeholder="Tell me about your project..."
                   rows={5}
-                  {...register('message', {
-                    required: 'Message is required',
-                    minLength: { value: 10, message: 'Min 10 characters' },
-                  })}
+                  aria-invalid={!!errors.message}
+                  aria-describedby={
+                    errors.message ? 'contact-message-error' : undefined
+                  }
+                  {...register('message')}
                   className={cn(errors.message && 'border-red-500')}
                 />
                 {errors.message && (
-                  <p className="mt-1 text-xs text-red-500">
+                  <p
+                    id="contact-message-error"
+                    role="alert"
+                    className="mt-1 text-xs text-red-500"
+                  >
                     {errors.message.message}
                   </p>
                 )}
               </div>
 
+              {/* Submit */}
               <Button
                 type="submit"
                 variant="glow"
                 size="lg"
                 className="w-full"
-                disabled={status === 'sending'}
+                disabled={status === 'sending' || isSubmitting}
+                aria-busy={status === 'sending'}
               >
                 {status === 'sending' ? (
                   <>
@@ -294,29 +341,33 @@ const onSubmit = async (data: ContactFormData) => {
                         ease: 'linear',
                       }}
                       className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                      aria-hidden="true"
                     />
                     Sending...
                   </>
                 ) : status === 'success' ? (
                   <>
-                    <CheckCircle size={18} />
+                    <CheckCircle size={18} aria-hidden="true" />
                     Message Sent!
                   </>
                 ) : status === 'error' ? (
                   <>
-                    <AlertCircle size={18} />
+                    <AlertCircle size={18} aria-hidden="true" />
                     Failed — Try Again
                   </>
                 ) : (
                   <>
-                    <Send size={18} />
+                    <Send size={18} aria-hidden="true" />
                     Send Message
                   </>
                 )}
               </Button>
 
+              {/* Status messages */}
               {status === 'success' && (
                 <motion.p
+                  role="status"
+                  aria-live="polite"
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="text-sm text-emerald-600 dark:text-emerald-400 text-center"
@@ -326,6 +377,8 @@ const onSubmit = async (data: ContactFormData) => {
               )}
               {status === 'error' && (
                 <motion.p
+                  role="alert"
+                  aria-live="assertive"
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="text-sm text-red-500 text-center"

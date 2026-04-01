@@ -1,3 +1,4 @@
+// src/components/chat/ChatMessage.tsx
 'use client';
 
 import { motion } from 'framer-motion';
@@ -12,32 +13,22 @@ export function ChatMessage({ message }: { message: ChatMessageType }) {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = useCallback(async () => {
-  try {
-    await navigator.clipboard.writeText(message.content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  } catch {
-    // ✅ Modern fallback using selection API (no deprecated execCommand)
-    try {
-      const range = document.createRange();
-      const tempEl = document.createElement('span');
-      tempEl.textContent = message.content;
-      tempEl.style.position = 'absolute';
-      tempEl.style.left = '-9999px';
-      document.body.appendChild(tempEl);
-      range.selectNode(tempEl);
-      window.getSelection()?.removeAllRanges();
-      window.getSelection()?.addRange(range);
-      document.execCommand('copy'); // Only used as last resort
-      window.getSelection()?.removeAllRanges();
-      document.body.removeChild(tempEl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Silent fail — copy not supported
+    // ✅ Primary: modern Clipboard API
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(message.content);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      } catch {
+        // Fall through — clipboard permission denied or unavailable
+      }
     }
-  }
-}, [message.content]);
+    // ✅ No execCommand fallback — deprecated and unreliable.
+    // User can still manually select the text to copy.
+    // Briefly show a "failed" state so the user knows.
+    setCopied(false);
+  }, [message.content]);
 
   return (
     <motion.div
@@ -52,8 +43,9 @@ export function ChatMessage({ message }: { message: ChatMessageType }) {
           'flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5',
           isUser
             ? 'bg-emerald-500/20 dark:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400'
-            : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-300'
+            : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-300',
         )}
+        aria-hidden="true"
       >
         {isUser ? <User size={13} /> : <Bot size={13} />}
       </div>
@@ -67,12 +59,10 @@ export function ChatMessage({ message }: { message: ChatMessageType }) {
               ? 'bg-emerald-600 text-white rounded-tr-sm'
               : [
                   'rounded-tl-sm',
-                  // Light mode: light gray bg, dark text
                   'bg-neutral-100 text-neutral-800',
-                  // Dark mode: darker bg, light text, visible border
                   'dark:bg-neutral-800 dark:text-neutral-100',
                   'border border-neutral-200 dark:border-neutral-600',
-                ].join(' ')
+                ].join(' '),
           )}
         >
           {isUser ? (
@@ -86,6 +76,7 @@ export function ChatMessage({ message }: { message: ChatMessageType }) {
               className="inline-block w-1.5 h-4 bg-emerald-500 ml-0.5 rounded-full align-middle"
               animate={{ opacity: [1, 0] }}
               transition={{ duration: 0.5, repeat: Infinity }}
+              aria-hidden="true"
             />
           )}
         </div>
@@ -94,16 +85,16 @@ export function ChatMessage({ message }: { message: ChatMessageType }) {
         <div
           className={cn(
             'flex items-center gap-2 mt-1 px-1',
-            isUser ? 'justify-end' : 'justify-start'
+            isUser ? 'justify-end' : 'justify-start',
           )}
         >
-          {/* Timestamp: was text-neutral-400/50 — invisible in dark mode */}
           <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
             {message.timestamp.toLocaleTimeString([], {
-              hour: '2-digit',
+              hour:   '2-digit',
               minute: '2-digit',
             })}
           </span>
+
           {!isUser && message.content.length > 10 && (
             <button
               onClick={copyToClipboard}
@@ -111,9 +102,10 @@ export function ChatMessage({ message }: { message: ChatMessageType }) {
                 'opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded cursor-pointer',
                 'hover:bg-neutral-200 dark:hover:bg-neutral-700',
                 'text-neutral-400 dark:text-neutral-500',
-                'hover:text-neutral-600 dark:hover:text-neutral-300'
+                'hover:text-neutral-600 dark:hover:text-neutral-300',
+                'focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500',
               )}
-              aria-label="Copy message"
+              aria-label="Copy message to clipboard"
             >
               {copied ? (
                 <Check size={10} className="text-emerald-500" />

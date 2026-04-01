@@ -1,3 +1,4 @@
+// src/components/common/FloatingAppBar.tsx
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -7,7 +8,7 @@ import {
   useMotionValue,
   useSpring,
   useTransform,
-  MotionValue,
+  type MotionValue,
   type MotionStyle,
 } from 'framer-motion';
 import {
@@ -19,38 +20,32 @@ import {
   Mail,
   Download,
 } from 'lucide-react';
-import Link from 'next/link';
-import { cn } from '@/utils/utils';
+import Link           from 'next/link';
+import { cn }         from '@/utils/utils';
 import { ToggleTheme } from '@/components/common/ToggleTheme';
 
-/* ═══════════════════════════════════════════════════════════════
-   TYPES
-   ═══════════════════════════════════════════════════════════════ */
+/* ── Types ────────────────────────────────────────────────────── */
 
 interface NavItem {
-  label: string;
-  href?: string;
-  icon: React.ReactNode;
-  onClick?: () => void;
+  label:         string;
+  href?:         string;
+  icon:          React.ReactNode;
+  onClick?:      () => void;
   isThemeToggle?: boolean;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CONFIG
-   ═══════════════════════════════════════════════════════════════ */
+/* ── Config ───────────────────────────────────────────────────── */
 
 const NAV_SECTIONS = [
-  { label: 'Home',       href: '#hero',       icon: <Home size={18} /> },
-  { label: 'About',      href: '#about',      icon: <User size={18} /> },
-  { label: 'Skills',     href: '#skills',     icon: <Zap size={18} /> },
-  { label: 'Experience', href: '#experience', icon: <Briefcase size={18} /> },
+  { label: 'Home',       href: '#hero',       icon: <Home       size={18} /> },
+  { label: 'About',      href: '#about',      icon: <User       size={18} /> },
+  { label: 'Skills',     href: '#skills',     icon: <Zap        size={18} /> },
+  { label: 'Experience', href: '#experience', icon: <Briefcase  size={18} /> },
   { label: 'Projects',   href: '#projects',   icon: <FolderOpen size={18} /> },
-  { label: 'Contact',    href: '#contact',    icon: <Mail size={18} /> },
+  { label: 'Contact',    href: '#contact',    icon: <Mail       size={18} /> },
 ];
 
-/* ═══════════════════════════════════════════════════════════════
-   ICON CONTAINER — Magnification (desktop, grows UPWARD)
-   ═══════════════════════════════════════════════════════════════ */
+/* ── IconContainer — magnification (desktop) ─────────────────── */
 
 function IconContainer({
   mouseX,
@@ -60,14 +55,14 @@ function IconContainer({
   onClick,
   isThemeToggle = false,
 }: {
-  mouseX: MotionValue<number>;
-  label: string;
-  icon?: React.ReactNode;
-  href?: string;
-  onClick?: () => void;
+  mouseX:         MotionValue<number>;
+  label:          string;
+  icon?:          React.ReactNode;
+  href?:          string;
+  onClick?:       () => void;
   isThemeToggle?: boolean;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref     = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
 
   const distance = useTransform(mouseX, (val) => {
@@ -83,14 +78,13 @@ function IconContainer({
   const height   = useSpring(heightSync, { mass: 0.1, stiffness: 150, damping: 12 });
   const iconSize = useSpring(iconSync,   { mass: 0.1, stiffness: 150, damping: 12 });
 
-  /* Tooltip only — active dot removed */
   const tooltip = (
     <AnimatePresence>
       {hovered && (
         <motion.div
-          initial={{ opacity: 0, y: 6, x: '-50%' }}
-          animate={{ opacity: 1, y: 0, x: '-50%' }}
-          exit={{ opacity: 0, y: 3, x: '-50%' }}
+          initial={{ opacity: 0, y: 6,  x: '-50%' }}
+          animate={{ opacity: 1, y: 0,  x: '-50%' }}
+          exit={{    opacity: 0, y: 3,  x: '-50%' }}
           transition={{ duration: 0.15 }}
           className={cn(
             'absolute -top-9 left-1/2 z-50 pointer-events-none',
@@ -98,8 +92,9 @@ function IconContainer({
             'bg-white/90 dark:bg-neutral-800/90',
             'border border-neutral-200/80 dark:border-white/10',
             'text-neutral-700 dark:text-neutral-200',
-            'shadow-lg backdrop-blur-md'
+            'shadow-lg backdrop-blur-md',
           )}
+          role="tooltip"
         >
           {label}
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-white/90 dark:bg-neutral-800/90 border-r border-b border-neutral-200/80 dark:border-white/10" />
@@ -108,13 +103,12 @@ function IconContainer({
     </AnimatePresence>
   );
 
-  /* Single base style — no active variant */
   const containerClasses = cn(
     'relative flex items-center justify-center rounded-full',
     'cursor-pointer transition-colors duration-200',
     'bg-neutral-200/50 dark:bg-white/[0.06]',
     'hover:bg-neutral-300/60 dark:hover:bg-white/[0.1]',
-    'backdrop-blur-sm'
+    'backdrop-blur-sm',
   );
 
   /* Theme toggle */
@@ -156,6 +150,7 @@ function IconContainer({
           <motion.div
             style={{ width: iconSize, height: iconSize }}
             className="flex items-center justify-center text-neutral-600 dark:text-neutral-400"
+            aria-hidden="true"
           >
             {icon}
           </motion.div>
@@ -180,6 +175,7 @@ function IconContainer({
       <motion.div
         style={{ width: iconSize, height: iconSize }}
         className="flex items-center justify-center text-neutral-600 dark:text-neutral-400 transition-colors duration-200"
+        aria-hidden="true"
       >
         {icon}
       </motion.div>
@@ -187,21 +183,18 @@ function IconContainer({
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MOBILE VERTICAL DOCK ITEM
-   ═══════════════════════════════════════════════════════════════ */
+/* ── Mobile dock item ─────────────────────────────────────────── */
 
 function MobileDockItem({ item }: { item: NavItem }) {
   const [hovered, setHovered] = useState(false);
 
-  /* Tooltip only — active dot removed */
   const tooltip = (
     <AnimatePresence>
       {hovered && (
         <motion.div
           initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -4 }}
+          animate={{ opacity: 1, x: 0  }}
+          exit={{    opacity: 0, x: -4 }}
           transition={{ duration: 0.15 }}
           className={cn(
             'absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 pointer-events-none',
@@ -209,8 +202,9 @@ function MobileDockItem({ item }: { item: NavItem }) {
             'bg-white/90 dark:bg-neutral-800/90',
             'border border-neutral-200/80 dark:border-white/10',
             'text-neutral-700 dark:text-neutral-200',
-            'shadow-lg backdrop-blur-md'
+            'shadow-lg backdrop-blur-md',
           )}
+          role="tooltip"
         >
           {item.label}
           <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 rotate-45 bg-white/90 dark:bg-neutral-800/90 border-l border-b border-neutral-200/80 dark:border-white/10" />
@@ -219,14 +213,13 @@ function MobileDockItem({ item }: { item: NavItem }) {
     </AnimatePresence>
   );
 
-  /* Single base style — no active variant */
   const baseClasses = cn(
     'relative w-10 h-10 rounded-full flex items-center justify-center',
     'cursor-pointer transition-colors duration-200',
-    'hover:bg-neutral-300/50 dark:hover:bg-white/[0.08]'
+    'hover:bg-neutral-300/50 dark:hover:bg-white/[0.08]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500',
   );
 
-  /* Theme toggle */
   if (item.isThemeToggle) {
     return (
       <div
@@ -243,7 +236,6 @@ function MobileDockItem({ item }: { item: NavItem }) {
     );
   }
 
-  /* External link */
   if (item.href && !item.href.startsWith('#')) {
     return (
       <Link
@@ -256,14 +248,16 @@ function MobileDockItem({ item }: { item: NavItem }) {
         onMouseLeave={() => setHovered(false)}
       >
         {tooltip}
-        <div className="flex items-center justify-center text-neutral-600 dark:text-neutral-400 transition-colors duration-200">
+        <div
+          className="flex items-center justify-center text-neutral-600 dark:text-neutral-400 transition-colors duration-200"
+          aria-hidden="true"
+        >
           {item.icon}
         </div>
       </Link>
     );
   }
 
-  /* Regular scroll button */
   return (
     <motion.button
       aria-label={item.label}
@@ -274,22 +268,23 @@ function MobileDockItem({ item }: { item: NavItem }) {
       whileTap={{ scale: 0.82 }}
     >
       {tooltip}
-      <div className="flex items-center justify-center text-neutral-600 dark:text-neutral-400 transition-colors duration-200">
+      <div
+        className="flex items-center justify-center text-neutral-600 dark:text-neutral-400 transition-colors duration-200"
+        aria-hidden="true"
+      >
         {item.icon}
       </div>
     </motion.button>
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MOBILE VERTICAL DOCK CONTAINER
-   ═══════════════════════════════════════════════════════════════ */
+/* ── Mobile vertical dock container ──────────────────────────── */
 
 function MobileVerticalDock({
   items,
   visible,
 }: {
-  items: NavItem[];
+  items:   NavItem[];
   visible: boolean;
 }) {
   return (
@@ -299,12 +294,14 @@ function MobileVerticalDock({
         className="fixed bottom-4 left-4 z-40 block md:hidden pointer-events-none"
         animate={{ opacity: visible ? 1 : 0, x: visible ? 0 : -40 }}
         transition={{ type: 'spring', stiffness: 200, damping: 30 }}
+        aria-hidden="true"
       >
         <div className="w-12 h-56 rounded-full bg-emerald-500/[0.07] dark:bg-emerald-500/[0.09] blur-2xl" />
       </motion.div>
 
       {/* Dock */}
-      <motion.div
+      <motion.nav
+        aria-label="Mobile navigation"
         className={cn(
           'fixed bottom-4 left-4 z-50 flex md:hidden flex-col items-center gap-1',
           'py-2 px-1.5 rounded-2xl',
@@ -313,27 +310,30 @@ function MobileVerticalDock({
           'border border-white/25 dark:border-white/[0.1]',
           'shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
           'isolate [will-change:transform,opacity]',
-          'overflow-visible'
+          'overflow-visible',
         )}
         style={{ WebkitBackdropFilter: 'blur(24px) saturate(160%)' }}
         initial={{ x: -80, opacity: 0, scale: 0.85 }}
         animate={{
-          x: visible ? 0 : -80,
-          opacity: visible ? 1 : 0,
-          scale: visible ? 1 : 0.85,
+          x:       visible ? 0    : -80,
+          opacity: visible ? 1    : 0,
+          scale:   visible ? 1    : 0.85,
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 28 }}
       >
-        {/* Vertical shimmer sweep */}
-        <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+        {/* Shimmer sweep */}
+        <div
+          className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
+          aria-hidden="true"
+        >
           <motion.div
             className="absolute left-0 w-full h-[30%] bg-gradient-to-b from-transparent via-white/[0.06] dark:via-white/[0.03] to-transparent"
             animate={{ y: ['-100%', '500%'] }}
             transition={{
-              duration: 6,
-              repeat: Infinity,
+              duration:    6,
+              repeat:      Infinity,
               repeatDelay: 8,
-              ease: 'easeInOut' as const,
+              ease:        'easeInOut',
             }}
           />
         </div>
@@ -344,13 +344,13 @@ function MobileVerticalDock({
             initial={{ opacity: 0, x: -12, scale: 0.7 }}
             animate={{
               opacity: 1,
-              x: 0,
-              scale: 1,
+              x:       0,
+              scale:   1,
               transition: {
-                delay: 0.3 + index * 0.05,
-                type: 'spring' as const,
+                delay:     0.3 + index * 0.05,
+                type:      'spring',
                 stiffness: 400,
-                damping: 25,
+                damping:   25,
               },
             }}
             className="relative"
@@ -358,43 +358,42 @@ function MobileVerticalDock({
             <MobileDockItem item={item} />
           </motion.div>
         ))}
-      </motion.div>
+      </motion.nav>
     </>
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MAIN COMPONENT
-   ═══════════════════════════════════════════════════════════════ */
+/* ── Main component ───────────────────────────────────────────── */
 
 export function FloatingAppBar() {
-  const [visible, setVisible]   = useState(true);
-  const [scrolled, setScrolled] = useState(false);
+  const [visible,    setVisible]    = useState(true);
+  const [scrolled,   setScrolled]   = useState(false);
   const [navHovered, setNavHovered] = useState(false);
 
   const lastScrollYRef = useRef(0);
   const navRef         = useRef<HTMLElement>(null);
 
-  /* mouseX for dock magnification */
-  const mouseX = useMotionValue(Infinity);
-
-  /* mouseX for nav glow follow */
+  const mouseX     = useMotionValue(Infinity);
   const navMouseX  = useMotionValue(0);
   const smoothNavX = useSpring(navMouseX, { stiffness: 250, damping: 30 });
 
-  /* ── Scroll handler — hide/show + scrolled flag only ── */
+  // ✅ Bail-out guards — only setState when value actually changes
   const handleScroll = useCallback(() => {
     const currentScrollY = window.scrollY;
+    const shouldHide     =
+      currentScrollY > lastScrollYRef.current && currentScrollY > 400;
 
-    if (currentScrollY > lastScrollYRef.current && currentScrollY > 400) {
-      setVisible(false);
-    } else {
-      setVisible(true);
-    }
+    setVisible((prev) => {
+      const next = !shouldHide;
+      return prev === next ? prev : next;
+    });
 
-    setScrolled(currentScrollY > 80);
+    setScrolled((prev) => {
+      const next = currentScrollY > 80;
+      return prev === next ? prev : next;
+    });
+
     lastScrollYRef.current = currentScrollY;
-    // ↑ Spy detection loop removed entirely
   }, []);
 
   useEffect(() => {
@@ -406,65 +405,62 @@ export function FloatingAppBar() {
     document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  /* ── Glass classes ── */
   const glassClasses = cn(
     'rounded-full overflow-visible isolate [will-change:transform,opacity]',
     'border transition-[background-color,border-color,box-shadow] duration-700 ease-out',
     scrolled
       ? 'bg-white/75 dark:bg-neutral-900/75 backdrop-blur-2xl border-white/30 dark:border-white/[0.12] shadow-[0_8px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)]'
-      : 'bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl border-white/20 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)]'
+      : 'bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl  border-white/20 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)]',
   );
 
-  /* ── Mobile items — isActive field removed entirely ── */
   const mobileItems: NavItem[] = [
     ...NAV_SECTIONS.map((s) => ({
-      label: s.label,
-      href: s.href,
-      icon: s.icon,
+      label:   s.label,
+      href:    s.href,
+      icon:    s.icon,
       onClick: () => scrollTo(s.href),
     })),
     {
-      label: 'Theme',
+      label:         'Theme',
       isThemeToggle: true,
-      icon: null,
+      icon:          null,
     },
     {
       label: 'Resume',
-      href: '/Hossam-Hassan-Resume.pdf',
-      icon: <Download size={18} />,
+      href:  '/Hossam-Hassan-Resume.pdf',
+      icon:  <Download size={18} />,
     },
   ];
 
   return (
     <>
-      {/* ══════════════════════════════════════════
-          DESKTOP — AMBIENT GLOW
-          ══════════════════════════════════════════ */}
+      {/* Desktop ambient glow */}
       <motion.div
         className="fixed bottom-6 left-1/2 z-40 hidden md:block pointer-events-none"
         initial={{ x: '-50%', opacity: 0 }}
-        animate={{ x: '-50%', opacity: visible ? 1 : 0, y: visible ? 0 : 80 }}
+        animate={{
+          x:       '-50%',
+          opacity: visible ? 1 : 0,
+          y:       visible ? 0 : 80,
+        }}
         transition={{ type: 'spring', stiffness: 200, damping: 30 }}
+        aria-hidden="true"
       >
         <motion.div
           className="w-80 h-14 rounded-full bg-emerald-500/[0.07] dark:bg-emerald-500/[0.09] blur-2xl"
           animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
-          transition={{
-            duration: 5,
-            repeat: Infinity,
-            ease: 'easeInOut' as const,
-          }}
+          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
         />
       </motion.div>
 
-      {/* ══════════════════════════════════════════
-          DESKTOP NAVBAR
-          ══════════════════════════════════════════ */}
+      {/* Desktop navbar */}
       <motion.nav
         ref={navRef}
+        aria-label="Main navigation"
         onMouseMove={(e) => {
           navMouseX.set(
-            e.clientX - (navRef.current?.getBoundingClientRect().left ?? 0)
+            e.clientX -
+              (navRef.current?.getBoundingClientRect().left ?? 0),
           );
           setNavHovered(true);
         }}
@@ -475,7 +471,7 @@ export function FloatingAppBar() {
         }}
         className={cn(
           'fixed bottom-6 left-1/2 z-50 hidden md:flex items-center',
-          glassClasses
+          glassClasses,
         )}
         style={{
           WebkitBackdropFilter: scrolled
@@ -484,10 +480,10 @@ export function FloatingAppBar() {
         }}
         initial={{ y: 100, x: '-50%', opacity: 0, scale: 0.85 }}
         animate={{
-          y: visible ? 0 : 100,
-          x: '-50%',
-          opacity: visible ? 1 : 0,
-          scale: visible ? 1 : 0.85,
+          y:         visible ? 0   : 100,
+          x:         '-50%',
+          opacity:   visible ? 1   : 0,
+          scale:     visible ? 1   : 0.85,
           boxShadow: navHovered
             ? '0 0 0 1px rgba(16,185,129,0.2), 0 8px 40px rgba(0,0,0,0.12), 0 0 30px rgba(16,185,129,0.08)'
             : '0 0 0 1px transparent, 0 8px 32px rgba(0,0,0,0.08), 0 0 0px transparent',
@@ -495,15 +491,18 @@ export function FloatingAppBar() {
         transition={{ type: 'spring', stiffness: 300, damping: 28 }}
       >
         {/* Shimmer sweep */}
-        <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
+        <div
+          className="absolute inset-0 rounded-full overflow-hidden pointer-events-none"
+          aria-hidden="true"
+        >
           <motion.div
             className="absolute top-0 h-full w-1/4 bg-gradient-to-r from-transparent via-white/[0.07] dark:via-white/[0.04] to-transparent skew-x-[-20deg]"
             animate={{ x: ['-100%', '500%'] }}
             transition={{
-              duration: 5,
-              repeat: Infinity,
+              duration:    5,
+              repeat:      Infinity,
               repeatDelay: 7,
-              ease: 'easeInOut' as const,
+              ease:        'easeInOut',
             }}
           />
         </div>
@@ -512,16 +511,17 @@ export function FloatingAppBar() {
         <motion.div
           className="absolute top-0 h-full w-44 pointer-events-none rounded-full"
           style={{
-            x: smoothNavX,
-            translateX: '-50%',
+            x:           smoothNavX,
+            translateX:  '-50%',
             background:
               'radial-gradient(ellipse 88px 44px at center, rgba(16,185,129,0.12) 0%, transparent 70%)',
           }}
           animate={{ opacity: navHovered ? 1 : 0 }}
           transition={{ duration: 0.4 }}
+          aria-hidden="true"
         />
 
-        {/* ══ DOCK CONTENT ══ */}
+        {/* Dock content */}
         <motion.div
           className="flex items-center gap-2 px-3 py-2 relative z-10"
           onMouseMove={(e) => mouseX.set(e.pageX)}
@@ -530,60 +530,57 @@ export function FloatingAppBar() {
           {/* Logo */}
           <motion.button
             onClick={() => scrollTo('#hero')}
+            aria-label="Scroll to top"
             className="group relative flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold text-sm cursor-pointer overflow-hidden"
             initial={{ opacity: 0, scale: 0, rotate: -180 }}
             animate={{
               opacity: 1,
-              scale: 1,
-              rotate: 0,
+              scale:   1,
+              rotate:  0,
               transition: {
-                delay: 0.2,
-                type: 'spring' as const,
+                delay:     0.2,
+                type:      'spring',
                 stiffness: 300,
-                damping: 20,
+                damping:   20,
               },
             }}
             whileHover={{
-              scale: 1.15,
+              scale:     1.15,
               boxShadow: '0 0 20px rgba(16,185,129,0.45)',
-              transition: {
-                type: 'spring' as const,
-                stiffness: 400,
-                damping: 15,
-              },
+              transition: { type: 'spring', stiffness: 400, damping: 15 },
             }}
             whileTap={{ scale: 0.85, rotate: -15 }}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-500 ease-out pointer-events-none" />
-            <span className="relative z-10">H</span>
+            <div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-500 ease-out pointer-events-none"
+              aria-hidden="true"
+            />
+            <span className="relative z-10" aria-hidden="true">H</span>
           </motion.button>
 
           {/* Divider */}
           <motion.div
             className="w-px h-5 flex-shrink-0 bg-gradient-to-b from-transparent via-neutral-300 dark:via-white/15 to-transparent"
             initial={{ opacity: 0, scaleY: 0 }}
-            animate={{
-              opacity: 1,
-              scaleY: 1,
-              transition: { delay: 0.3, duration: 0.4 },
-            }}
+            animate={{ opacity: 1, scaleY: 1, transition: { delay: 0.3, duration: 0.4 } }}
+            aria-hidden="true"
           />
 
-          {/* Nav section icons — isActive removed */}
+          {/* Nav section icons */}
           {NAV_SECTIONS.map((item, index) => (
             <motion.div
               key={item.label}
               initial={{ opacity: 0, y: 10, scale: 0.8, filter: 'blur(4px)' }}
               animate={{
                 opacity: 1,
-                y: 0,
-                scale: 1,
-                filter: 'blur(0px)',
+                y:       0,
+                scale:   1,
+                filter:  'blur(0px)',
                 transition: {
-                  delay: 0.35 + index * 0.06,
-                  type: 'spring' as const,
+                  delay:     0.35 + index * 0.06,
+                  type:      'spring',
                   stiffness: 400,
-                  damping: 25,
+                  damping:   25,
                 },
               }}
             >
@@ -600,11 +597,8 @@ export function FloatingAppBar() {
           <motion.div
             className="w-px h-5 flex-shrink-0 bg-gradient-to-b from-transparent via-neutral-300 dark:via-white/15 to-transparent"
             initial={{ opacity: 0, scaleY: 0 }}
-            animate={{
-              opacity: 1,
-              scaleY: 1,
-              transition: { delay: 0.7, duration: 0.4 },
-            }}
+            animate={{ opacity: 1, scaleY: 1, transition: { delay: 0.7, duration: 0.4 } }}
+            aria-hidden="true"
           />
 
           {/* Theme toggle */}
@@ -612,13 +606,8 @@ export function FloatingAppBar() {
             initial={{ opacity: 0, scale: 0 }}
             animate={{
               opacity: 1,
-              scale: 1,
-              transition: {
-                delay: 0.75,
-                type: 'spring' as const,
-                stiffness: 300,
-                damping: 20,
-              },
+              scale:   1,
+              transition: { delay: 0.75, type: 'spring', stiffness: 300, damping: 20 },
             }}
           >
             <IconContainer
@@ -633,46 +622,45 @@ export function FloatingAppBar() {
             initial={{ opacity: 0, scale: 0.6, x: 10 }}
             animate={{
               opacity: 1,
-              scale: 1,
-              x: 0,
-              transition: {
-                delay: 0.82,
-                type: 'spring' as const,
-                stiffness: 300,
-                damping: 22,
-              },
+              scale:   1,
+              x:       0,
+              transition: { delay: 0.82, type: 'spring', stiffness: 300, damping: 22 },
             }}
           >
             <Link
               href="/Hossam-Hassan-Resume.pdf"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Download Resume"
+              aria-label="Download Resume (opens PDF)"
             >
               <motion.div
                 className="group relative flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-medium bg-gradient-to-r from-emerald-500 to-emerald-600 text-white cursor-pointer overflow-hidden"
                 whileHover={{
-                  scale: 1.08,
+                  scale:     1.08,
                   boxShadow: '0 0 24px rgba(16,185,129,0.4)',
-                  transition: {
-                    type: 'spring' as const,
-                    stiffness: 400,
-                    damping: 15,
-                  },
+                  transition: { type: 'spring', stiffness: 400, damping: 15 },
                 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent skew-x-[-20deg] -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-500 ease-out pointer-events-none" />
+                <div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent skew-x-[-20deg] -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-500 ease-out pointer-events-none"
+                  aria-hidden="true"
+                />
                 <motion.div
                   className="absolute inset-0 rounded-full border border-emerald-400/50"
                   initial={{ scale: 1, opacity: 0 }}
                   whileHover={{
-                    scale: [1, 1.5],
+                    scale:   [1, 1.5],
                     opacity: [0.7, 0],
                     transition: { duration: 0.8, repeat: Infinity },
                   }}
+                  aria-hidden="true"
                 />
-                <Download size={12} className="relative z-10 flex-shrink-0" />
+                <Download
+                  size={12}
+                  className="relative z-10 flex-shrink-0"
+                  aria-hidden="true"
+                />
                 <span className="relative z-10">Resume</span>
               </motion.div>
             </Link>
@@ -680,9 +668,7 @@ export function FloatingAppBar() {
         </motion.div>
       </motion.nav>
 
-      {/* ══════════════════════════════════════════
-          MOBILE — VERTICAL DOCK
-          ══════════════════════════════════════════ */}
+      {/* Mobile vertical dock */}
       <MobileVerticalDock items={mobileItems} visible={visible} />
     </>
   );

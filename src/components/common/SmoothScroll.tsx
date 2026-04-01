@@ -1,4 +1,4 @@
-// ✅ FIXED — src/components/common/SmoothScroll.tsx
+// src/components/common/SmoothScroll.tsx
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -26,18 +26,10 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
 
     lenisRef.current = lenis;
 
-    // ✅ FIX 1: Store the ticker function reference so we can remove it
-    // GSAP ticker passes time in seconds → multiply by 1000 for ms
-    const tickerFn = (time: number) => {
-      lenis.raf(time * 1000); // ✅ Was 1500 — caused scroll to run 50% too fast
-    };
-
-    // ✅ FIX 2: Store the refresh handler reference for cleanup
+    const tickerFn  = (time: number) => lenis.raf(time * 1000);
     const onRefresh = () => lenis.resize();
 
-    // Proxy ScrollTrigger through Lenis so GSAP pins work correctly
     lenis.on('scroll', ScrollTrigger.update);
-
     gsap.ticker.add(tickerFn);
     gsap.ticker.lagSmoothing(0);
 
@@ -63,12 +55,21 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     ScrollTrigger.refresh();
 
     return () => {
-      // ✅ FIX 3: All removals now use stored references — cleanup works correctly
       ScrollTrigger.removeEventListener('refresh', onRefresh);
-      ScrollTrigger.scrollerProxy(document.body, undefined as never);
-      gsap.ticker.remove(tickerFn); // ✅ Correct reference — actually removes it
+      gsap.ticker.remove(tickerFn);
+
+      // ✅ Kill ALL ScrollTrigger instances before destroying proxy
+      // Prevents "scrollerProxy called after destroy" warnings in GSAP 3.14
+      ScrollTrigger.getAll().forEach((t) => t.kill());
+
+      // ✅ Clear scroll memory correctly
+      ScrollTrigger.clearScrollMemory();
+
       lenis.destroy();
       lenisRef.current = null;
+
+      // ✅ Refresh after cleanup so any remaining triggers recalculate
+      setTimeout(() => ScrollTrigger.refresh(), 100);
     };
   }, []);
 

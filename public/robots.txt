@@ -1,4 +1,9 @@
+# *
 User-agent: *
 Allow: /
 
-Sitemap: https://hossamhassan.dev/sitemap.xml
+# Host
+Host: https://hossam-hassann.netlify.app
+
+# Sitemaps
+Sitemap: https://hossam-hassann.netlify.app/sitemap.xml

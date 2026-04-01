@@ -1,32 +1,51 @@
+// src/components/chat/ChatWindow.tsx
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Trash2, X, Minus, StopCircle, AlertTriangle, Zap, Sparkles } from 'lucide-react';
-import { useChat } from '@/hooks/useChat';
-import { ChatMessage } from './ChatMessage';
+import {
+  Send,
+  Trash2,
+  X,
+  Minus,
+  StopCircle,
+  AlertTriangle,
+  Zap,
+  Sparkles,
+} from 'lucide-react';
+import { useChat }         from '@/hooks/useChat';
+import { ChatMessage }     from './ChatMessage';
 import { TypingIndicator } from './TypingIndicator';
-import { cn } from '@/utils/utils';
+import { cn }              from '@/utils/utils';
 
 const QUICK_PROMPTS = [
-  { label: '🛠 Skills',      prompt: 'What technologies does Hossam work with?' },
-  { label: '📂 Projects',    prompt: "Tell me about Hossam's featured projects" },
-  { label: '💼 Hire',        prompt: 'How can I hire Hossam?' },
-  { label: '🎓 Experience',  prompt: "What's Hossam's work experience?" },
+  { label: '🛠 Skills',     prompt: 'What technologies does Hossam work with?' },
+  { label: '📂 Projects',   prompt: "Tell me about Hossam's featured projects"  },
+  { label: '💼 Hire',       prompt: 'How can I hire Hossam?'                    },
+  { label: '🎓 Experience', prompt: "What's Hossam's work experience?"          },
 ];
 
 interface ChatWindowProps {
-  onClose: () => void;
+  onClose:    () => void;
   onMinimize: () => void;
 }
 
 export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
-  const { messages, isLoading, error, sendMessage, clearMessages, stop, rateLimitInfo } = useChat();
-  const [input, setInput] = useState('');
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef  = useRef<HTMLInputElement>(null);
+  const {
+    messages,
+    isLoading,
+    error,
+    sendMessage,
+    clearMessages,
+    stop,
+    rateLimitInfo,
+  } = useChat();
 
-  // ── Auto-scroll to bottom when new messages arrive ──────────
+  const [input, setInput] = useState('');
+  const scrollRef         = useRef<HTMLDivElement>(null);
+  const inputRef          = useRef<HTMLInputElement>(null);
+
+  // ── Auto-scroll to bottom when new messages arrive ───────────
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -36,23 +55,7 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
     }
   }, [messages, isLoading]);
 
-  // ── Focus input on open ─────────────────────────────────────
-  useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 300);
-  }, []);
-
-  // ── Prevent scroll leaking to the page ──────────────────────
-  // When the user scrolls inside the messages area, wheel/touch
-  // events must NOT bubble up to the <body> (which would scroll
-  // the portfolio page underneath the chat window).
-  //
-  // Strategy:
-  //   • overscroll-contain (CSS) — tells the browser to contain
-  //     scroll within this element. Works in Chrome/Edge/Firefox.
-  //   • wheel listener with stopPropagation — belt-and-suspenders
-  //     for Safari which doesn't honour overscroll-contain fully.
-  //   • preventDefault only at the boundary (top / bottom) so the
-  //     chat itself still scrolls normally in all directions.
+  // ── Prevent scroll leaking to the page underneath ────────────
   const preventScrollLeak = useCallback((e: WheelEvent) => {
     const el = scrollRef.current;
     if (!el) return;
@@ -61,13 +64,9 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
     const atTop    = scrollTop <= 0;
     const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
 
-    // If we're at the boundary and still trying to scroll past it,
-    // prevent the event from reaching the page.
     if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
       e.preventDefault();
     }
-
-    // Always stop the event from bubbling to parent scrollers.
     e.stopPropagation();
   }, []);
 
@@ -75,8 +74,7 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
     const el = scrollRef.current;
     if (!el) return;
 
-    // passive: false is required so we can call preventDefault
-    el.addEventListener('wheel',     preventScrollLeak, { passive: false });
+    el.addEventListener('wheel',     preventScrollLeak,                  { passive: false });
     el.addEventListener('touchmove', preventScrollLeak as EventListener, { passive: false });
 
     return () => {
@@ -97,6 +95,9 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
 
   return (
     <motion.div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Chat with Hossam's AI assistant"
       className={cn(
         'w-[380px] max-w-[calc(100vw-2rem)] h-[540px] max-h-[calc(100vh-8rem)]',
         'rounded-2xl overflow-hidden flex flex-col',
@@ -105,8 +106,8 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
         'shadow-2xl shadow-black/10 dark:shadow-black/40',
       )}
       initial={{ opacity: 0, y: 20, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0,  scale: 1   }}
+      exit={{    opacity: 0, y: 20, scale: 0.9 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
     >
       {/* ── Header ── */}
@@ -114,39 +115,68 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-center">
-              <Sparkles size={16} className="text-emerald-500" />
+              <Sparkles
+                size={16}
+                className="text-emerald-500"
+                aria-hidden="true"
+              />
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-neutral-800" />
+            <div
+              className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-neutral-800"
+              aria-hidden="true"
+            />
           </div>
           <div>
             <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 block leading-tight">
               Hossam&apos;s AI
             </span>
             <span className="text-[10px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
-              <Zap size={8} className="text-emerald-500" />
+              <Zap size={8} className="text-emerald-500" aria-hidden="true" />
               Powered by GPT-4o
             </span>
           </div>
         </div>
+
+        {/* Header actions */}
         <div className="flex items-center gap-0.5">
           <button
             onClick={clearMessages}
-            className="p-1.5 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer"
-            aria-label="Clear"
+            className={cn(
+              'p-1.5 rounded-lg transition-colors cursor-pointer',
+              'hover:bg-neutral-200 dark:hover:bg-neutral-700',
+              'text-neutral-400 dark:text-neutral-500',
+              'hover:text-neutral-700 dark:hover:text-neutral-200',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500',
+            )}
+            aria-label="Clear chat history"
           >
             <Trash2 size={14} />
           </button>
+
           <button
             onClick={onMinimize}
-            className="p-1.5 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer"
-            aria-label="Minimize"
+            className={cn(
+              'p-1.5 rounded-lg transition-colors cursor-pointer',
+              'hover:bg-neutral-200 dark:hover:bg-neutral-700',
+              'text-neutral-400 dark:text-neutral-500',
+              'hover:text-neutral-700 dark:hover:text-neutral-200',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500',
+            )}
+            aria-label="Minimize chat"
           >
             <Minus size={14} />
           </button>
+
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/15 text-neutral-400 dark:text-neutral-500 hover:text-red-500 transition-colors cursor-pointer"
-            aria-label="Close"
+            className={cn(
+              'p-1.5 rounded-lg transition-colors cursor-pointer',
+              'hover:bg-red-100 dark:hover:bg-red-500/15',
+              'text-neutral-400 dark:text-neutral-500',
+              'hover:text-red-500',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500',
+            )}
+            aria-label="Close chat"
           >
             <X size={14} />
           </button>
@@ -154,44 +184,44 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
       </div>
 
       {/* ── Messages ─────────────────────────────────────────────
-       *
-       * Key classes:
-       *   flex-1          → takes all available height
-       *   overflow-y-auto → enables scrolling inside this div
-       *   overscroll-contain → CSS containment (Chrome/Firefox/Edge)
-       *
-       * The wheel/touchmove listeners (attached above) handle
-       * Safari and any remaining scroll-bubble cases.
+       * flex-1          → takes all available height
+       * overflow-y-auto → enables scrolling inside this div
+       * overscroll-contain → CSS containment (Chrome/Firefox/Edge)
+       * wheel/touchmove listeners above handle Safari edge cases
        */}
       <div
         ref={scrollRef}
         className={cn(
           'flex-1 overflow-y-auto p-4 space-y-1',
           'bg-white dark:bg-neutral-900',
-          // CSS scroll containment — prevents scroll chaining to body
           'overscroll-contain',
         )}
-        // Inline style for cross-browser overscroll support
         style={{ overscrollBehavior: 'contain' }}
+        role="log"
+        aria-live="polite"
+        aria-label="Chat messages"
       >
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
 
         <AnimatePresence>
-          {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-            <TypingIndicator />
-          )}
+          {isLoading &&
+            messages[messages.length - 1]?.role !== 'assistant' && (
+              <TypingIndicator />
+            )}
         </AnimatePresence>
 
+        {/* Quick prompt chips — shown only before first user message */}
         <AnimatePresence>
           {showQuickPrompts && !isLoading && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              exit={{    opacity: 0, y: -10 }}
               transition={{ delay: 0.5 }}
               className="flex flex-wrap gap-1.5 pt-2"
+              aria-label="Quick question suggestions"
             >
               {QUICK_PROMPTS.map((qp) => (
                 <button
@@ -204,6 +234,7 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
                     'border border-emerald-500/20 dark:border-emerald-500/25',
                     'hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25',
                     'transition-all',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500',
                   )}
                 >
                   {qp.label}
@@ -214,24 +245,33 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
         </AnimatePresence>
       </div>
 
-      {/* ── Error ── */}
+      {/* ── Error / Rate limit banner ── */}
       <AnimatePresence>
         {(error || rateLimitInfo) && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
+            exit={{    height: 0, opacity: 0 }}
             className="overflow-hidden flex-shrink-0"
           >
-            <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-500/10 border-t border-red-200 dark:border-red-500/20 text-xs text-red-600 dark:text-red-400">
-              <AlertTriangle size={12} className="flex-shrink-0" />
-              <span className="flex-1">{rateLimitInfo || error}</span>
+            <div
+              id="chat-error"
+              role="alert"
+              aria-live="assertive"
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-500/10 border-t border-red-200 dark:border-red-500/20 text-xs text-red-600 dark:text-red-400"
+            >
+              <AlertTriangle
+                size={12}
+                className="flex-shrink-0"
+                aria-hidden="true"
+              />
+              <span className="flex-1">{rateLimitInfo ?? error}</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Input ── */}
+      {/* ── Input form ── */}
       <form
         onSubmit={handleSubmit}
         className={cn(
@@ -242,6 +282,7 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
       >
         <input
           ref={inputRef}
+          id="chat-input"
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -251,29 +292,53 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
               handleSubmit(e);
             }
           }}
-          placeholder={isLoading ? 'AI is responding...' : 'Ask about skills, projects...'}
+          // ✅ autoFocus — user explicitly opened the chat window
+          // eslint-disable-next-line jsx-a11y/no-autofocus
+          autoFocus
+          placeholder={
+            isLoading ? 'AI is responding...' : 'Ask about skills, projects...'
+          }
+          aria-label="Message Hossam's AI assistant"
+          aria-describedby={error ? 'chat-error' : undefined}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          maxLength={2000}
           className={cn(
             'flex-1 bg-transparent text-sm outline-none',
             'text-neutral-900 dark:text-neutral-100',
             'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
           )}
-        
-          maxLength={2000}
         />
-       {input.length > 1600 && ( // ✅ Was 400, update for new maxLength
-  <span className={cn(
-    'text-[10px] tabular-nums flex-shrink-0',
-    input.length > 1900 ? 'text-red-500' : 'text-neutral-400 dark:text-neutral-500',
-  )}>
-    {input.length}/2000
-  </span>
-)}
+
+        {/* Character counter — shown when approaching limit */}
+        {input.length > 1600 && (
+          <span
+            className={cn(
+              'text-[10px] tabular-nums flex-shrink-0',
+              input.length > 1900
+                ? 'text-red-500'
+                : 'text-neutral-400 dark:text-neutral-500',
+            )}
+            aria-live="polite"
+          >
+            {input.length}/2000
+          </span>
+        )}
+
+        {/* Stop / Send button */}
         {isLoading ? (
           <button
             type="button"
             onClick={stop}
-            className="p-2 rounded-xl bg-red-100 dark:bg-red-500/15 text-red-500 hover:bg-red-200 dark:hover:bg-red-500/25 transition-colors cursor-pointer"
-            aria-label="Stop"
+            className={cn(
+              'p-2 rounded-xl transition-colors cursor-pointer',
+              'bg-red-100 dark:bg-red-500/15',
+              'text-red-500',
+              'hover:bg-red-200 dark:hover:bg-red-500/25',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500',
+            )}
+            aria-label="Stop AI response"
           >
             <StopCircle size={14} />
           </button>
@@ -281,8 +346,14 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
           <button
             type="submit"
             disabled={!input.trim()}
-            className="p-2 rounded-xl bg-emerald-500 text-white disabled:opacity-30 hover:bg-emerald-600 transition-all cursor-pointer disabled:cursor-not-allowed"
-            aria-label="Send"
+            className={cn(
+              'p-2 rounded-xl transition-all cursor-pointer',
+              'bg-emerald-500 text-white',
+              'hover:bg-emerald-600',
+              'disabled:opacity-30 disabled:cursor-not-allowed',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500',
+            )}
+            aria-label="Send message"
           >
             <Send size={14} />
           </button>

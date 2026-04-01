@@ -1,3 +1,4 @@
+/* src/app/globals.css */
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -25,13 +26,18 @@
   --color-ring: oklch(0.205 0 0);
 
   --radius: 0.75rem;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  --animate-marquee: marquee 30s linear infinite;
-  --animate-float: float 6s ease-in-out infinite;
-  --animate-glow: glow 2s ease-in-out infinite alternate;
-  --animate-shimmer: shimmer 2.5s linear infinite;
+  /* ✅ Updated to use next/font CSS variables */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  /* ✅ Custom breakpoint — Tailwind v4 syntax */
+  --breakpoint-xs: 480px;
+
+  --animate-marquee:       marquee 30s linear infinite;
+  --animate-float:         float 6s ease-in-out infinite;
+  --animate-glow:          glow 2s ease-in-out infinite alternate;
+  --animate-shimmer:       shimmer 2.5s linear infinite;
   --animate-shimmer-sweep: shimmer-sweep 2.5s ease-in-out infinite;
 }
 
@@ -58,13 +64,9 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Panel Background — CSS-only theme switching
-   Uses CSS custom properties set as inline style on .panel-bg.
-   The .dark class on <html> flips which variable is read.
-   Zero JS involved → zero hydration mismatch.
+   Panel Background
 ═══════════════════════════════════════════════════════════════ */
 
-/* Base layer — solid background color */
 .panel-bg__base {
   background: var(--pb-base-light);
   transition: background 600ms ease;
@@ -73,7 +75,6 @@
   background: var(--pb-base-dark);
 }
 
-/* Mesh gradient layer */
 .panel-bg__mesh {
   background:
     radial-gradient(ellipse 80% 60% at 20% 80%, var(--pb-mesh-light)  0%, transparent 55%),
@@ -88,7 +89,6 @@
     radial-gradient(ellipse 90% 50% at 50% 50%, var(--pb-orb2-dark)  0%, transparent 60%);
 }
 
-/* Orb A */
 .panel-bg__orb--a {
   background: radial-gradient(circle at center, var(--pb-orb1-light) 0%, transparent 68%);
   transition: background 600ms ease;
@@ -97,7 +97,6 @@
   background: radial-gradient(circle at center, var(--pb-orb1-dark) 0%, transparent 68%);
 }
 
-/* Orb B */
 .panel-bg__orb--b {
   background: radial-gradient(circle at center, var(--pb-orb2-light) 0%, transparent 68%);
   transition: background 600ms ease;
@@ -106,7 +105,6 @@
   background: radial-gradient(circle at center, var(--pb-orb2-dark) 0%, transparent 68%);
 }
 
-/* Orb C */
 .panel-bg__orb--c {
   background: radial-gradient(circle at center, var(--pb-orb3-light) 0%, transparent 68%);
   transition: background 600ms ease;
@@ -115,7 +113,6 @@
   background: radial-gradient(circle at center, var(--pb-orb3-dark) 0%, transparent 68%);
 }
 
-/* Grid lines */
 .panel-bg__grid {
   background-image:
     linear-gradient(rgba(0,0,0,0.028) 1px, transparent 1px),
@@ -149,7 +146,7 @@
 
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  100% { background-position:  200% 0; }
 }
 
 @keyframes shimmer-sweep {
@@ -168,7 +165,7 @@
 }
 
 @keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
+  0%, 100% { background-position: 0%   50%; }
   50%       { background-position: 100% 50%; }
 }
 
@@ -182,7 +179,6 @@
   50%       { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.18); }
 }
 
-/* ── Project panel orb animations ── */
 @keyframes panel-orb-a {
   0%   { transform: translateZ(0) translate(0%,   0%)  scale(1);    }
   20%  { transform: translateZ(0) translate(8%,  -12%) scale(1.06); }
@@ -237,13 +233,16 @@
 
 html {
   scroll-behavior: auto;
+  /* ✅ Firefox scrollbar — single declaration */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 185, 129, 0.2) transparent;
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
+  background:  var(--color-background);
+  color:       var(--color-foreground);
   font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing:  antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
@@ -252,14 +251,42 @@ body {
   color: var(--color-foreground);
 }
 
-::-webkit-scrollbar { width: 5px; }
+/* ✅ Single scrollbar block — no duplicates */
+::-webkit-scrollbar       { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(16, 185, 129, 0.2);
+  background:    rgba(16, 185, 129, 0.2);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(16, 185, 129, 0.35);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Focus visible — global accessibility
+═══════════════════════════════════════════════════════════════ */
+
+:focus-visible {
+  outline:        2px solid rgba(16, 185, 129, 0.7);
+  outline-offset: 2px;
+  border-radius:  4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Touch target utility
+   Use .touch-target on small interactive elements that need a
+   44px hit area without changing their visual size.
+═══════════════════════════════════════════════════════════════ */
+
+.touch-target {
+  position: relative;
+}
+.touch-target::before {
+  content:    '';
+  position:   absolute;
+  inset:      -8px;
+  min-width:  44px;
+  min-height: 44px;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -270,10 +297,10 @@ body {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+    animation-duration:       0.01ms !important;
+    animation-iteration-count: 1     !important;
+    transition-duration:      0.01ms !important;
+    scroll-behavior:          auto   !important;
   }
 }
 
@@ -282,13 +309,13 @@ body {
 ═══════════════════════════════════════════════════════════════ */
 
 .gradient-text {
-  background: linear-gradient(135deg, #009966 0%, #6ee7b7 50%, #008299 100%);
-  background-clip: text;
+  background:              linear-gradient(135deg, #009966 0%, #6ee7b7 50%, #008299 100%);
+  background-clip:         text;
   -webkit-background-clip: text;
-  color: transparent;
+  color:                   transparent;
   -webkit-text-fill-color: transparent;
-  background-size: 200% 200%;
-  animation: gradient-shift 6s ease infinite;
+  background-size:         200% 200%;
+  animation:               gradient-shift 6s ease infinite;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -296,25 +323,25 @@ body {
 ═══════════════════════════════════════════════════════════════ */
 
 .glass {
-  background: oklch(0.97 0 0 / 60%);
-  backdrop-filter: blur(20px);
+  background:          oklch(0.97 0 0 / 60%);
+  backdrop-filter:         blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid oklch(0.922 0 0);
 }
 .dark .glass {
   background: oklch(0.205 0 0 / 60%);
-  border: 1px solid oklch(1 0 0 / 8%);
+  border:     1px solid oklch(1 0 0 / 8%);
 }
 
 .glass-strong {
-  background: oklch(1 0 0 / 80%);
-  backdrop-filter: blur(40px);
+  background:          oklch(1 0 0 / 80%);
+  backdrop-filter:         blur(40px);
   -webkit-backdrop-filter: blur(40px);
   border: 1px solid oklch(0.922 0 0);
 }
 .dark .glass-strong {
   background: oklch(0.145 0 0 / 85%);
-  border: 1px solid oklch(1 0 0 / 10%);
+  border:     1px solid oklch(1 0 0 / 10%);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -322,33 +349,33 @@ body {
 ═══════════════════════════════════════════════════════════════ */
 
 .gradient-border-animated {
-  position: relative;
+  position:      relative;
   border-radius: var(--radius);
 }
 .gradient-border-animated::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
+  content:       "";
+  position:      absolute;
+  inset:         -1px;
   border-radius: inherit;
-  background: conic-gradient(
+  background:    conic-gradient(
     from var(--gradient-angle),
     #009966, #10b981, #6ee7b7, #008299, #009966
   );
   animation: gradient-rotate 4s linear infinite;
-  z-index: -1;
-  opacity: 0;
+  z-index:   -1;
+  opacity:   0;
   transition: opacity 0.5s ease;
 }
 .gradient-border-animated:hover::before {
   opacity: 1;
 }
 .gradient-border-animated::after {
-  content: "";
-  position: absolute;
-  inset: 0;
+  content:       "";
+  position:      absolute;
+  inset:         0;
   border-radius: inherit;
-  background: var(--color-card);
-  z-index: -1;
+  background:    var(--color-card);
+  z-index:       -1;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -370,7 +397,7 @@ body {
 
 .navbar-shimmer-mask {
   -webkit-mask-image: linear-gradient(black, black);
-  mask-image: linear-gradient(black, black);
+  mask-image:         linear-gradient(black, black);
 }
 
 @supports (backdrop-filter: blur(1px)) {
@@ -390,10 +417,10 @@ body {
   .glass-nav,
   .glass-strong,
   .glass {
-    background: Canvas !important;
-    border: 1px solid ButtonText !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+    background:          Canvas     !important;
+    border:              1px solid ButtonText !important;
+    backdrop-filter:         none   !important;
+    -webkit-backdrop-filter: none   !important;
   }
 }
 
@@ -403,7 +430,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   [data-nav-animated] {
-    animation: none !important;
+    animation:  none !important;
     transition: none !important;
   }
 }
@@ -414,7 +441,7 @@ body {
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation: none;
+  animation:      none;
   mix-blend-mode: normal;
 }
 
@@ -424,39 +451,4 @@ body {
 
 .border-white\/8 {
   border-color: rgba(255, 255, 255, 0.08);
-}
-/* ✅ ADDITIONS to globals.css */
-
-/* ── Custom xs breakpoint (320px–479px phones) ── */
-@custom-media --xs (min-width: 480px);
-
-/* ── Firefox scrollbar support ── */
-html {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(16, 185, 129, 0.2) transparent;
-}
-
-/* ── Existing WebKit scrollbar (keep as-is) ── */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: rgba(16, 185, 129, 0.2);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.35);
-}
-
-/* ── Focus visible styles (global accessibility) ── */
-:focus-visible {
-  outline: 2px solid rgba(16, 185, 129, 0.7);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-/* ── Improve tap target sizes on mobile ── */
-@media (max-width: 640px) {
-  button, a, [role="button"] {
-    min-height: 44px; /* Apple HIG minimum tap target */
-  }
 }

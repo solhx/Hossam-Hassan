@@ -1,34 +1,44 @@
-import { siteConfig } from "./portfolio-data";
-import { skills } from "./mocks/skills";
-import { projects } from "./mocks/projects";
-import { experiences } from "./mocks/experience";
+// src/lib/chat-config.ts
+import { siteConfig }   from './portfolio-data';
+import { skills }       from './mocks/skills';
+import { projects }     from './mocks/projects';
+import { experiences }  from './mocks/experience';
+
+// ✅ Cache the prompt at module load time — data is static, no reason to
+// rebuild the string on every API request
+let _cachedPrompt: string | null = null;
 
 /**
  * Builds a rich system prompt so the AI has full context
  * about Hossam's portfolio, skills, projects, and experience.
+ * Result is memoized — computed once, reused on every request.
  */
 export function buildSystemPrompt(): string {
+  if (_cachedPrompt) return _cachedPrompt;
+
   const skillsList = skills
     .map((s) => `${s.name} (${s.category}, ${s.proficiency}% proficiency)`)
-    .join(", ");
+    .join(', ');
 
   const projectsList = projects
     .map(
       (p) =>
-        `- **${p.title}**: ${p.description} [Tags: ${p.tags.join(", ")}] ${
-          p.featured ? "(Featured)" : ""
-        }`
+        `- **${p.title}**: ${p.description} [Tags: ${p.tags.join(', ')}] ${
+          p.featured ? '(Featured)' : ''
+        }`,
     )
-    .join("\n");
+    .join('\n');
 
   const experienceList = experiences
     .map(
       (e) =>
-        `- **${e.role}** at ${e.company} (${e.period}): ${e.description}\n  Key achievements: ${e.achievements.join("; ")}\n  Technologies: ${e.technologies.join(", ")}`
+        `- **${e.role}** at ${e.company} (${e.period}): ${e.description}\n` +
+        `  Key achievements: ${e.achievements.join('; ')}\n` +
+        `  Technologies: ${e.technologies.join(', ')}`,
     )
-    .join("\n\n");
+    .join('\n\n');
 
-  return `You are an AI assistant embedded in ${siteConfig.name}'s personal portfolio website. Your role is to help visitors learn about Hossam and his work. Be friendly, professional, helpful, and concise.
+  _cachedPrompt = `You are an AI assistant embedded in ${siteConfig.name}'s personal portfolio website. Your role is to help visitors learn about Hossam and his work. Be friendly, professional, helpful, and concise.
 
 ═══════════════════════════════════════
 ABOUT HOSSAM HASSAN
@@ -73,12 +83,14 @@ INSTRUCTIONS
 8. If you don't know something specific about Hossam, say so rather than making it up.
 9. You can discuss general web development topics briefly, but always tie it back to Hossam's expertise.
 10. When mentioning projects, you can suggest the visitor check the Projects section of the portfolio.`;
+
+  return _cachedPrompt;
 }
 
 /**
- * Rate limit configuration
+ * Rate limit configuration — reads from env with safe defaults
  */
 export const RATE_LIMIT = {
-  maxRequests: parseInt(process.env.CHAT_RATE_LIMIT_MAX || "20", 10),
-  windowMs: parseInt(process.env.CHAT_RATE_LIMIT_WINDOW_MS || "60000", 10),
+  maxRequests: parseInt(process.env.CHAT_RATE_LIMIT_MAX     ?? '20', 10),
+  windowMs:    parseInt(process.env.CHAT_RATE_LIMIT_WINDOW_MS ?? '60000', 10),
 };
