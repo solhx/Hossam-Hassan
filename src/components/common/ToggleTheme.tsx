@@ -20,8 +20,7 @@ type AnimationType =
   | 'split-vertical'
   | 'swipe-right'
   | 'swipe-down'
-  | 'wave-ripple'
-  | 'mobile-fade'; // ← NEW: lightweight mobile animation type
+  | 'wave-ripple';
 
 interface ToggleThemeProps extends React.ComponentPropsWithoutRef<'button'> {
   duration?:      number;
@@ -47,7 +46,7 @@ export const ToggleTheme = React.memo(function ToggleTheme({
     setTheme(isDark ? 'light' : 'dark');
   }, [isDark, setTheme]);
 
-  /* ── Desktop animation configs ────────────────────────────────── */
+  /* ── Animation configs ────────────────────────────────────────── */
 
   const runAnimation = useCallback(
     (x: number, y: number, maxRadius: number) => {
@@ -222,7 +221,9 @@ export const ToggleTheme = React.memo(function ToggleTheme({
           flipStyleRef.current = styleElement;
           setTimeout(() => {
             styleElement.remove();
-            if (flipStyleRef.current === styleElement) flipStyleRef.current = null;
+            if (flipStyleRef.current === styleElement) {
+              flipStyleRef.current = null;
+            }
           }, duration + 100);
         },
         'split-vertical': () => {
@@ -270,75 +271,6 @@ export const ToggleTheme = React.memo(function ToggleTheme({
     [duration, animationType],
   );
 
-  /* ── Mobile animation — lightweight fade + scale ──────────────────
-    
-    WHY a separate mobile animation path:
-    
-    clip-path animations (circle-spread, wave-ripple, swipe-*)
-    on mobile require the browser to:
-    1. Snapshot the ENTIRE viewport as a texture (old state)
-    2. Render the new state beneath it
-    3. Animate the clip mask across all ~2M+ pixels per frame
-    
-    On a 390×844 iPhone screen at 3x DPR = 1170×2532 real pixels.
-    Clipping that at 60fps = massive GPU fill-rate pressure.
-    
-    The mobile-fade animation uses ONLY opacity — the cheapest
-    possible compositor property. The scale adds perceived smoothness
-    without any clip calculation. Total GPU cost: near zero.
-    
-    Duration is shorter (280ms vs 400ms) because mobile users
-    expect snappier responses and the animation covers less area.
-  ────────────────────────────────────────────────────────────────── */
-
-  const runMobileAnimation = useCallback(async () => {
-    if (!document.startViewTransition) return false;
-
-    const mobileDuration = Math.min(duration, 280);
-
-    const transition = document.startViewTransition(() => {
-      flushSync(applyThemeChange);
-    });
-
-    try {
-      await transition.ready;
-
-      // New state fades + scales up from 97% → 100%
-      // Cheap: opacity + transform only — both composited
-      document.documentElement.animate(
-        [
-          { opacity: 0, transform: 'scale(0.97)' },
-          { opacity: 1, transform: 'scale(1)'    },
-        ],
-        {
-          duration:      mobileDuration,
-          easing:        'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-          pseudoElement: '::view-transition-new(root)',
-          fill:          'forwards',
-        },
-      );
-
-      // Old state fades + scales down — gives depth feeling
-      document.documentElement.animate(
-        [
-          { opacity: 1, transform: 'scale(1)'    },
-          { opacity: 0, transform: 'scale(1.03)' },
-        ],
-        {
-          duration:      mobileDuration * 0.8,
-          easing:        'ease-in',
-          pseudoElement: '::view-transition-old(root)',
-          fill:          'forwards',
-        },
-      );
-
-      return true;
-    } catch {
-      // View transition interrupted — theme still applied
-      return false;
-    }
-  }, [applyThemeChange, duration]);
-
   /* ── Main toggle handler ──────────────────────────────────────── */
 
   const toggleTheme = useCallback(async () => {
@@ -348,44 +280,12 @@ export const ToggleTheme = React.memo(function ToggleTheme({
       '(prefers-reduced-motion: reduce)',
     ).matches;
 
-    // Reduced motion: instant swap, no animation at all
-    if (prefersReduced) {
-      applyThemeChange();
-      return;
-    }
-
-    const isMobile = window.matchMedia('(max-width: 768px)').matches;
-
-    /* ── Mobile path ──────────────────────────────────────────────
-      
-      Uses View Transition API if available (Chrome Android 111+,
-      Safari iOS 18+) with the lightweight fade+scale animation.
-      
-      Falls back to CSS transition via data-theme-transitioning
-      for Firefox Android and older Safari iOS.
-    ────────────────────────────────────────────────────────────── */
-    if (isMobile) {
-      if (document.startViewTransition) {
-        // Try the lightweight mobile animation
-        const animated = await runMobileAnimation();
-        if (animated) return;
-      }
-
-      // CSS fallback for browsers without View Transition API
-      // Uses the surgical selectors in globals.css
-      document.documentElement.setAttribute('data-theme-transitioning', '');
-      applyThemeChange();
-      setTimeout(() => {
-        document.documentElement.removeAttribute('data-theme-transitioning');
-      }, 350);
-      return;
-    }
-
-    /* ── Desktop path ─────────────────────────────────────────────
-      
-      Full View Transition with clip-path animations.
-      Read button position BEFORE startViewTransition takes snapshot.
-    ────────────────────────────────────────────────────────────── */
+    /*
+      ── Read button position BEFORE startViewTransition ─────────────
+      getBoundingClientRect() must be called before the snapshot is
+      taken. Calling it after transition.ready gives stale coordinates
+      on some mobile browsers.
+    */
     const { top, left, width, height } =
       buttonRef.current.getBoundingClientRect();
     const x = left + width / 2;
@@ -395,8 +295,19 @@ export const ToggleTheme = React.memo(function ToggleTheme({
       Math.max(top,  window.innerHeight - top),
     );
 
-    if (!document.startViewTransition) {
-      // CSS fallback for desktop browsers without View Transition API
+    /*
+      ── Fallback: no View Transition API or reduced motion ───────────
+      Covers:
+      - Firefox (all platforms) — no View Transition support yet
+      - Safari iOS < 18
+      - Any browser with prefers-reduced-motion: reduce set
+      
+      Uses CSS transition via data-theme-transitioning attribute
+      which triggers the surgical selectors in globals.css.
+      No clip-path, no animation — just smooth color transition
+      on semantic elements only.
+    */
+    if (!document.startViewTransition || prefersReduced) {
       document.documentElement.setAttribute('data-theme-transitioning', '');
       applyThemeChange();
       setTimeout(() => {
@@ -405,17 +316,39 @@ export const ToggleTheme = React.memo(function ToggleTheme({
       return;
     }
 
+    /*
+      ── Full View Transition — ALL devices that support it ───────────
+      This runs on:
+      - Chrome desktop + Android 111+
+      - Safari desktop + iOS 18+
+      - Samsung Internet 23+
+      - Edge 111+
+      
+      Mobile devices that support the API get the SAME animation
+      as desktop — the circle-spread expanding from the button position.
+      
+      The View Transition API composites the snapshot off the main
+      thread, so the clip-path animation runs on the GPU regardless
+      of device. Modern mid-range Android phones (Snapdragon 700+)
+      and all iPhones handle this without frame drops.
+    */
     const transition = document.startViewTransition(() => {
       flushSync(applyThemeChange);
     });
 
+    /*
+      transition.ready resolves when pseudo-elements are created
+      and animation can begin. Wrap in try/catch — rejects if a
+      second transition interrupts this one (safe to ignore,
+      theme was still applied correctly).
+    */
     try {
       await transition.ready;
       runAnimation(x, y, maxRadius);
     } catch {
       // Transition interrupted — theme applied correctly
     }
-  }, [applyThemeChange, runAnimation, runMobileAnimation]);
+  }, [applyThemeChange, runAnimation]);
 
   /* ── Render ───────────────────────────────────────────────────── */
 
