@@ -247,55 +247,49 @@ export const ToggleTheme = React.memo(function ToggleTheme({
   );
 
   const toggleTheme = useCallback(async () => {
-    if (!buttonRef.current) return;
+  if (!buttonRef.current) return;
 
-    const prefersReduced = window.matchMedia(
-      '(prefers-reduced-motion: reduce)'
-    ).matches;
+  const prefersReduced = window.matchMedia(
+    '(prefers-reduced-motion: reduce)'
+  ).matches;
 
-    // ── Read button position NOW — before any transition starts ──────
-    // This is the key fix: getBoundingClientRect() must be called
-    // BEFORE startViewTransition() takes the page snapshot.
-    // Calling it after transition.ready gives stale coordinates on mobile.
-    const { top, left, width, height } =
-      buttonRef.current.getBoundingClientRect();
-    const x = left + width / 2;
-    const y = top  + height / 2;
-    const maxRadius = Math.hypot(
-      Math.max(left, window.innerWidth  - left),
-      Math.max(top,  window.innerHeight - top),
-    );
+  // ── Mobile guard ─────────────────────────────────────────────────
+  // View Transition clip-path animations are GPU-expensive on mobile.
+  // On touch devices, use instant swap — it's actually better UX
+  // because the theme change feels immediate and responsive.
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
-    // ── Fallback: no View Transition API or reduced motion ────────────
-    // Browsers: Firefox Android, Safari iOS < 18
-    // Uses CSS class to trigger smooth color transition from globals.css
-    if (!document.startViewTransition || prefersReduced) {
-      // Signal globals.css transition block to animate color changes
-      document.documentElement.setAttribute('data-theme-transitioning', '');
-      applyThemeChange();
-      setTimeout(() => {
-        document.documentElement.removeAttribute('data-theme-transitioning');
-      }, 350);
-      return;
-    }
+  const { top, left, width, height } =
+    buttonRef.current.getBoundingClientRect();
+  const x = left + width / 2;
+  const y = top  + height / 2;
+  const maxRadius = Math.hypot(
+    Math.max(left, window.innerWidth  - left),
+    Math.max(top,  window.innerHeight - top),
+  );
 
-    // ── Full View Transition animation ────────────────────────────────
-    // Supported: Chrome Android 111+, Safari iOS 18+, Samsung Internet 23+
-    const transition = document.startViewTransition(() => {
-      flushSync(applyThemeChange);
-    });
+  // ── Fallback: no View Transition API, reduced motion, OR mobile ───
+  if (!document.startViewTransition || prefersReduced || isMobile) {
+    document.documentElement.setAttribute('data-theme-transitioning', '');
+    applyThemeChange();
+    setTimeout(() => {
+      document.documentElement.removeAttribute('data-theme-transitioning');
+    }, 350);
+    return;
+  }
 
-    // transition.ready resolves when the pseudo-elements are created
-    // and the animation can begin. Wrap in try/catch — rejects if a
-    // second transition interrupts this one (safe to ignore).
-    try {
-      await transition.ready;
-      runAnimation(x, y, maxRadius);
-    } catch {
-      // Transition was interrupted — theme was still applied correctly
-    }
-  }, [applyThemeChange, runAnimation]);
+  // ── Full View Transition — desktop only ───────────────────────────
+  const transition = document.startViewTransition(() => {
+    flushSync(applyThemeChange);
+  });
 
+  try {
+    await transition.ready;
+    runAnimation(x, y, maxRadius);
+  } catch {
+    // Transition interrupted — theme applied correctly
+  }
+}, [applyThemeChange, runAnimation]);
   return (
     <button
       ref={buttonRef}

@@ -205,8 +205,12 @@ const Projects = React.memo(function Projects() {
 
   const [activeIndex,  setActiveIndex]  = useState(0);
   const [cursorActive, setCursorActive] = useState(false);
-  const reduced = useMemo(() => prefersReducedMotion(), []);
+   const [isDesktop, setIsDesktop] = useState(false);
+   useEffect(() => {
+    setIsDesktop(window.matchMedia('(min-width: 768px)').matches);
+  }, []);
 
+  const reduced = useMemo(() => prefersReducedMotion(), []);
   const setPanelRef = useCallback(
     (el: HTMLDivElement | null, i: number) => {
       panelRefs.current[i] = el ?? undefined;
@@ -304,7 +308,7 @@ const Projects = React.memo(function Projects() {
   return (
     <div className="relative">
       <NoiseOverlay />
-      <CursorFollower active={cursorActive} />
+        {isDesktop && <CursorFollower active={cursorActive} />}
 
       <section
         id="projects"

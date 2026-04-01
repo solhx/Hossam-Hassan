@@ -1,7 +1,7 @@
 // ✅ FIXED — src/components/ui/hero-background.tsx
 'use client';
 
-import { memo, useEffect, useRef, useCallback } from 'react';
+import { memo, useEffect, useState,useRef, useCallback } from 'react';
 import { motion, type MotionValue } from 'framer-motion';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
@@ -209,6 +209,52 @@ function FloatingOrbs({
 }) {
   const reduced = useReducedMotion();
 
+  /*
+    FIX: Two-tier performance strategy:
+    
+    Mobile (< 768px):
+    - Static orbs, no animation, no parallax
+    - Uses CSS classes only — zero JS animation cost
+    - Still renders the visual blur orbs for aesthetics
+    
+    Desktop, reduced motion:
+    - Static orbs, no animation, HAS parallax (transform only)
+    
+    Desktop, full motion:
+    - Full floating animations + parallax
+    
+    This saves ~4 Framer Motion subscriptions + 4 rAF callbacks on mobile.
+  */
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    // Use matchMedia for efficient resize listening
+    const mq = window.matchMedia('(max-width: 767px)');
+    mq.addEventListener('change', (e) => setIsMobile(e.matches));
+    return () => mq.removeEventListener('change', (e) => setIsMobile(e.matches));
+  }, []);
+
+  // Mobile: pure CSS, no motion values, no JS animations
+  if (isMobile) {
+    return (
+      <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+        {lightOrbs.map((orb, i) => (
+          <div
+            key={i}
+            className={`absolute rounded-full ${orb.size} ${orb.position} blur-[100px]`}
+            style={{ background: `var(--hero-orb-${i})` }}
+          />
+        ))}
+        <style>{`
+          :root { ${lightOrbs.map((o, i) => `--hero-orb-${i}: ${o.lightColor};`).join(' ')} }
+          .dark  { ${lightOrbs.map((o, i) => `--hero-orb-${i}: ${o.darkColor};`).join(' ')}  }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       className="absolute inset-0 overflow-hidden"
@@ -229,21 +275,12 @@ function FloatingOrbs({
         />
       ))}
       <style>{`
-        :root {
-          ${lightOrbs
-            .map((o, i) => `--hero-orb-${i}: ${o.lightColor};`)
-            .join('\n          ')}
-        }
-        .dark {
-          ${lightOrbs
-            .map((o, i) => `--hero-orb-${i}: ${o.darkColor};`)
-            .join('\n          ')}
-        }
+        :root { ${lightOrbs.map((o, i) => `--hero-orb-${i}: ${o.lightColor};`).join(' ')} }
+        .dark  { ${lightOrbs.map((o, i) => `--hero-orb-${i}: ${o.darkColor};`).join(' ')}  }
       `}</style>
     </motion.div>
   );
 }
-
 /* ── Layer 3: Spotlight ── */
 
 function Spotlight({
@@ -314,14 +351,13 @@ function DepthFog() {
 }
 
 /* ── Layer 6: Dust Particles ── */
-
 function DustParticles() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef   = useRef<number>(0);
   const reduced   = useReducedMotion();
 
   const initParticles = useCallback((width: number, height: number) => {
-    const count = Math.min(Math.floor((width * height) / 8000), 80); // ✅ reduced from 100→80
+    const count = Math.min(Math.floor((width * height) / 8000), 80);
     return Array.from({ length: count }, () => ({
       x:          Math.random() * width,
       y:          Math.random() * height,
@@ -335,7 +371,11 @@ function DustParticles() {
   }, []);
 
   useEffect(() => {
+    // FIX: Skip canvas animation on mobile AND reduced motion
+    // Canvas 2D particle loop on mobile = battery drain + jank
     if (reduced) return;
+    if (window.innerWidth < 768) return;  // ← NEW mobile guard
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -344,7 +384,7 @@ function DustParticles() {
 
     let width  = canvas.parentElement?.clientWidth  ?? window.innerWidth;
     let height = canvas.parentElement?.clientHeight ?? window.innerHeight;
-    const dpr  = Math.min(window.devicePixelRatio, 1.5); // ✅ cap at 1.5 (was 2)
+    const dpr  = Math.min(window.devicePixelRatio, 1.5);
 
     canvas.width  = width  * dpr;
     canvas.height = height * dpr;
@@ -354,24 +394,19 @@ function DustParticles() {
 
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
-
       for (const p of particles) {
         p.x += p.vx;
         p.y += p.vy;
-
         if (p.y < -10)        { p.y = height + 10; p.x = Math.random() * width; }
         if (p.x < -10)          p.x = width + 10;
         if (p.x > width + 10)   p.x = -10;
-
         p.opacity += p.opacityDir;
         if (p.opacity >= 0.5 || p.opacity <= 0.05) p.opacityDir *= -1;
-
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fillStyle = `hsla(${p.hue}, 50%, 70%, ${p.opacity})`;
         ctx.fill();
       }
-
       animRef.current = requestAnimationFrame(animate);
     };
 
@@ -394,7 +429,11 @@ function DustParticles() {
     };
   }, [reduced, initParticles]);
 
-  if (reduced) return null;
+  // FIX: Don't even render the canvas element on mobile
+  // (saves DOM node + any accidental paint)
+  if (reduced || typeof window !== 'undefined' && window.innerWidth < 768) {
+    return null;
+  }
 
   return (
     <canvas
@@ -404,7 +443,6 @@ function DustParticles() {
     />
   );
 }
-
 /* ── Composed Export ── */
 
 interface HeroBackgroundProps {

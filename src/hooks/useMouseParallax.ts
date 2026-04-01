@@ -49,29 +49,49 @@ export function useMouseParallax(
   const rotateY    = useTransform(springX, [-1, 1], [-2, 2]);
   const rotateX    = useTransform(springY, [-1, 1], [2, -2]);
 
-  useEffect(() => {
-    if (prefersReducedMotion()) return;
+  // src/hooks/useMouseParallax.ts
+// Replace only the useEffect block
 
-    let rafId: number | null = null;
+useEffect(() => {
+  if (prefersReducedMotion()) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (rafId !== null) return;
-      rafId = requestAnimationFrame(() => {
-        rafId = null;
-        const x = (e.clientX / window.innerWidth)  * 2 - 1;
-        const y = (e.clientY / window.innerHeight) * 2 - 1;
-        mouseX.set(x);
-        mouseY.set(y);
-      });
-    };
+  /*
+    FIX: Touch devices don't fire mousemove.
+    But the event listener still adds overhead.
+    More importantly: the spring values still exist and process
+    on every frame. By returning early, we prevent:
+    - Unnecessary event listener registration
+    - Spring system from initializing with input device
+      that will never produce events
+    
+    Touch devices get static parallax values (0,0) which is
+    correct — there's no cursor to follow.
+  */
+  const isTouchDevice =
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0;
 
-    // ✅ passive: true — improves scroll performance
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      if (rafId !== null) cancelAnimationFrame(rafId);
-    };
-  }, [mouseX, mouseY]);
+  if (isTouchDevice) return;
+
+  let rafId: number | null = null;
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (rafId !== null) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      const x = (e.clientX / window.innerWidth)  * 2 - 1;
+      const y = (e.clientY / window.innerHeight) * 2 - 1;
+      mouseX.set(x);
+      mouseY.set(y);
+    });
+  };
+
+  window.addEventListener('mousemove', handleMouseMove, { passive: true });
+  return () => {
+    window.removeEventListener('mousemove', handleMouseMove);
+    if (rafId !== null) cancelAnimationFrame(rafId);
+  };
+}, [mouseX, mouseY]);
 
   return {
     mouseX,

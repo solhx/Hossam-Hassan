@@ -1,7 +1,13 @@
 // src/components/common/FloatingAppBar.tsx
 'use client';
-import React from 'react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
   motion,
   AnimatePresence,
@@ -19,22 +25,24 @@ import {
   FolderOpen,
   Mail,
   Download,
+  Menu,
+  X,
 } from 'lucide-react';
-import Link           from 'next/link';
-import { cn }         from '@/utils/utils';
+import Link          from 'next/link';
+import { cn }        from '@/utils/utils';
 import { ToggleTheme } from '@/components/common/ToggleTheme';
 
-/* ── Types ────────────────────────────────────────────────────── */
+/* ── Types ──────────────────────────────────────────────────────── */
 
 interface NavItem {
-  label:         string;
-  href?:         string;
-  icon:          React.ReactNode;
-  onClick?:      () => void;
+  label:          string;
+  href?:          string;
+  icon:           React.ReactNode;
+  onClick?:       () => void;
   isThemeToggle?: boolean;
 }
 
-/* ── Config ───────────────────────────────────────────────────── */
+/* ── Config ─────────────────────────────────────────────────────── */
 
 const NAV_SECTIONS = [
   { label: 'Home',       href: '#hero',       icon: <Home       size={18} /> },
@@ -43,9 +51,9 @@ const NAV_SECTIONS = [
   { label: 'Experience', href: '#experience', icon: <Briefcase  size={18} /> },
   { label: 'Projects',   href: '#projects',   icon: <FolderOpen size={18} /> },
   { label: 'Contact',    href: '#contact',    icon: <Mail       size={18} /> },
-];
+] as const;
 
-/* ── IconContainer — magnification (desktop) ─────────────────── */
+/* ── IconContainer — desktop magnification dock ─────────────────── */
 
 function IconContainer({
   mouseX,
@@ -111,7 +119,6 @@ function IconContainer({
     'backdrop-blur-sm',
   );
 
-  /* Theme toggle */
   if (isThemeToggle) {
     return (
       <motion.div
@@ -130,7 +137,6 @@ function IconContainer({
     );
   }
 
-  /* External / download link */
   if (href && !href.startsWith('#')) {
     return (
       <Link
@@ -159,7 +165,6 @@ function IconContainer({
     );
   }
 
-  /* Scroll / action button */
   return (
     <motion.button
       aria-label={label}
@@ -183,187 +188,374 @@ function IconContainer({
   );
 }
 
-/* ── Mobile dock item ─────────────────────────────────────────── */
+/* ── Mobile Dock Item ───────────────────────────────────────────── */
 
-function MobileDockItem({ item }: { item: NavItem }) {
-  const [hovered, setHovered] = useState(false);
-
-  const tooltip = (
-    <AnimatePresence>
-      {hovered && (
-        <motion.div
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0  }}
-          exit={{    opacity: 0, x: -4 }}
-          transition={{ duration: 0.15 }}
-          className={cn(
-            'absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 pointer-events-none',
-            'whitespace-nowrap rounded-lg px-2 py-1 text-xs font-medium',
-            'bg-white/90 dark:bg-neutral-800/90',
-            'border border-neutral-200/80 dark:border-white/10',
-            'text-neutral-700 dark:text-neutral-200',
-            'shadow-lg backdrop-blur-md',
-          )}
-          role="tooltip"
-        >
-          {item.label}
-          <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 rotate-45 bg-white/90 dark:bg-neutral-800/90 border-l border-b border-neutral-200/80 dark:border-white/10" />
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+const MobileDockItem = React.memo(function MobileDockItem({
+  item,
+  index,
+  onClose,
+}: {
+  item:    NavItem;
+  index:   number;
+  onClose: () => void;
+}) {
+  const handleClick = useCallback(() => {
+    item.onClick?.();
+    // Close dock after navigation on mobile for better UX
+    if (item.href?.startsWith('#')) {
+      setTimeout(onClose, 150);
+    }
+  }, [item, onClose]);
 
   const baseClasses = cn(
-    'relative w-10 h-10 rounded-full flex items-center justify-center',
-    'cursor-pointer transition-colors duration-200',
-    'hover:bg-neutral-300/50 dark:hover:bg-white/[0.08]',
+    'relative w-12 h-12 rounded-2xl flex items-center justify-center',
+    'cursor-pointer',
+    'bg-neutral-100/80 dark:bg-white/[0.06]',
+    'hover:bg-emerald-50 dark:hover:bg-emerald-500/[0.12]',
+    'border border-neutral-200/60 dark:border-white/[0.08]',
+    'hover:border-emerald-300/60 dark:hover:border-emerald-500/30',
+    'transition-colors duration-200',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500',
+  );
+
+  /*
+    FIX: Item animation variants defined outside render
+    Each item staggers in when dock opens, staggers out when it closes.
+    Using variants (not inline animate objects) is more performant —
+    Framer Motion can batch variant updates.
+  */
+  const itemVariants = {
+    hidden: {
+      opacity: 0,
+      x:       -20,
+      scale:   0.7,
+    },
+    visible: {
+      opacity:    1,
+      x:          0,
+      scale:      1,
+      transition: {
+        delay:     index * 0.04,
+        type:      'spring' as const,
+        stiffness: 400,
+        damping:   28,
+      },
+    },
+    exit: {
+      opacity:    0,
+      x:          -12,
+      scale:      0.8,
+      transition: {
+        delay:    (8 - index) * 0.025, // reverse stagger on exit
+        duration: 0.15,
+      },
+    },
+  };
+
+  const content = (
+    <div
+      className="flex items-center justify-center text-neutral-600 dark:text-neutral-300"
+      aria-hidden="true"
+    >
+      {item.icon}
+    </div>
   );
 
   if (item.isThemeToggle) {
     return (
-      <div
-        className={baseClasses}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-      >
-        {tooltip}
-        <ToggleTheme
-          animationType="circle-spread"
-          className="!p-0 w-full h-full rounded-full bg-transparent"
-        />
-      </div>
+      <motion.div variants={itemVariants} className="flex flex-col items-center gap-1">
+        <div className={baseClasses}>
+          <ToggleTheme
+            animationType="fade-in-out"
+            className="!p-0 w-full h-full rounded-2xl bg-transparent"
+          />
+        </div>
+        <span className="text-[9px] text-neutral-400 dark:text-neutral-500 font-medium tracking-wide">
+          {item.label}
+        </span>
+      </motion.div>
     );
   }
 
   if (item.href && !item.href.startsWith('#')) {
     return (
-      <Link
-        href={item.href}
-        aria-label={item.label}
-        rel="noopener noreferrer"
-        target={item.href.startsWith('http') ? '_blank' : '_self'}
-        className={baseClasses}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-      >
-        {tooltip}
-        <div
-          className="flex items-center justify-center text-neutral-600 dark:text-neutral-400 transition-colors duration-200"
-          aria-hidden="true"
+      <motion.div variants={itemVariants} className="flex flex-col items-center gap-1">
+        <Link
+          href={item.href}
+          aria-label={item.label}
+          rel="noopener noreferrer"
+          target={item.href.startsWith('http') ? '_blank' : '_self'}
+          className={baseClasses}
         >
-          {item.icon}
-        </div>
-      </Link>
+          {content}
+        </Link>
+        <span className="text-[9px] text-neutral-400 dark:text-neutral-500 font-medium tracking-wide">
+          {item.label}
+        </span>
+      </motion.div>
     );
   }
 
   return (
-    <motion.button
-      aria-label={item.label}
-      onClick={item.onClick}
-      className={baseClasses}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      whileTap={{ scale: 0.82 }}
-    >
-      {tooltip}
-      <div
-        className="flex items-center justify-center text-neutral-600 dark:text-neutral-400 transition-colors duration-200"
-        aria-hidden="true"
+    <motion.div variants={itemVariants} className="flex flex-col items-center gap-1">
+      <motion.button
+        aria-label={item.label}
+        onClick={handleClick}
+        className={baseClasses}
+        whileTap={{ scale: 0.85 }}
       >
-        {item.icon}
-      </div>
-    </motion.button>
+        {content}
+      </motion.button>
+      <span className="text-[9px] text-neutral-400 dark:text-neutral-500 font-medium tracking-wide">
+        {item.label}
+      </span>
+    </motion.div>
   );
-}
+});
 
-/* ── Mobile vertical dock container ──────────────────────────── */
+/* ── Mobile Dock — NEW toggle-based design ──────────────────────── */
 
-function MobileVerticalDock({
+/*
+  BEFORE: Always rendered, translated off-screen, infinite shimmer loop
+  AFTER:  
+  - Circular FAB (Floating Action Button) always visible
+  - Dock panel only MOUNTED when open (saves memory + animation cost)
+  - AnimatePresence unmounts dock when closed (no offscreen animations)
+  - Backdrop closes dock when tapped outside
+  - Proper ARIA: aria-expanded, aria-controls, role="dialog"
+*/
+
+const MobileDock = React.memo(function MobileDock({
   items,
-  visible,
+  navVisible,
 }: {
-  items:   NavItem[];
-  visible: boolean;
+  items:      NavItem[];
+  navVisible: boolean;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleOpen = useCallback(() => setIsOpen((prev) => !prev), []);
+  const closeDoc   = useCallback(() => setIsOpen(false), []);
+
+  // Close dock when navbar hides (user scrolled down fast)
+  useEffect(() => {
+    if (!navVisible) setIsOpen(false);
+  }, [navVisible]);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeDoc();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, closeDoc]);
+
+  // Prevent body scroll when dock is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
+
+  const fabVariants = {
+    hidden:  { scale: 0, opacity: 0 },
+    visible: {
+      scale:      1,
+      opacity:    1,
+      transition: { type: 'spring' as const, stiffness: 400, damping: 25 },
+    },
+    exit: {
+      scale:      0,
+      opacity:    0,
+      transition: { duration: 0.15 },
+    },
+  };
+
+  const dockVariants = {
+    hidden: {
+      x:       -60,
+      opacity: 0,
+      scale:   0.9,
+    },
+    visible: {
+      x:          0,
+      opacity:    1,
+      scale:      1,
+      transition: {
+        type:       'spring' as const,
+        stiffness:  350,
+        damping:    30,
+        /*
+          staggerChildren here staggers the ITEMS inside the dock.
+          The dock container itself animates first, then items follow.
+        */
+        staggerChildren:  0.04,
+        delayChildren:    0.08,
+      },
+    },
+    exit: {
+      x:       -40,
+      opacity: 0,
+      scale:   0.92,
+      transition: {
+        duration:        0.2,
+        staggerChildren: 0.025,
+      },
+    },
+  };
+
   return (
     <>
-      {/* Ambient glow */}
-      <motion.div
-        className="fixed bottom-4 left-4 z-40 block md:hidden pointer-events-none"
-        animate={{ opacity: visible ? 1 : 0, x: visible ? 0 : -40 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 30 }}
-        aria-hidden="true"
-      >
-        <div className="w-12 h-56 rounded-full bg-emerald-500/[0.07] dark:bg-emerald-500/[0.09] blur-2xl" />
-      </motion.div>
-
-      {/* Dock */}
-      <motion.nav
-        aria-label="Mobile navigation"
-        className={cn(
-          'fixed bottom-4 left-4 z-50 flex md:hidden flex-col items-center gap-1',
-          'py-2 px-1.5 rounded-2xl',
-          'bg-white/65 dark:bg-neutral-900/65',
-          'backdrop-blur-xl',
-          'border border-white/25 dark:border-white/[0.1]',
-          'shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
-          'isolate [will-change:transform,opacity]',
-          'overflow-visible',
-        )}
-        style={{ WebkitBackdropFilter: 'blur(24px) saturate(160%)' }}
-        initial={{ x: -80, opacity: 0, scale: 0.85 }}
-        animate={{
-          x:       visible ? 0    : -80,
-          opacity: visible ? 1    : 0,
-          scale:   visible ? 1    : 0.85,
-        }}
-        transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-      >
-        {/* Shimmer sweep */}
-        <div
-          className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
-          aria-hidden="true"
-        >
+      {/* ── Backdrop — closes dock when tapped outside ── */}
+      <AnimatePresence>
+        {isOpen && (
           <motion.div
-            className="absolute left-0 w-full h-[30%] bg-gradient-to-b from-transparent via-white/[0.06] dark:via-white/[0.03] to-transparent"
-            animate={{ y: ['-100%', '500%'] }}
-            transition={{
-              duration:    6,
-              repeat:      Infinity,
-              repeatDelay: 8,
-              ease:        'easeInOut',
-            }}
+            key="mobile-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{    opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-40 md:hidden bg-black/20 backdrop-blur-[2px]"
+            onClick={closeDoc}
+            aria-hidden="true"
           />
-        </div>
+        )}
+      </AnimatePresence>
 
-        {items.map((item, index) => (
-          <motion.div
-            key={item.label}
-            initial={{ opacity: 0, x: -12, scale: 0.7 }}
-            animate={{
-              opacity: 1,
-              x:       0,
-              scale:   1,
-              transition: {
-                delay:     0.3 + index * 0.05,
-                type:      'spring',
-                stiffness: 400,
-                damping:   25,
-              },
-            }}
-            className="relative"
+      {/* ── FAB — always visible, toggles the dock ── */}
+      <AnimatePresence mode="wait">
+        {navVisible && (
+          <motion.button
+            key="mobile-fab"
+            variants={fabVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={toggleOpen}
+            className={cn(
+              'fixed bottom-6 left-5 z-50 md:hidden',
+              'w-12 h-12 rounded-full',
+              'flex items-center justify-center',
+              'shadow-lg shadow-black/20 dark:shadow-black/40',
+              'focus-visible:outline-none focus-visible:ring-2',
+              'focus-visible:ring-emerald-500 focus-visible:ring-offset-2',
+              /*
+                Two visual states:
+                - Closed: glass pill with Menu icon
+                - Open:   emerald fill with X icon
+              */
+              isOpen
+                ? 'bg-emerald-500 text-white border border-emerald-400'
+                : [
+                    'bg-white/85 dark:bg-neutral-900/85',
+                    'backdrop-blur-xl',
+                    'border border-white/30 dark:border-white/[0.12]',
+                    'text-neutral-700 dark:text-neutral-300',
+                  ],
+            )}
+            aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={isOpen}
+            aria-controls="mobile-nav-dock"
+            whileTap={{ scale: 0.88 }}
           >
-            <MobileDockItem item={item} />
-          </motion.div>
-        ))}
-      </motion.nav>
+            <motion.div
+              animate={{ rotate: isOpen ? 90 : 0 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+            >
+              {isOpen ? <X size={18} /> : <Menu size={18} />}
+            </motion.div>
+
+            {/* Pulse ring — only when closed, draws attention */}
+            {!isOpen && (
+              <motion.div
+                className="absolute inset-0 rounded-full border-2 border-emerald-500/40"
+                animate={{ scale: [1, 1.5], opacity: [0.6, 0] }}
+                transition={{
+                  duration:   2,
+                  repeat:     Infinity,
+                  ease:       'easeOut',
+                  repeatDelay: 1,
+                }}
+                aria-hidden="true"
+              />
+            )}
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* ── Dock panel — ONLY mounted when open ── */}
+      {/*
+        WHY AnimatePresence + conditional mount (not just animate visibility):
+        When closed, the component is UNMOUNTED from the DOM.
+        This means:
+        - Zero Framer Motion subscriptions running
+        - Zero requestAnimationFrame loops
+        - Zero GPU layers
+        - Memory freed immediately
+        
+        vs the old approach (translate off-screen):
+        - All animations still running
+        - GPU layers still allocated
+        - Framer Motion still tracking spring values
+      */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.nav
+            key="mobile-dock"
+            id="mobile-nav-dock"
+            role="dialog"
+            aria-label="Navigation menu"
+            aria-modal="true"
+            variants={dockVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className={cn(
+              'fixed bottom-6 left-5 z-50 md:hidden',
+              'flex flex-col items-center gap-2',
+              'p-3 rounded-3xl',
+              'bg-white/80 dark:bg-neutral-900/80',
+              'backdrop-blur-2xl',
+              'border border-white/30 dark:border-white/[0.10]',
+              'shadow-2xl shadow-black/15 dark:shadow-black/50',
+              /*
+                margin-bottom accounts for FAB height (48px) + gap (8px)
+                so dock appears above the FAB button
+              */
+              'mb-16',
+            )}
+            style={{ WebkitBackdropFilter: 'blur(24px) saturate(160%)' }}
+          >
+            {/* Ambient glow behind dock */}
+            <div
+              className="absolute inset-0 rounded-3xl pointer-events-none overflow-hidden"
+              aria-hidden="true"
+            >
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-16 bg-emerald-500/10 dark:bg-emerald-500/15 blur-2xl rounded-full" />
+            </div>
+
+            {/* Nav items — use motion.div with inherited variants */}
+            {items.map((item, index) => (
+              <MobileDockItem
+                key={item.label}
+                item={item}
+                index={index}
+                onClose={closeDoc}
+              />
+            ))}
+          </motion.nav>
+        )}
+      </AnimatePresence>
     </>
   );
-}
+});
 
-/* ── Main component ───────────────────────────────────────────── */
+/* ── Main Component ─────────────────────────────────────────────── */
 
 const FloatingAppBar = React.memo(function FloatingAppBar() {
   const [visible,    setVisible]    = useState(true);
@@ -377,11 +569,9 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
   const navMouseX  = useMotionValue(0);
   const smoothNavX = useSpring(navMouseX, { stiffness: 250, damping: 30 });
 
-  // ✅ Bail-out guards — only setState when value actually changes
   const handleScroll = useCallback(() => {
     const currentScrollY = window.scrollY;
-    const shouldHide     =
-      currentScrollY > lastScrollYRef.current && currentScrollY > 400;
+    const shouldHide     = currentScrollY > lastScrollYRef.current && currentScrollY > 400;
 
     setVisible((prev) => {
       const next = !shouldHide;
@@ -405,15 +595,19 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
     document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  const glassClasses = cn(
+  /*
+    FIX: Compute glassClasses with useMemo — was recomputing cn() on
+    every render including scroll events (every ~16ms while scrolling)
+  */
+  const glassClasses = useMemo(() => cn(
     'rounded-full overflow-visible isolate [will-change:transform,opacity]',
     'border transition-[background-color,border-color,box-shadow] duration-700 ease-out',
     scrolled
       ? 'bg-white/75 dark:bg-neutral-900/75 backdrop-blur-2xl border-white/30 dark:border-white/[0.12] shadow-[0_8px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)]'
       : 'bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl  border-white/20 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)]',
-  );
+  ), [scrolled]);
 
-  const mobileItems: NavItem[] = [
+  const mobileItems: NavItem[] = useMemo(() => [
     ...NAV_SECTIONS.map((s) => ({
       label:   s.label,
       href:    s.href,
@@ -430,11 +624,11 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
       href:  '/Hossam-Hassan-Resume.pdf',
       icon:  <Download size={18} />,
     },
-  ];
+  ], [scrollTo]);
 
   return (
     <>
-      {/* Desktop ambient glow */}
+      {/* ── Desktop ambient glow ── */}
       <motion.div
         className="fixed bottom-6 left-1/2 z-40 hidden md:block pointer-events-none"
         initial={{ x: '-50%', opacity: 0 }}
@@ -453,14 +647,13 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
         />
       </motion.div>
 
-      {/* Desktop navbar */}
+      {/* ── Desktop navbar ── */}
       <motion.nav
         ref={navRef}
         aria-label="Main navigation"
         onMouseMove={(e) => {
           navMouseX.set(
-            e.clientX -
-              (navRef.current?.getBoundingClientRect().left ?? 0),
+            e.clientX - (navRef.current?.getBoundingClientRect().left ?? 0),
           );
           setNavHovered(true);
         }}
@@ -490,14 +683,20 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 28 }}
       >
-        {/* Shimmer sweep */}
+        {/* Shimmer sweep — desktop only, paused when not hovered */}
         <div
           className="absolute inset-0 rounded-full overflow-hidden pointer-events-none"
           aria-hidden="true"
         >
+          {/*
+            FIX: Shimmer only animates when navHovered.
+            When not hovered, animate prop is empty object {} — 
+            Framer Motion pauses the animation entirely.
+            Previously ran Infinity regardless of visibility.
+          */}
           <motion.div
             className="absolute top-0 h-full w-1/4 bg-gradient-to-r from-transparent via-white/[0.07] dark:via-white/[0.04] to-transparent skew-x-[-20deg]"
-            animate={{ x: ['-100%', '500%'] }}
+            animate={navHovered ? { x: ['-100%', '500%'] } : {}}
             transition={{
               duration:    5,
               repeat:      Infinity,
@@ -511,8 +710,8 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
         <motion.div
           className="absolute top-0 h-full w-44 pointer-events-none rounded-full"
           style={{
-            x:           smoothNavX,
-            translateX:  '-50%',
+            x:          smoothNavX,
+            translateX: '-50%',
             background:
               'radial-gradient(ellipse 88px 44px at center, rgba(16,185,129,0.12) 0%, transparent 70%)',
           }}
@@ -545,8 +744,8 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
               },
             }}
             whileHover={{
-              scale:     1.15,
-              boxShadow: '0 0 20px rgba(16,185,129,0.45)',
+              scale:      1.15,
+              boxShadow:  '0 0 20px rgba(16,185,129,0.45)',
               transition: { type: 'spring', stiffness: 400, damping: 15 },
             }}
             whileTap={{ scale: 0.85, rotate: -15 }}
@@ -558,7 +757,6 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
             <span className="relative z-10" aria-hidden="true">H</span>
           </motion.button>
 
-          {/* Divider */}
           <motion.div
             className="w-px h-5 flex-shrink-0 bg-gradient-to-b from-transparent via-neutral-300 dark:via-white/15 to-transparent"
             initial={{ opacity: 0, scaleY: 0 }}
@@ -566,7 +764,6 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
             aria-hidden="true"
           />
 
-          {/* Nav section icons */}
           {NAV_SECTIONS.map((item, index) => (
             <motion.div
               key={item.label}
@@ -593,7 +790,6 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
             </motion.div>
           ))}
 
-          {/* Divider */}
           <motion.div
             className="w-px h-5 flex-shrink-0 bg-gradient-to-b from-transparent via-neutral-300 dark:via-white/15 to-transparent"
             initial={{ opacity: 0, scaleY: 0 }}
@@ -601,7 +797,6 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
             aria-hidden="true"
           />
 
-          {/* Theme toggle */}
           <motion.div
             initial={{ opacity: 0, scale: 0 }}
             animate={{
@@ -610,14 +805,9 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
               transition: { delay: 0.75, type: 'spring', stiffness: 300, damping: 20 },
             }}
           >
-            <IconContainer
-              mouseX={mouseX}
-              label="Toggle Theme"
-              isThemeToggle
-            />
+            <IconContainer mouseX={mouseX} label="Toggle Theme" isThemeToggle />
           </motion.div>
 
-          {/* Resume */}
           <motion.div
             initial={{ opacity: 0, scale: 0.6, x: 10 }}
             animate={{
@@ -636,8 +826,8 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
               <motion.div
                 className="group relative flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-medium bg-gradient-to-r from-emerald-500 to-emerald-600 text-white cursor-pointer overflow-hidden"
                 whileHover={{
-                  scale:     1.08,
-                  boxShadow: '0 0 24px rgba(16,185,129,0.4)',
+                  scale:      1.08,
+                  boxShadow:  '0 0 24px rgba(16,185,129,0.4)',
                   transition: { type: 'spring', stiffness: 400, damping: 15 },
                 }}
                 whileTap={{ scale: 0.9 }}
@@ -646,21 +836,7 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent skew-x-[-20deg] -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-500 ease-out pointer-events-none"
                   aria-hidden="true"
                 />
-                <motion.div
-                  className="absolute inset-0 rounded-full border border-emerald-400/50"
-                  initial={{ scale: 1, opacity: 0 }}
-                  whileHover={{
-                    scale:   [1, 1.5],
-                    opacity: [0.7, 0],
-                    transition: { duration: 0.8, repeat: Infinity },
-                  }}
-                  aria-hidden="true"
-                />
-                <Download
-                  size={12}
-                  className="relative z-10 flex-shrink-0"
-                  aria-hidden="true"
-                />
+                <Download size={12} className="relative z-10 flex-shrink-0" aria-hidden="true" />
                 <span className="relative z-10">Resume</span>
               </motion.div>
             </Link>
@@ -668,8 +844,8 @@ const FloatingAppBar = React.memo(function FloatingAppBar() {
         </motion.div>
       </motion.nav>
 
-      {/* Mobile vertical dock */}
-      <MobileVerticalDock items={mobileItems} visible={visible} />
+      {/* ── Mobile Dock — NEW toggle-based ── */}
+      <MobileDock items={mobileItems} navVisible={visible} />
     </>
   );
 });
