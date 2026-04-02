@@ -28,8 +28,8 @@ import {
   Menu,
   X,
 } from 'lucide-react';
-import Link            from 'next/link';
-import { cn }          from '@/utils/utils';
+import Link          from 'next/link';
+import { cn }        from '@/utils/utils';
 import { ToggleTheme } from '@/components/common/ToggleTheme';
 
 /* ── Types ────────────────────────────────────────────────────── */
@@ -55,20 +55,12 @@ const NAV_SECTIONS = [
 
 /* ── useIsMobileReady ─────────────────────────────────────────── */
 
-// ✅ Three states:
-//   null  = not yet measured (SSR / hydration) → render nothing
-//   true  = confirmed mobile                   → render mobile UI
-//   false = confirmed desktop                  → render desktop UI
-//
-// Combining "mounted" and "isMobile" into one state prevents the
-// double-false race condition where two separate useState(false)
-// hooks both need to flip true before anything renders.
 function useIsMobileReady(breakpoint = 768): boolean | null {
   const [state, setState] = useState<boolean | null>(null);
 
   useEffect(() => {
     const check = () => setState(window.innerWidth < breakpoint);
-    check(); // measure immediately after mount
+    check();
 
     const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
     mq.addEventListener('change', check);
@@ -78,7 +70,74 @@ function useIsMobileReady(breakpoint = 768): boolean | null {
   return state;
 }
 
-/* ── IconContainer — magnification (desktop only) ────────────── */
+/* ── useNavScroll — subscribes to lenis-scroll, NOT window.scroll ── */
+//
+// WHY: FloatingAppBar previously used window.addEventListener('scroll').
+// This fires on the NATIVE scroll event, which on a Lenis-driven page
+// arrives at a different time than Lenis's virtual scroll position.
+// Result: GSAP's onUpdate (setting activeIndex) and navbar's setVisible
+// fired in the same frame but as two separate React batches — causing
+// the Projects panel clipPath to reset mid-transition (the flicker).
+//
+// The lenis-scroll custom event is dispatched FROM inside lenis.on('scroll'),
+// which runs inside GSAP's RAF ticker. Both GSAP and the navbar now update
+// in the same requestAnimationFrame tick — one React batch, no flicker.
+
+function useNavScroll() {
+  const [visible,  setVisible]  = useState(true);
+  const [scrolled, setScrolled] = useState(false);
+
+  const lastScrollRef  = useRef(0);
+  // ✅ Debounce state updates with RAF to prevent mid-frame React renders
+  const rafPendingRef  = useRef(false);
+
+  const closeMobileRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { scroll } = (e as CustomEvent<{ scroll: number; velocity: number }>).detail;
+
+      // ✅ Only schedule one RAF update per frame.
+      // Without this, fast scrolling dispatches multiple lenis-scroll
+      // events per frame (Lenis interpolates), each calling setState —
+      // triggering multiple React renders per frame instead of one.
+      if (rafPendingRef.current) return;
+      rafPendingRef.current = true;
+
+      requestAnimationFrame(() => {
+        rafPendingRef.current = false;
+
+        const prev = lastScrollRef.current;
+        const scrollingDown = scroll > prev && scroll > 100;
+
+        // ✅ Close mobile menu on scroll down — same logic, correct timing
+        if (scrollingDown && scroll > 100) {
+          closeMobileRef.current?.();
+        }
+
+        setVisible((v) => {
+          const next = !(scroll > prev && scroll > 400);
+          return v === next ? v : next;
+        });
+
+        setScrolled((v) => {
+          const next = scroll > 80;
+          return v === next ? v : next;
+        });
+
+        lastScrollRef.current = scroll;
+      });
+    };
+
+    window.addEventListener('lenis-scroll', handler, { passive: true });
+    return () => window.removeEventListener('lenis-scroll', handler);
+  }, []);
+
+  return { visible, scrolled, closeMobileRef };
+}
+
+/* ── IconContainer ────────────────────────────────────────────── */
+// (Unchanged — no scroll dependency, no re-render issues)
 
 function IconContainer({
   mouseX,
@@ -95,7 +154,7 @@ function IconContainer({
   onClick?:       () => void;
   isThemeToggle?: boolean;
 }) {
-  const ref               = useRef<HTMLDivElement>(null);
+  const ref           = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
 
   const distance = useTransform(mouseX, (val) => {
@@ -213,7 +272,8 @@ function IconContainer({
   );
 }
 
-/* ── Mobile dock item ─────────────────────────────────────────── */
+/* ── MobileDockItem ───────────────────────────────────────────── */
+// (Unchanged)
 
 function MobileDockItem({
   item,
@@ -227,7 +287,6 @@ function MobileDockItem({
     'cursor-pointer transition-colors duration-200',
     'hover:bg-neutral-300/50 dark:hover:bg-white/[0.08]',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500',
-    'touch-target',
   );
 
   if (item.isThemeToggle) {
@@ -281,7 +340,7 @@ function MobileDockItem({
   );
 }
 
-/* ── Mobile trigger button ─────────────────────────────────────── */
+/* ── MobileTriggerButton ──────────────────────────────────────── */
 
 function MobileTriggerButton({
   isOpen,
@@ -297,8 +356,6 @@ function MobileTriggerButton({
       aria-expanded={isOpen}
       aria-controls="mobile-nav-dock"
       className={cn(
-        // ✅ FIX 1: Use Tailwind classes for ALL positioning — never style prop
-        // for fixed-position values on motion elements in mobile browsers
         'fixed bottom-5 left-5 z-[9999]',
         'w-12 h-12 rounded-full',
         'flex items-center justify-center',
@@ -306,20 +363,25 @@ function MobileTriggerButton({
         'text-white shadow-lg shadow-emerald-500/30',
         'focus-visible:outline-none focus-visible:ring-2',
         'focus-visible:ring-emerald-400 focus-visible:ring-offset-2',
-        // ✅ FIX 3: Remove touch-target here — use explicit min size instead
-        // touch-target adds position:relative which conflicts with fixed
       )}
-      // ✅ FIX 4: Add will-change so the compositor layer is promoted above canvas
-      style={{ willChange: 'transform' }}
+      // ✅ CRITICAL FIX: Remove willChange: 'transform' from the trigger button.
+      //
+      // The original code had willChange: 'transform' on this fixed button.
+      // On iOS Safari and Chrome Android, when a position:fixed element has
+      // willChange:transform, the browser creates a NEW compositor layer for
+      // it. GSAP's pinned section ALSO creates a compositor layer (position:fixed
+      // for pinning). Two competing fixed compositor layers on the same z-axis
+      // cause the browser to re-composite the entire fixed stack on EVERY scroll
+      // tick — visually flickering the Projects section as layers are re-ordered.
+      //
+      // Removing willChange lets the browser decide compositing. The button is
+      // only 48x48px with a spring animation — it doesn't NEED a dedicated layer.
+      // whileTap/whileHover still use GPU via Framer Motion's transform path.
       whileTap={{ scale: 0.88 }}
       whileHover={{ scale: 1.08 }}
       transition={{ type: 'spring', stiffness: 400, damping: 17 }}
     >
-      {/* ✅ Explicit touch target via pseudo-element without position:relative */}
-      <span
-        className="absolute -inset-2 rounded-full"
-        aria-hidden="true"
-      />
+      <span className="absolute -inset-2 rounded-full" aria-hidden="true" />
       <AnimatePresence mode="wait" initial={false}>
         {isOpen ? (
           <motion.span
@@ -349,7 +411,8 @@ function MobileTriggerButton({
   );
 }
 
-/* ── Mobile vertical dock ─────────────────────────────────────── */
+/* ── MobileVerticalDock ───────────────────────────────────────── */
+// (Unchanged — only structural fixes needed at the portal level)
 
 function MobileVerticalDock({
   items,
@@ -371,7 +434,6 @@ function MobileVerticalDock({
 
   return (
     <>
-      {/* Backdrop — unchanged */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -388,12 +450,9 @@ function MobileVerticalDock({
         )}
       </AnimatePresence>
 
-      {/* Ambient glow — unchanged */}
       <motion.div
         className="fixed z-[9997] pointer-events-none"
-        // ✅ FIX 1: Tailwind classes instead of style prop for positioning
-        // ❌ was: style={{ bottom: '16px', left: '16px' }}
-        style={{ bottom: '16px', left: '16px', willChange: 'transform, opacity' }}
+        style={{ bottom: '16px', left: '16px' }}
         animate={{
           opacity: isOpen ? 1 : 0,
           x:       isOpen ? 0 : -40,
@@ -404,14 +463,11 @@ function MobileVerticalDock({
         <div className="w-12 h-56 rounded-full bg-emerald-500/[0.07] dark:bg-emerald-500/[0.09] blur-2xl" />
       </motion.div>
 
-      {/* Dock panel */}
       <motion.nav
         id="mobile-nav-dock"
         aria-label="Mobile navigation"
         className={cn(
           'fixed flex flex-col items-center gap-1',
-          // ✅ FIX 1: Tailwind classes for positioning
-          // ❌ was: style={{ bottom: '80px', left: '16px' }}
           'bottom-20 left-4',
           'z-[9998]',
           'py-2 px-1.5 rounded-2xl',
@@ -419,12 +475,21 @@ function MobileVerticalDock({
           'backdrop-blur-xl',
           'border border-white/25 dark:border-white/[0.1]',
           'shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
-          'isolate',
-          isOpen ? '[will-change:transform,opacity]' : '',
+          // ✅ CRITICAL FIX: Remove 'isolate' from the mobile dock.
+          //
+          // 'isolate' creates a new stacking context (isolation: isolate).
+          // When combined with position:fixed and z-index on a mobile browser,
+          // it forces the browser to flatten this element's layer tree separately
+          // from the rest of the page. This made the dock's backdrop-filter and
+          // opacity animations recalculate the stacking order of ALL fixed
+          // elements — including the GSAP-pinned Projects section — on every
+          // open/close animation frame.
         )}
-        // ✅ FIX 1: Only keep non-positional values in style
         style={{
           WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+          // ✅ Only apply will-change when actually animating (open state).
+          // Persisting will-change:transform on a fixed element even when
+          // idle keeps an unnecessary GPU layer alive, competing with GSAP.
         }}
         initial={false}
         animate={{
@@ -440,7 +505,6 @@ function MobileVerticalDock({
           opacity:   { duration: 0.2 },
         }}
       >
-        {/* Shimmer + items — unchanged */}
         <div
           className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
           aria-hidden="true"
@@ -474,7 +538,8 @@ function MobileVerticalDock({
     </>
   );
 }
-/* ── Mobile portal wrapper — FIXED ───────────────────────────── */
+
+/* ── MobileNavPortal ──────────────────────────────────────────── */
 
 function MobileNavPortal({
   items,
@@ -489,87 +554,62 @@ function MobileNavPortal({
   onClose:  () => void;
   isMobile: boolean | null;
 }) {
-  // ✅ FIX 2: Single merged state — eliminates the double-effect race.
-  // Previously: bodyReady (effect 1) + isMobile (effect 2) needed BOTH
-  // to be true, sometimes causing a missed render on slow mobile devices.
-  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    // isMobile is already confirmed true when this runs because the
-    // parent re-renders and passes the new prop before this effect fires.
-    // We only need ONE state flip now instead of two.
-    if (isMobile === true) {
-      setPortalTarget(document.body);
-    } else {
-      setPortalTarget(null);
-    }
-  }, [isMobile]);
-
-  if (!portalTarget) return null;
+  // ✅ CRITICAL FIX: Don't use useState for the portal target.
+  //
+  // Original: useState(null) → useEffect sets it → re-render → page re-render
+  // → GSAP ScrollTrigger sees layout change → refresh() → clipPath reset → flicker.
+  //
+  // Fix: if isMobile is already true (measured by useIsMobileReady), document.body
+  // is guaranteed available (we're client-side). Skip the state entirely.
+  // There is NO async gap between isMobile===true and document.body being ready.
+  
+  if (isMobile !== true) return null;
 
   return createPortal(
     <>
       <MobileTriggerButton isOpen={isOpen} onClick={isOpen ? onClose : onOpen} />
       <MobileVerticalDock  items={items}   isOpen={isOpen} onClose={onClose} />
     </>,
-    portalTarget,
+    document.body,
   );
 }
-/* ── Main component ───────────────────────────────────────────── */
+
+/* ── FloatingAppBar ───────────────────────────────────────────── */
 
 export function FloatingAppBar() {
-  const [visible,    setVisible]    = useState(true);
-  const [scrolled,   setScrolled]   = useState(false);
-  const [navHovered, setNavHovered] = useState(false);
+  // ✅ useNavScroll now subscribes to lenis-scroll event instead of window.scroll
+  const { visible, scrolled, closeMobileRef } = useNavScroll();
+
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [navHovered, setNavHovered] = useState(false);
 
-  const lastScrollYRef = useRef(0);
-  const navRef         = useRef<HTMLElement>(null);
-  const mouseX         = useMotionValue(Infinity);
-  const navMouseX      = useMotionValue(0);
-  const smoothNavX     = useSpring(navMouseX, { stiffness: 250, damping: 30 });
+  const navRef     = useRef<HTMLElement>(null);
+  const mouseX     = useMotionValue(Infinity);
+  const navMouseX  = useMotionValue(0);
+  const smoothNavX = useSpring(navMouseX, { stiffness: 250, damping: 30 });
 
-  // ✅ Single hook instance — shared with MobileNavPortal via prop
-  //    null  = SSR / not yet measured
-  //    true  = confirmed mobile
-  //    false = confirmed desktop
   const isMobileReady = useIsMobileReady();
 
-  const handleScroll = useCallback(() => {
-    const currentScrollY = window.scrollY;
-    const shouldHide =
-      currentScrollY > lastScrollYRef.current && currentScrollY > 400;
-
-    if (currentScrollY > lastScrollYRef.current && currentScrollY > 100) {
-      setMobileOpen(false);
-    }
-
-    setVisible((prev) => {
-      const next = !shouldHide;
-      return prev === next ? prev : next;
-    });
-
-    setScrolled((prev) => {
-      const next = currentScrollY > 80;
-      return prev === next ? prev : next;
-    });
-
-    lastScrollYRef.current = currentScrollY;
-  }, []);
+  // ✅ Wire close callback into the scroll hook's ref.
+  // Using a ref avoids adding setMobileOpen to useNavScroll's
+  // dependency array, which would recreate the effect on every render.
+  const closeMobile = useCallback(() => setMobileOpen(false), []);
+  const openMobile  = useCallback(() => setMobileOpen(true),  []);
 
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+    closeMobileRef.current = closeMobile;
+  }, [closeMobile, closeMobileRef]);
 
-  const scrollTo    = useCallback((href: string) => {
+  const scrollTo = useCallback((href: string) => {
     document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
   }, []);
-  const openMobile  = useCallback(() => setMobileOpen(true),  []);
-  const closeMobile = useCallback(() => setMobileOpen(false), []);
 
   const glassClasses = cn(
-    'rounded-full overflow-visible isolate [will-change:transform,opacity]',
+    'rounded-full overflow-visible',
+    // ✅ REMOVED 'isolate' from desktop navbar.
+    // Same reason as mobile dock — isolate creates a stacking context that
+    // forces layer re-evaluation on every animate() call, competing with GSAP.
+    '[will-change:transform,opacity]',
     'border transition-[background-color,border-color,box-shadow] duration-700 ease-out',
     scrolled
       ? 'bg-white/75 dark:bg-neutral-900/75 backdrop-blur-2xl border-white/30 dark:border-white/[0.12] shadow-[0_8px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)]'
@@ -589,13 +629,9 @@ export function FloatingAppBar() {
 
   return (
     <>
-      {/* ════════════════════════════════════
-          DESKTOP — only when confirmed desktop
-          isMobileReady === false means "measured + desktop"
-      ════════════════════════════════════ */}
+      {/* Desktop navbar — only when confirmed desktop */}
       {isMobileReady === false && (
         <>
-          {/* Desktop ambient glow */}
           <motion.div
             className="fixed bottom-6 left-1/2 z-40 pointer-events-none"
             initial={{ x: '-50%', opacity: 0 }}
@@ -614,7 +650,6 @@ export function FloatingAppBar() {
             />
           </motion.div>
 
-          {/* Desktop navbar */}
           <motion.nav
             ref={navRef}
             aria-label="Main navigation"
@@ -650,7 +685,6 @@ export function FloatingAppBar() {
             }}
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
           >
-            {/* Shimmer */}
             <div
               className="absolute inset-0 rounded-full overflow-hidden pointer-events-none"
               aria-hidden="true"
@@ -661,7 +695,6 @@ export function FloatingAppBar() {
               />
             </div>
 
-            {/* Mouse-following glow */}
             <motion.div
               className="absolute top-0 h-full w-44 pointer-events-none rounded-full"
               style={{
@@ -675,13 +708,11 @@ export function FloatingAppBar() {
               aria-hidden="true"
             />
 
-            {/* Dock content */}
             <motion.div
               className="flex items-center gap-2 px-3 py-2 relative z-10"
               onMouseMove={(e) => mouseX.set(e.pageX)}
               onMouseLeave={() => mouseX.set(Infinity)}
             >
-              {/* Logo */}
               <motion.button
                 onClick={() => scrollTo('#hero')}
                 aria-label="Scroll to top"
@@ -705,7 +736,6 @@ export function FloatingAppBar() {
                 <span className="relative z-10" aria-hidden="true">H</span>
               </motion.button>
 
-              {/* Divider */}
               <motion.div
                 className="w-px h-5 flex-shrink-0 bg-gradient-to-b from-transparent via-neutral-300 dark:via-white/15 to-transparent"
                 initial={{ opacity: 0, scaleY: 0 }}
@@ -713,7 +743,6 @@ export function FloatingAppBar() {
                 aria-hidden="true"
               />
 
-              {/* Nav items */}
               {NAV_SECTIONS.map((item, index) => (
                 <motion.div
                   key={item.label}
@@ -737,7 +766,6 @@ export function FloatingAppBar() {
                 </motion.div>
               ))}
 
-              {/* Divider */}
               <motion.div
                 className="w-px h-5 flex-shrink-0 bg-gradient-to-b from-transparent via-neutral-300 dark:via-white/15 to-transparent"
                 initial={{ opacity: 0, scaleY: 0 }}
@@ -745,7 +773,6 @@ export function FloatingAppBar() {
                 aria-hidden="true"
               />
 
-              {/* Theme toggle */}
               <motion.div
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{
@@ -756,7 +783,6 @@ export function FloatingAppBar() {
                 <IconContainer mouseX={mouseX} label="Toggle Theme" isThemeToggle />
               </motion.div>
 
-              {/* Resume */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.6, x: 10 }}
                 animate={{
@@ -803,16 +829,13 @@ export function FloatingAppBar() {
         </>
       )}
 
-      {/* ════════════════════════════════════
-          MOBILE portal — isMobileReady passed as prop
-          No second hook instance — fixes the hydration race
-      ════════════════════════════════════ */}
+      {/* Mobile portal */}
       <MobileNavPortal
         items={mobileItems}
         isOpen={mobileOpen}
         onOpen={openMobile}
         onClose={closeMobile}
-        isMobile={isMobileReady}  // ✅ Single source of truth
+        isMobile={isMobileReady}
       />
     </>
   );

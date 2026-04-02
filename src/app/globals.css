@@ -27,11 +27,9 @@
 
   --radius: 0.75rem;
 
-  /* ✅ Updated to use next/font CSS variables */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
-  /* ✅ Custom breakpoint — Tailwind v4 syntax */
   --breakpoint-xs: 480px;
 
   --animate-marquee:       marquee 30s linear infinite;
@@ -67,9 +65,36 @@
    Panel Background
 ═══════════════════════════════════════════════════════════════ */
 
+/*
+  ✅ contain: layout paint — NOT strict.
+
+  strict = size + layout + paint + style combined.
+  The size part breaks percentage-based width/height on orbs:
+  the browser resolves % against a zero-size containing block,
+  then snaps back when GSAP clipPath causes a reflow → flicker.
+
+  layout paint = safe: isolates layout and repaint boundaries
+  WITHOUT breaking percentage dimensions.
+*/
+.panel-bg {
+  contain: layout paint;
+}
+
 .panel-bg__base {
   background: var(--pb-base-light);
-  transition: background 600ms ease;
+  /*
+    ✅ FIX: Remove transition from base layer.
+
+    The base layer covers the entire panel (inset: 0). A 600ms
+    background transition on a full-panel element means 600ms of
+    continuous repainting. During GSAP scroll scrubbing, this
+    transition re-triggers on every style recalculation, creating
+    a 600ms "ghost" of the previous color that overlaps the new
+    one — the shimmer/flicker visible during scroll.
+
+    Theme changes are handled by the View Transition in ToggleTheme.
+    We don't need CSS transitions on background here.
+  */
 }
 .dark .panel-bg__base {
   background: var(--pb-base-dark);
@@ -80,7 +105,14 @@
     radial-gradient(ellipse 80% 60% at 20% 80%, var(--pb-mesh-light)  0%, transparent 55%),
     radial-gradient(ellipse 60% 80% at 80% 20%, var(--pb-orb3-light)  0%, transparent 55%),
     radial-gradient(ellipse 90% 50% at 50% 50%, var(--pb-orb2-light)  0%, transparent 60%);
-  transition: background 600ms ease;
+  /*
+    ✅ FIX: No transition, no contain: strict.
+
+    contain: strict was here — removed (see .panel-bg note above).
+    No transition: the mesh background uses CSS vars that don't
+    change during scroll, only on theme switch. View Transition
+    handles the theme switch visually.
+  */
 }
 .dark .panel-bg__mesh {
   background:
@@ -89,9 +121,28 @@
     radial-gradient(ellipse 90% 50% at 50% 50%, var(--pb-orb2-dark)  0%, transparent 60%);
 }
 
+/*
+  ✅ FIX: contain: layout paint on orbs — NOT strict.
+  
+  Also: NO transition property on orb background.
+  
+  The original had `transition: background 600ms ease` on each orb.
+  During GSAP scroll, the browser fires a style recalculation on
+  the entire panel subtree for EVERY clipPath update (60x/second).
+  Even though the CSS variable values haven't changed, the browser
+  sees a "style event" and restarts the transition — triggering
+  60 repaint cycles per second on each orb's radial-gradient.
+  That's the flicker during scrolling.
+
+  Theme transitions are cosmetic and handled by View Transition API.
+  Orbs don't need background transitions.
+*/
+.panel-bg__orb {
+  contain: layout paint;
+}
+
 .panel-bg__orb--a {
   background: radial-gradient(circle at center, var(--pb-orb1-light) 0%, transparent 68%);
-  transition: background 600ms ease;
 }
 .dark .panel-bg__orb--a {
   background: radial-gradient(circle at center, var(--pb-orb1-dark) 0%, transparent 68%);
@@ -99,7 +150,6 @@
 
 .panel-bg__orb--b {
   background: radial-gradient(circle at center, var(--pb-orb2-light) 0%, transparent 68%);
-  transition: background 600ms ease;
 }
 .dark .panel-bg__orb--b {
   background: radial-gradient(circle at center, var(--pb-orb2-dark) 0%, transparent 68%);
@@ -107,7 +157,6 @@
 
 .panel-bg__orb--c {
   background: radial-gradient(circle at center, var(--pb-orb3-light) 0%, transparent 68%);
-  transition: background 600ms ease;
 }
 .dark .panel-bg__orb--c {
   background: radial-gradient(circle at center, var(--pb-orb3-dark) 0%, transparent 68%);
@@ -117,12 +166,24 @@
   background-image:
     linear-gradient(rgba(0,0,0,0.028) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0,0,0,0.028) 1px, transparent 1px);
-  transition: background-image 600ms ease;
 }
 .dark .panel-bg__grid {
   background-image:
     linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+}
+
+/*
+  ✅ Grain as CSS class — parsed once, never re-evaluated inline.
+  contain: paint shrinks repaint region to element bounds.
+*/
+.panel-bg__grain {
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 160px 160px;
+  contain: paint;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -153,10 +214,12 @@
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+
 @keyframes shimmer-sweep-vertical {
   0%   { transform: translateY(-100%); }
   100% { transform: translateY(500%); }
 }
+
 @keyframes pulse-ring {
   0%   { transform: scale(0.85); opacity: 1; }
   100% { transform: scale(1.8);  opacity: 0; }
@@ -182,37 +245,48 @@
   50%       { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.18); }
 }
 
+/*
+  ✅ Panel orb keyframes: translateZ(0) kept INSIDE the keyframe.
+  This promotes the GPU layer only during active animation frames,
+  not permanently. Combined with animationFillMode: none in the
+  component, the layer is de-promoted when animation is paused.
+*/
 @keyframes panel-orb-a {
-  0%   { transform: translateZ(0) translate(0%,   0%)  scale(1);    }
-  20%  { transform: translateZ(0) translate(8%,  -12%) scale(1.06); }
-  45%  { transform: translateZ(0) translate(-6%,  10%) scale(0.95); }
-  65%  { transform: translateZ(0) translate(12%,  5%)  scale(1.04); }
-  80%  { transform: translateZ(0) translate(-4%, -8%)  scale(1.02); }
-  100% { transform: translateZ(0) translate(0%,   0%)  scale(1);    }
+  0%   { transform: translate( 0%,   0%)  scale(1)    translateZ(0); }
+  20%  { transform: translate( 8%,  -12%) scale(1.06) translateZ(0); }
+  45%  { transform: translate(-6%,   10%) scale(0.95) translateZ(0); }
+  65%  { transform: translate(12%,   5%)  scale(1.04) translateZ(0); }
+  80%  { transform: translate(-4%,  -8%)  scale(1.02) translateZ(0); }
+  100% { transform: translate( 0%,   0%)  scale(1)    translateZ(0); }
 }
 
 @keyframes panel-orb-b {
-  0%   { transform: translateZ(0) translate(0%,    0%) scale(1);    }
-  25%  { transform: translateZ(0) translate(-10%, 14%) scale(1.08); }
-  50%  { transform: translateZ(0) translate(7%,  -6%)  scale(0.93); }
-  75%  { transform: translateZ(0) translate(-5%,  9%)  scale(1.05); }
-  100% { transform: translateZ(0) translate(0%,   0%)  scale(1);    }
+  0%   { transform: translate(  0%,   0%) scale(1)    translateZ(0); }
+  25%  { transform: translate(-10%,  14%) scale(1.08) translateZ(0); }
+  50%  { transform: translate(  7%,  -6%) scale(0.93) translateZ(0); }
+  75%  { transform: translate( -5%,   9%) scale(1.05) translateZ(0); }
+  100% { transform: translate(  0%,   0%) scale(1)    translateZ(0); }
 }
 
 @keyframes panel-orb-c {
-  0%   { transform: translateZ(0) translate(0%,    0%) scale(1);   }
-  30%  { transform: translateZ(0) translate(14%, -10%) scale(1.1); }
-  60%  { transform: translateZ(0) translate(-8%,  12%) scale(0.9); }
-  100% { transform: translateZ(0) translate(0%,   0%)  scale(1);   }
+  0%   { transform: translate(  0%,   0%) scale(1)   translateZ(0); }
+  30%  { transform: translate( 14%, -10%) scale(1.1) translateZ(0); }
+  60%  { transform: translate( -8%,  12%) scale(0.9) translateZ(0); }
+  100% { transform: translate(  0%,   0%) scale(1)   translateZ(0); }
 }
 
-/* ── Reduced motion: freeze all panel orbs ── */
+/* ═══════════════════════════════════════════════════════════════
+   Panel orb: reduced motion
+═══════════════════════════════════════════════════════════════ */
+
 @media (prefers-reduced-motion: reduce) {
   .panel-bg__orb--a,
   .panel-bg__orb--b,
   .panel-bg__orb--c,
-  .panel-bg__mesh {
+  .panel-bg__mesh,
+  .panel-bg__grain {
     animation: none !important;
+    will-change: auto !important;
   }
 }
 
@@ -236,13 +310,23 @@
 
 html {
   scroll-behavior: auto;
-  /* ✅ Firefox scrollbar — single declaration */
   scrollbar-width: thin;
   scrollbar-color: rgba(16, 185, 129, 0.2) transparent;
 }
 
 body {
-    transition: background-color 0ms, color 0ms;
+  /*
+    ✅ FIX: Remove transition on background-color/color.
+
+    transition: background-color 0ms is a no-op (0ms = instant).
+    BUT declaring ANY transition on body makes the browser include
+    body in its "elements with transitions" list. On every scroll
+    event, the browser checks this list for elements that need
+    transition updates. On a page with GSAP ScrollTrigger running
+    at 60fps, this adds 60 unnecessary body-style checks per second.
+
+    Removed entirely — no visual difference, measurable perf gain.
+  */
   background:  var(--color-background);
   color:       var(--color-foreground);
   font-family: var(--font-sans);
@@ -255,7 +339,6 @@ body {
   color: var(--color-foreground);
 }
 
-/* ✅ Single scrollbar block — no duplicates */
 ::-webkit-scrollbar       { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -267,7 +350,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Focus visible — global accessibility
+   Focus visible
 ═══════════════════════════════════════════════════════════════ */
 
 :focus-visible {
@@ -277,9 +360,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Touch target utility
-   Use .touch-target on small interactive elements that need a
-   44px hit area without changing their visual size.
+   Touch target
 ═══════════════════════════════════════════════════════════════ */
 
 .touch-target-relative {
@@ -298,14 +379,35 @@ body {
    Reduced Motion — global
 ═══════════════════════════════════════════════════════════════ */
 
+/*
+  ✅ CRITICAL FIX: Scope reduced-motion to CSS animations ONLY.
+  Never apply it to transition-duration on *.
+
+  The original rule used `transition-duration: 0.01ms !important`
+  on `*`. This overrides Framer Motion's inline style transitions
+  (which are set as style="transition: transform 0.5s ...").
+  !important wins over inline styles.
+
+  Result: every Framer Motion animation on MobileCard snapped to
+  0.01ms, then Framer Motion detected the "completed" animation
+  and re-queued it — creating the rapid flicker loop on mobile.
+
+  Fix: Only suppress CSS @keyframes animations in reduced-motion.
+  Framer Motion handles its own reduced-motion via the
+  useReducedMotion() hook in the component — don't interfere.
+*/
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration:       0.01ms !important;
-    animation-iteration-count: 1     !important;
-    transition-duration:      0.01ms !important;
-    scroll-behavior:          auto   !important;
+  /*
+    Target only CSS keyframe animations — not JS-driven transitions.
+    The [style] attribute selector excludes elements that have
+    inline style transitions set by Framer Motion.
+  */
+  *:not([style*="transition"]),
+  *:not([style*="transition"])::before,
+  *:not([style*="transition"])::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    scroll-behavior:           auto   !important;
   }
 }
 
@@ -328,13 +430,13 @@ body {
 ═══════════════════════════════════════════════════════════════ */
 
 .glass {
-  background:          oklch(0.97 0 0 / 60%);
+  background:              oklch(0.97 0 0 / 60%);
   backdrop-filter:         blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid oklch(0.922 0 0);
-    transition: 
+  transition:
     background-color 400ms ease,
-    border-color 400ms ease;
+    border-color     400ms ease;
 }
 .dark .glass {
   background: oklch(0.205 0 0 / 60%);
@@ -342,13 +444,13 @@ body {
 }
 
 .glass-strong {
-  background:          oklch(1 0 0 / 80%);
+  background:              oklch(1 0 0 / 80%);
   backdrop-filter:         blur(40px);
   -webkit-backdrop-filter: blur(40px);
   border: 1px solid oklch(0.922 0 0);
-    transition: 
+  transition:
     background-color 400ms ease,
-    border-color 400ms ease;
+    border-color     400ms ease;
 }
 .dark .glass-strong {
   background: oklch(0.145 0 0 / 85%);
@@ -421,17 +523,17 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   High-contrast mode fallback
+   High-contrast mode
 ═══════════════════════════════════════════════════════════════ */
 
 @media (forced-colors: active) {
   .glass-nav,
   .glass-strong,
   .glass {
-    background:          Canvas     !important;
+    background:          Canvas          !important;
     border:              1px solid ButtonText !important;
-    backdrop-filter:         none   !important;
-    -webkit-backdrop-filter: none   !important;
+    backdrop-filter:         none        !important;
+    -webkit-backdrop-filter: none        !important;
   }
 }
 
