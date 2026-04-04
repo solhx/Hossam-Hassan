@@ -50,6 +50,13 @@
   --projects-green-300:   oklch(0.76 0.16 142);
   --projects-green-neon:  oklch(0.82 0.22 140);
   --projects-green-soft:  oklch(0.90 0.10 145);
+
+  /* ── Projects light palette ──────────────────────────────── */
+  --projects-light-base:    oklch(0.97 0.008 160);
+  --projects-light-surface: oklch(0.99 0.004 155);
+  --projects-light-muted:   oklch(0.94 0.012 158);
+  --projects-light-border:  oklch(0.88 0.018 155);
+  --projects-light-subtle:  oklch(0.92 0.015 157);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -182,6 +189,37 @@
   100% { background-position:  200% 200%; }
 }
 
+/* ── Light mode orb drift (gentler amplitude) ───────────────── */
+@keyframes projects-orb-drift-a-light {
+  0%   { transform: translate(  0%,   0%) scale(1.00); }
+  20%  { transform: translate(  2%,  -4%) scale(1.02); }
+  45%  { transform: translate( -2%,   3%) scale(0.98); }
+  65%  { transform: translate(  3%,   2%) scale(1.02); }
+  80%  { transform: translate( -1%,  -3%) scale(1.01); }
+  100% { transform: translate(  0%,   0%) scale(1.00); }
+}
+
+@keyframes projects-orb-drift-b-light {
+  0%   { transform: translate(  0%,   0%) scale(1.00); }
+  25%  { transform: translate( -3%,   4%) scale(1.03); }
+  50%  { transform: translate(  2%,  -2%) scale(0.97); }
+  75%  { transform: translate( -2%,   3%) scale(1.02); }
+  100% { transform: translate(  0%,   0%) scale(1.00); }
+}
+
+@keyframes projects-orb-drift-c-light {
+  0%   { transform: translate(  0%,   0%) scale(1.00); }
+  30%  { transform: translate(  4%,  -3%) scale(1.04); }
+  60%  { transform: translate( -3%,   4%) scale(0.96); }
+  100% { transform: translate(  0%,   0%) scale(1.00); }
+}
+
+@keyframes projects-sweep-light {
+  0%   { background-position:  200% 200%; opacity: 0.4; }
+  50%  { background-position: -100% -100%; opacity: 0.7; }
+  100% { background-position:  200% 200%; opacity: 0.4; }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    Base
 ═══════════════════════════════════════════════════════════════ */
@@ -246,7 +284,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Reduced Motion — single merged block
+   Reduced Motion
 ═══════════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
@@ -500,16 +538,10 @@ body {
     display: none;
   }
 }
-/* ─────────────────────────────────────────────────────────────
-   NOTE: @media block closed here ↑
-   Everything below is TOP-LEVEL — not nested inside any block
-───────────────────────────────────────────────────────────── */
 
 /* ═══════════════════════════════════════════════════════════════
-   Projects Section — Green Design System
-   All background work is CSS-only.
-   Zero GSAP involvement. Zero image dependencies.
-   Animations use transform only (compositor-safe).
+   Projects Section — DARK mode background (default)
+   Cinema feel: deep blacks, glowing emerald accents, drama
 ═══════════════════════════════════════════════════════════════ */
 
 /* ── Root container ─────────────────────────────────────────── */
@@ -518,13 +550,18 @@ body {
   inset:      0;
   overflow:   hidden;
   z-index:    0;
+  /* DARK default: deep near-black green */
   background: oklch(0.08 0.02 160);
+  /* Smooth transition when theme switches */
+  transition: background 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ── Layer 1: Static mesh gradient ─────────────────────────── */
 .projects-bg-mesh {
-  position: absolute;
-  inset:    0;
+  position:   absolute;
+  inset:      0;
+  transition: opacity 0.6s ease;
+  /* DARK: rich deep green mesh */
   background:
     radial-gradient(
       ellipse 70% 60% at -10% -10%,
@@ -543,7 +580,7 @@ body {
     );
 }
 
-/* ── Layer 2: Animated ambient orbs ────────────────────────── */
+/* ── Layer 2: Animated ambient orbs (DARK) ──────────────────── */
 .projects-bg-orb {
   position:       absolute;
   border-radius:  50%;
@@ -566,6 +603,7 @@ body {
     transparent 70%
   );
   animation: projects-orb-drift-a 18s ease-in-out infinite;
+  transition: background 0.6s ease;
 }
 
 .projects-bg-orb--b {
@@ -583,6 +621,7 @@ body {
   );
   animation:       projects-orb-drift-b 22s ease-in-out infinite;
   animation-delay: -6s;
+  transition:      background 0.6s ease;
 }
 
 .projects-bg-orb--c {
@@ -600,6 +639,7 @@ body {
   );
   animation:       projects-orb-drift-c 26s ease-in-out infinite;
   animation-delay: -12s;
+  transition:      background 0.6s ease;
 }
 
 .projects-bg-orb--d {
@@ -615,10 +655,10 @@ body {
     oklch(0.14 0.05 155 / 0.15) 50%,
     transparent 70%
   );
-  /* Static — no animation for performance */
+  transition: background 0.6s ease;
 }
 
-/* ── Layer 3: Grid overlay ──────────────────────────────────── */
+/* ── Layer 3: Grid overlay (DARK) ───────────────────────────── */
 .projects-bg-grid {
   position:         absolute;
   inset:            0;
@@ -636,22 +676,16 @@ body {
     black 30%,
     transparent 90%
   );
+  transition: opacity 0.6s ease;
 }
 
-/* ── Layer 4: Noise grain ───────────────────────────────────── */
-/*
-  FIX 6: SVG data URI replaced with CSS crosshatch pattern.
-  BEFORE: 2KB+ SVG parsed per element = repaint on scroll.
-  AFTER:  Pure CSS math — zero bytes, zero GPU texture upload.
-  Two overlapping 45deg gradients create micro-texture cheaply.
-*/
+/* ── Layer 4: Noise/grain texture ───────────────────────────── */
 .projects-bg-grain {
-  position:      absolute;
-  inset:         0;
+  position:       absolute;
+  inset:          0;
   mix-blend-mode: overlay;
   pointer-events: none;
   contain:        paint;
-  /* CSS crosshatch — GPU-computed, zero memory cost */
   background-image: linear-gradient(
       45deg,
       transparent 49.5%,
@@ -667,10 +701,11 @@ body {
       transparent 50.5%
     );
   background-size: 4px 4px;
-  opacity: 0.6;
+  opacity:         0.6;
+  transition:      opacity 0.6s ease;
 }
 
-/* ── Layer 5: Vignette ──────────────────────────────────────── */
+/* ── Layer 5: Vignette (DARK) ───────────────────────────────── */
 .projects-bg-vignette {
   position:   absolute;
   inset:      0;
@@ -680,9 +715,10 @@ body {
     oklch(0.06 0.01 160 / 0.55) 100%
   );
   pointer-events: none;
+  transition:     background 0.6s ease;
 }
 
-/* ── Layer 6: Animated sweep ────────────────────────────────── */
+/* ── Layer 6: Animated sweep (DARK) ────────────────────────── */
 .projects-bg-sweep {
   position:        absolute;
   inset:           0;
@@ -697,6 +733,7 @@ body {
   background-size: 200% 200%;
   animation:       projects-sweep 12s ease-in-out infinite;
   pointer-events:  none;
+  transition:      opacity 0.6s ease;
 }
 
 /* ── Layer 7: Per-project accent ring ───────────────────────── */
@@ -711,6 +748,192 @@ body {
   transition:     opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
   opacity:        1;
+}
+
+/* ── Layer 8: Top edge shimmer (DARK only) ──────────────────── */
+.projects-bg-edge-top {
+  position:   absolute;
+  top:        0;
+  left:       0;
+  right:      0;
+  height:     1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(0.53 0.17 145 / 0.4) 30%,
+    oklch(0.65 0.18 143 / 0.7) 50%,
+    oklch(0.53 0.17 145 / 0.4) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+  transition:     opacity 0.6s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Projects Section — LIGHT mode overrides
+   Apple-esque: crisp white, soft shadows, airy depth
+   Accent colors keep their identity but are more refined
+═══════════════════════════════════════════════════════════════ */
+
+/* Root: warm white with the faintest green tint */
+.light .projects-bg-root,
+:root:not(.dark) .projects-bg-root {
+  background: oklch(0.97 0.008 160);
+}
+
+/* Mesh: soft green tints, very low opacity — structure only */
+.light .projects-bg-mesh,
+:root:not(.dark) .projects-bg-mesh {
+  background:
+    radial-gradient(
+      ellipse 70% 60% at -10% -10%,
+      oklch(0.88 0.04 152 / 0.50) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 80% 70% at 110% 110%,
+      oklch(0.90 0.03 155 / 0.45) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 100% 80% at 50% 50%,
+      oklch(0.95 0.015 158 / 0.80) 0%,
+      oklch(0.97 0.008 160) 70%
+    );
+}
+
+/* Orbs: very soft, pastel emerald — airy not glowing */
+.light .projects-bg-orb--a,
+:root:not(.dark) .projects-bg-orb--a {
+  background: radial-gradient(
+    circle at center,
+    oklch(0.82 0.08 148 / 0.18) 0%,
+    oklch(0.88 0.05 150 / 0.08) 50%,
+    transparent 70%
+  );
+  animation-name: projects-orb-drift-a-light;
+  filter: blur(100px);
+}
+
+.light .projects-bg-orb--b,
+:root:not(.dark) .projects-bg-orb--b {
+  background: radial-gradient(
+    circle at center,
+    oklch(0.78 0.10 145 / 0.14) 0%,
+    oklch(0.85 0.06 148 / 0.06) 50%,
+    transparent 70%
+  );
+  animation-name: projects-orb-drift-b-light;
+  filter: blur(110px);
+}
+
+.light .projects-bg-orb--c,
+:root:not(.dark) .projects-bg-orb--c {
+  background: radial-gradient(
+    circle at center,
+    oklch(0.75 0.12 143 / 0.10) 0%,
+    oklch(0.82 0.08 145 / 0.05) 50%,
+    transparent 70%
+  );
+  animation-name: projects-orb-drift-c-light;
+  filter: blur(120px);
+}
+
+.light .projects-bg-orb--d,
+:root:not(.dark) .projects-bg-orb--d {
+  background: radial-gradient(
+    circle at center,
+    oklch(0.90 0.03 152 / 0.25) 0%,
+    oklch(0.94 0.02 155 / 0.10) 50%,
+    transparent 70%
+  );
+}
+
+/* Grid: dark lines instead of white — visible on light bg */
+.light .projects-bg-grid,
+:root:not(.dark) .projects-bg-grid {
+  background-image:
+    linear-gradient(oklch(0.40 0.08 155 / 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.40 0.08 155 / 0.06) 1px, transparent 1px);
+}
+
+/* Grain: darken instead of lighten in light mode */
+.light .projects-bg-grain,
+:root:not(.dark) .projects-bg-grain {
+  mix-blend-mode: multiply;
+  background-image: linear-gradient(
+      45deg,
+      transparent 49.5%,
+      rgba(0, 80, 50, 0.025) 49.5%,
+      rgba(0, 80, 50, 0.025) 50.5%,
+      transparent 50.5%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 49.5%,
+      rgba(0, 80, 50, 0.025) 49.5%,
+      rgba(0, 80, 50, 0.025) 50.5%,
+      transparent 50.5%
+    );
+  opacity: 0.5;
+}
+
+/* Vignette: white edges (inward fade to center clarity) */
+.light .projects-bg-vignette,
+:root:not(.dark) .projects-bg-vignette {
+  background: radial-gradient(
+    ellipse 90% 90% at 50% 50%,
+    transparent 50%,
+    oklch(0.94 0.010 158 / 0.40) 100%
+  );
+}
+
+/* Sweep: subtle warm teal highlight */
+.light .projects-bg-sweep,
+:root:not(.dark) .projects-bg-sweep {
+  background: linear-gradient(
+    105deg,
+    transparent                   0%,
+    oklch(0.78 0.10 148 / 0.04)  40%,
+    oklch(0.72 0.12 145 / 0.07)  50%,
+    oklch(0.78 0.10 148 / 0.04)  60%,
+    transparent                  100%
+  );
+  animation-name: projects-sweep-light;
+}
+
+/* Accent ring: lighter opacity in light mode */
+.light .projects-bg-accent-ring,
+:root:not(.dark) .projects-bg-accent-ring {
+  opacity: 0.6;
+}
+
+/* Edge top: hide in light mode — doesn't look right on white */
+.light .projects-bg-edge-top,
+:root:not(.dark) .projects-bg-edge-top {
+  opacity: 0;
+}
+
+/* ── Light mode card chrome ──────────────────────────────────
+   Cards in light mode: white glass panels, green accent glows
+   Premium shadow system replaces the harsh dark card borders
+─────────────────────────────────────────────────────────────── */
+
+/* Card shell gets a light-mode glass surface */
+:root:not(.dark) .stack-card-light-surface {
+  background: oklch(1 0 0 / 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.9) inset,  /* top highlight */
+    0 32px 64px -12px oklch(0.60 0.10 155 / 0.15),
+    0  8px 24px  -4px oklch(0.70 0.12 152 / 0.10),
+    0  0   0     1px  oklch(0.80 0.06 155 / 0.25); /* subtle border */
+}
+
+/* Progress bar track: visible in light mode */
+:root:not(.dark) .stack-progress-track-light {
+  background: oklch(0.88 0.02 155 / 0.6);
 }
 
 /* ── Mobile optimizations ───────────────────────────────────── */

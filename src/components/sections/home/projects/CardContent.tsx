@@ -1,24 +1,4 @@
 // src/components/sections/home/projects/CardContent.tsx
-// ─────────────────────────────────────────────────────────────────
-// FIX 4 — AnimatePresence flicker during clip-path transition
-//
-// BEFORE: AnimatePresence mode="wait" → when isVisible toggles,
-//         FM immediately unmounts old content and mounts new.
-//         If this happens while GSAP clip-path is 50% open,
-//         the new text is visible behind the wipe = flash.
-//
-// AFTER:  mode="sync" replaces mode="wait".
-//         "sync" runs exit + enter simultaneously instead of
-//         waiting for exit to complete. Combined with the deferred
-//         onActiveChange timing in useStackAnimation (fires after
-//         clip covers card), the content swap always happens
-//         while geometrically hidden.
-//
-//         Additionally: exit animations removed from text variants.
-//         Content that's hidden behind a clip-path doesn't need
-//         to animate out — the wipe IS the exit. Removing exit
-//         variants eliminates a full stagger cycle of work.
-// ─────────────────────────────────────────────────────────────────
 'use client';
 
 import { memo }                                   from 'react';
@@ -29,11 +9,7 @@ import { cn }                                     from '@/utils/utils';
 import { FM_EASE }                                from './constants';
 import type { Project, Accent }                   from './types';
 
-// ── Animation variants ─────────────────────────────────────────────
-// FIX 4: exit variants removed from line/tag variants.
-// Content exits via GSAP clip-path wipe — no FM exit needed.
-// This removes an entire stagger cycle on every transition.
-
+// ── Animation variants ─────────────────────────────────────────
 const containerVariants = {
   hidden: {},
   show: {
@@ -42,7 +18,6 @@ const containerVariants = {
       delayChildren:   0.06,
     },
   },
-  // FIX 4: No exit transition defined — clip-path handles exit
 } as const;
 
 const lineVariants = {
@@ -60,7 +35,6 @@ const lineVariants = {
       ease:     FM_EASE.outExpo,
     },
   },
-  // FIX 4: exit removed — wipe covers content before FM exit runs
 } as const;
 
 const tagVariants = {
@@ -79,7 +53,6 @@ const tagVariants = {
       ease:     FM_EASE.outSpring,
     },
   }),
-  // FIX 4: exit removed
 } as const;
 
 const imageCardVariants = {
@@ -98,13 +71,12 @@ const imageCardVariants = {
       delay:    0.04,
     },
   },
-  // FIX 4: exit removed
 } as const;
 
 const linkButtonClass = cn(
   'inline-flex items-center gap-2 px-5 py-2.5',
   'rounded-xl text-sm font-semibold',
-  'transition-transform duration-200 ease-out',
+  'transition-all duration-200 ease-out',
   'active:scale-95',
 );
 
@@ -129,16 +101,8 @@ export const CardContent = memo(function CardContent({
     <div className="absolute inset-0 z-10 flex items-center">
       <div className="max-w-7xl mx-auto w-full px-8 lg:px-14 grid grid-cols-12 gap-8 items-center pt-36 pb-10">
 
-        {/* Left: Text content */}
+        {/* ── Left: Text content ─────────────────────────── */}
         <div className="col-span-12 lg:col-span-5">
-          {/*
-            FIX 4: mode="sync" replaces mode="wait"
-            "wait" held the exit animation open, keeping old content
-            visible while GSAP was mid-wipe.
-            "sync" runs enter immediately — works with deferred
-            onActiveChange timing to ensure content only appears
-            after clip-path fully covers the old card.
-          */}
           <AnimatePresence mode="sync">
             {isVisible && (
               <motion.div
@@ -146,9 +110,9 @@ export const CardContent = memo(function CardContent({
                 variants={reduced ? undefined : containerVariants}
                 initial="hidden"
                 animate="show"
-                // FIX 4: No exit variant — clip-path is the exit
                 className="space-y-6"
               >
+
                 {/* Counter */}
                 <motion.div
                   variants={reduced ? undefined : lineVariants}
@@ -165,7 +129,15 @@ export const CardContent = memo(function CardContent({
                   />
                   {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
                   {project.featured && (
-                    <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full bg-white/10 text-white/60 text-[9px] border border-white/10">
+                    <span
+                      className={cn(
+                        'inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full',
+                        'text-[9px] border',
+                        // DARK: white tinted / LIGHT: accent tinted
+                        'dark:bg-white/10 dark:text-white/60 dark:border-white/10',
+                        'bg-black/5 text-black/40 border-black/10',
+                      )}
+                    >
                       <Star size={7} className="fill-current" aria-hidden="true" />
                       Featured
                     </span>
@@ -175,7 +147,12 @@ export const CardContent = memo(function CardContent({
                 {/* Title */}
                 <motion.h3
                   variants={reduced ? undefined : lineVariants}
-                  className="text-3xl lg:text-4xl xl:text-5xl font-bold leading-[1.1] tracking-tight text-white"
+                  className={cn(
+                    'text-3xl lg:text-4xl xl:text-5xl font-bold',
+                    'leading-[1.1] tracking-tight',
+                    // DARK: pure white / LIGHT: rich near-black
+                    'dark:text-white text-neutral-900',
+                  )}
                 >
                   {project.title}
                 </motion.h3>
@@ -183,7 +160,11 @@ export const CardContent = memo(function CardContent({
                 {/* Description */}
                 <motion.p
                   variants={reduced ? undefined : lineVariants}
-                  className="text-base lg:text-lg text-white/60 leading-relaxed max-w-md"
+                  className={cn(
+                    'text-base lg:text-lg leading-relaxed max-w-md',
+                    // DARK: muted white / LIGHT: readable dark neutral
+                    'dark:text-white/60 text-neutral-600',
+                  )}
                 >
                   {project.description}
                 </motion.p>
@@ -214,14 +195,19 @@ export const CardContent = memo(function CardContent({
                   variants={reduced ? undefined : lineVariants}
                   className="flex items-center gap-3 pt-2"
                 >
+                  {/* Live Demo — accent gradient */}
                   <a
                     href={project.liveUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={cn(linkButtonClass, 'text-white hover:scale-105')}
+                    className={cn(
+                      linkButtonClass,
+                      // DARK: white text on accent / LIGHT: white text on deeper accent
+                      'text-white hover:scale-105 hover:brightness-110',
+                    )}
                     style={{
-                      background: `linear-gradient(135deg, ${accent.primary}cc, ${accent.primary}88)`,
-                      boxShadow:  `0 0 24px ${accent.glow}`,
+                      background: `linear-gradient(135deg, ${accent.primary}ee, ${accent.primary}aa)`,
+                      boxShadow:  `0 0 24px ${accent.glow}, 0 4px 12px rgba(0,0,0,0.15)`,
                     }}
                     aria-label={`View ${project.title} live demo`}
                   >
@@ -230,27 +216,33 @@ export const CardContent = memo(function CardContent({
                     <ArrowRight size={12} aria-hidden="true" />
                   </a>
 
+                  {/* GitHub — glass button */}
                   <a
                     href={project.githubUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
                       linkButtonClass,
-                      'bg-white/8 border border-white/12 text-white/80',
-                      'hover:bg-white/14 hover:scale-105',
+                      'hover:scale-105',
+                      // DARK: white glass / LIGHT: dark glass
+                      'dark:bg-white/8 dark:border dark:border-white/12 dark:text-white/80',
+                      'dark:hover:bg-white/14',
+                      'bg-black/6 border border-black/10 text-neutral-700',
+                      'hover:bg-black/10',
                     )}
                     aria-label={`View ${project.title} on GitHub`}
                   >
-                    <Github size={14} aria-hidden="true" />
+                                        <Github size={14} aria-hidden="true" />
                     Code
                   </a>
                 </motion.div>
+
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Right: Project image card */}
+        {/* ── Right: Project image card ──────────────────── */}
         <div className="col-span-12 lg:col-span-6 lg:col-start-7 flex justify-end">
           <AnimatePresence mode="sync">
             {isVisible && (
@@ -259,19 +251,28 @@ export const CardContent = memo(function CardContent({
                 variants={reduced ? undefined : imageCardVariants}
                 initial="hidden"
                 animate="show"
-                // FIX 4: No exit — wipe handles it
                 className="relative w-full max-w-[520px]"
                 style={{ perspective: 1200 }}
               >
+                {/* ── Image card frame ───────────────────── */}
                 <div
                   className={cn(
                     'relative rounded-2xl overflow-hidden border',
-                    accent.border,
+                    // DARK: accent-tinted border
+                    // LIGHT: stronger border + white inner highlight
+                    'dark:border-white/8',
+                    'border-black/8',
                   )}
                   style={{
-                    boxShadow: `0 32px 64px -12px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05), 0 0 80px -20px rgba(${PROJECT_ACCENTS_MAP[index % 5]},0.3)`,
+                    boxShadow: `
+                      0 32px 64px -12px rgba(0,0,0,0.12),
+                      0  8px 24px  -4px rgba(0,0,0,0.08),
+                      0  0   0     1px  rgba(${PROJECT_ACCENTS_MAP[index % 5]}, 0.20),
+                      0  0   80px -20px rgba(${PROJECT_ACCENTS_MAP[index % 5]}, 0.15)
+                    `,
                   }}
                 >
+                  {/* Image */}
                   <div className="relative aspect-[16/10] overflow-hidden">
                     <Image
                       src={project.image}
@@ -279,17 +280,37 @@ export const CardContent = memo(function CardContent({
                       fill
                       sizes="(max-width: 1024px) 100vw, 520px"
                       className="object-cover object-top"
-                      priority={index < 3} // FIX 14: Preload top 3 to prevent swipe blanks
+                      priority={index < 3}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                    {/* DARK: dark gradient overlay */}
+                    <div className="absolute inset-0 dark:block hidden bg-gradient-to-t from-black/30 to-transparent" />
+                    {/* LIGHT: very light overlay — keeps image crisp */}
+                    <div className="absolute inset-0 dark:hidden block bg-gradient-to-t from-white/10 to-transparent" />
                   </div>
 
+                  {/* ── Card footer bar ─────────────────── */}
                   <div
-                    className="px-5 py-4 border-t border-white/8"
-                    style={{ background: 'rgba(10,10,10,0.92)' }}
+                    className={cn(
+                      'px-5 py-4 border-t',
+                      // DARK: near-black footer
+                      'dark:border-white/8',
+                      // LIGHT: clean white footer with green tint
+                      'border-black/6',
+                    )}
+                    style={{
+                      background: `light-dark(
+                        oklch(0.98 0.006 158 / 0.95),
+                        rgba(10,10,10,0.92)
+                      )`,
+                    }}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-white/90 truncate max-w-[60%]">
+                      <span
+                        className={cn(
+                          'text-sm font-semibold truncate max-w-[60%]',
+                          'dark:text-white/90 text-neutral-800',
+                        )}
+                      >
                         {project.title}
                       </span>
                       <span className={cn('text-xs font-mono', accent.text)}>
@@ -297,11 +318,21 @@ export const CardContent = memo(function CardContent({
                       </span>
                     </div>
                   </div>
+
+                  {/* ── Light mode: top inset highlight ─── */}
+                  {/* Creates the "glass panel" depth illusion */}
+                  <div
+                    className="absolute top-0 left-0 right-0 h-px dark:opacity-0 opacity-100 pointer-events-none"
+                    style={{
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.9) 30%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.9) 70%, transparent)',
+                    }}
+                  />
                 </div>
 
-                {/* Reflection */}
+                {/* ── Reflection ──────────────────────── */}
+                {/* DARK: accent-tinted reflection */}
                 <div
-                  className="absolute -bottom-8 left-4 right-4 h-16 rounded-2xl pointer-events-none"
+                  className="absolute -bottom-8 left-4 right-4 h-16 rounded-2xl pointer-events-none dark:opacity-100 opacity-0"
                   aria-hidden="true"
                   style={{
                     background: `linear-gradient(to bottom, rgba(${PROJECT_ACCENTS_MAP[index % 5]}, 0.08), transparent)`,
@@ -309,6 +340,17 @@ export const CardContent = memo(function CardContent({
                     transform:  'scaleY(-0.4) translateY(100%)',
                   }}
                 />
+
+                {/* LIGHT: soft shadow instead of reflection */}
+                <div
+                  className="absolute -bottom-4 left-6 right-6 h-8 rounded-2xl pointer-events-none dark:opacity-0 opacity-100"
+                  aria-hidden="true"
+                  style={{
+                    background: `rgba(${PROJECT_ACCENTS_MAP[index % 5]}, 0.12)`,
+                    filter:     'blur(16px)',
+                  }}
+                />
+
               </motion.div>
             )}
           </AnimatePresence>
