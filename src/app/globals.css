@@ -38,7 +38,7 @@
   --animate-shimmer:       shimmer 2.5s linear infinite;
   --animate-shimmer-sweep: shimmer-sweep 2.5s ease-in-out infinite;
 
-  /* ── Projects green palette ──────────────────────────────── */
+  /* ── Projects dark palette ───────────────────────────────── */
   --projects-bg-base:     oklch(0.08 0.02 160);
   --projects-green-950:   oklch(0.10 0.03 158);
   --projects-green-900:   oklch(0.14 0.05 155);
@@ -157,7 +157,7 @@
   100% { opacity: 0; transform: translateX(-50%) translateY(12px); }
 }
 
-/* ── Projects background keyframes ─────────────────────────── */
+/* ── Projects background keyframes — DARK ───────────────────── */
 
 @keyframes projects-orb-drift-a {
   0%   { transform: translate(  0%,   0%) scale(1.00); }
@@ -189,7 +189,8 @@
   100% { background-position:  200% 200%; }
 }
 
-/* ── Light mode orb drift (gentler amplitude) ───────────────── */
+/* ── Projects background keyframes — LIGHT ──────────────────── */
+
 @keyframes projects-orb-drift-a-light {
   0%   { transform: translate(  0%,   0%) scale(1.00); }
   20%  { transform: translate(  2%,  -4%) scale(1.02); }
@@ -218,6 +219,25 @@
   0%   { background-position:  200% 200%; opacity: 0.4; }
   50%  { background-position: -100% -100%; opacity: 0.7; }
   100% { background-position:  200% 200%; opacity: 0.4; }
+}
+
+/* ── Premium animation keyframes ────────────────────────────── */
+
+@keyframes imageShimmer {
+  0%   { background-position: 200% 0;    opacity: 0.0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { background-position: -200% 0;   opacity: 0.0; }
+}
+
+@keyframes progressShimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+@keyframes dotPulse {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(1.8); opacity: 0;   }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -323,6 +343,10 @@ body {
   .projects-bg-sweep {
     animation:   none !important;
     will-change: auto !important;
+  }
+
+  .stack-progress-fill::after {
+    animation: none !important;
   }
 }
 
@@ -519,9 +543,28 @@ body {
     box-shadow  500ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ── Progress bar — with shimmer reflection ─────────────────── */
 .stack-progress-fill {
+  position:   relative;
   height:     100%;
+  overflow:   hidden;
   transition: width 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stack-progress-fill::after {
+  content:  '';
+  position: absolute;
+  top:      0;
+  left:     0;
+  width:    40%;
+  height:   100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  animation: progressShimmer 2s ease-in-out infinite;
 }
 
 /* ── Mobile overrides for stack system ──────────────────────── */
@@ -537,31 +580,29 @@ body {
   .stack-card-bloom {
     display: none;
   }
+
+  .stack-progress-fill::after {
+    display: none;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
    Projects Section — DARK mode background (default)
-   Cinema feel: deep blacks, glowing emerald accents, drama
 ═══════════════════════════════════════════════════════════════ */
 
-/* ── Root container ─────────────────────────────────────────── */
 .projects-bg-root {
   position:   absolute;
   inset:      0;
   overflow:   hidden;
   z-index:    0;
-  /* DARK default: deep near-black green */
   background: oklch(0.08 0.02 160);
-  /* Smooth transition when theme switches */
   transition: background 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ── Layer 1: Static mesh gradient ─────────────────────────── */
 .projects-bg-mesh {
   position:   absolute;
   inset:      0;
   transition: opacity 0.6s ease;
-  /* DARK: rich deep green mesh */
   background:
     radial-gradient(
       ellipse 70% 60% at -10% -10%,
@@ -580,7 +621,6 @@ body {
     );
 }
 
-/* ── Layer 2: Animated ambient orbs (DARK) ──────────────────── */
 .projects-bg-orb {
   position:       absolute;
   border-radius:  50%;
@@ -658,7 +698,6 @@ body {
   transition: background 0.6s ease;
 }
 
-/* ── Layer 3: Grid overlay (DARK) ───────────────────────────── */
 .projects-bg-grid {
   position:         absolute;
   inset:            0;
@@ -679,7 +718,6 @@ body {
   transition: opacity 0.6s ease;
 }
 
-/* ── Layer 4: Noise/grain texture ───────────────────────────── */
 .projects-bg-grain {
   position:       absolute;
   inset:          0;
@@ -705,7 +743,6 @@ body {
   transition:      opacity 0.6s ease;
 }
 
-/* ── Layer 5: Vignette (DARK) ───────────────────────────────── */
 .projects-bg-vignette {
   position:   absolute;
   inset:      0;
@@ -718,7 +755,6 @@ body {
   transition:     background 0.6s ease;
 }
 
-/* ── Layer 6: Animated sweep (DARK) ────────────────────────── */
 .projects-bg-sweep {
   position:        absolute;
   inset:           0;
@@ -736,7 +772,6 @@ body {
   transition:      opacity 0.6s ease;
 }
 
-/* ── Layer 7: Per-project accent ring ───────────────────────── */
 .projects-bg-accent-ring {
   position:   absolute;
   inset:      0;
@@ -750,7 +785,6 @@ body {
   opacity:        1;
 }
 
-/* ── Layer 8: Top edge shimmer (DARK only) ──────────────────── */
 .projects-bg-edge-top {
   position:   absolute;
   top:        0;
@@ -771,17 +805,13 @@ body {
 
 /* ═══════════════════════════════════════════════════════════════
    Projects Section — LIGHT mode overrides
-   Apple-esque: crisp white, soft shadows, airy depth
-   Accent colors keep their identity but are more refined
 ═══════════════════════════════════════════════════════════════ */
 
-/* Root: warm white with the faintest green tint */
 .light .projects-bg-root,
 :root:not(.dark) .projects-bg-root {
   background: oklch(0.97 0.008 160);
 }
 
-/* Mesh: soft green tints, very low opacity — structure only */
 .light .projects-bg-mesh,
 :root:not(.dark) .projects-bg-mesh {
   background:
@@ -802,7 +832,6 @@ body {
     );
 }
 
-/* Orbs: very soft, pastel emerald — airy not glowing */
 .light .projects-bg-orb--a,
 :root:not(.dark) .projects-bg-orb--a {
   background: radial-gradient(
@@ -849,7 +878,6 @@ body {
   );
 }
 
-/* Grid: dark lines instead of white — visible on light bg */
 .light .projects-bg-grid,
 :root:not(.dark) .projects-bg-grid {
   background-image:
@@ -857,7 +885,6 @@ body {
     linear-gradient(90deg, oklch(0.40 0.08 155 / 0.06) 1px, transparent 1px);
 }
 
-/* Grain: darken instead of lighten in light mode */
 .light .projects-bg-grain,
 :root:not(.dark) .projects-bg-grain {
   mix-blend-mode: multiply;
@@ -878,7 +905,6 @@ body {
   opacity: 0.5;
 }
 
-/* Vignette: white edges (inward fade to center clarity) */
 .light .projects-bg-vignette,
 :root:not(.dark) .projects-bg-vignette {
   background: radial-gradient(
@@ -888,7 +914,6 @@ body {
   );
 }
 
-/* Sweep: subtle warm teal highlight */
 .light .projects-bg-sweep,
 :root:not(.dark) .projects-bg-sweep {
   background: linear-gradient(
@@ -902,53 +927,135 @@ body {
   animation-name: projects-sweep-light;
 }
 
-/* Accent ring: lighter opacity in light mode */
 .light .projects-bg-accent-ring,
 :root:not(.dark) .projects-bg-accent-ring {
   opacity: 0.6;
 }
 
-/* Edge top: hide in light mode — doesn't look right on white */
 .light .projects-bg-edge-top,
 :root:not(.dark) .projects-bg-edge-top {
   opacity: 0;
 }
 
-/* ── Light mode card chrome ──────────────────────────────────
-   Cards in light mode: white glass panels, green accent glows
-   Premium shadow system replaces the harsh dark card borders
-─────────────────────────────────────────────────────────────── */
-
-/* Card shell gets a light-mode glass surface */
 :root:not(.dark) .stack-card-light-surface {
-  background: oklch(1 0 0 / 0.85);
-  backdrop-filter: blur(24px);
+  background:              oklch(1 0 0 / 0.85);
+  backdrop-filter:         blur(24px);
   -webkit-backdrop-filter: blur(24px);
   box-shadow:
-    0 1px 0 0 oklch(1 0 0 / 0.9) inset,  /* top highlight */
+    0  1px 0  0   oklch(1 0 0 / 0.9) inset,
     0 32px 64px -12px oklch(0.60 0.10 155 / 0.15),
     0  8px 24px  -4px oklch(0.70 0.12 152 / 0.10),
-    0  0   0     1px  oklch(0.80 0.06 155 / 0.25); /* subtle border */
+    0  0   0     1px  oklch(0.80 0.06 155 / 0.25);
 }
 
-/* Progress bar track: visible in light mode */
 :root:not(.dark) .stack-progress-track-light {
   background: oklch(0.88 0.02 155 / 0.6);
 }
 
-/* ── Mobile optimizations ───────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   Mobile — Scroll Performance Fixes
+   All rules here target max-width: 767px only.
+   DO NOT add will-change, filter:blur, or animation to any
+   element inside this block — those are the scroll killers.
+═══════════════════════════════════════════════════════════════ */
+
 @media (max-width: 767px) {
-  .projects-bg-orb {
-    filter: blur(50px);
+
+  /* ── FIX A: Hide scrollbar on mobile ──────────────────────
+     The 5px scrollbar width causes layout recalculation when
+     content height changes during section transitions, which
+     triggers a scroll position recalculate mid-animation.    */
+  ::-webkit-scrollbar {
+    width:   0px;
+    display: none;
   }
 
+  html {
+    scrollbar-width: none;
+  }
+
+  /* ── FIX B: touch-action on main content ──────────────────
+     pan-y tells the browser all vertical touches on <main>
+     are scroll gestures — it starts compositing immediately
+     without waiting to see if JS calls preventDefault.
+     This removes the ~100ms scroll latency on first touch.   */
+  main {
+    touch-action: pan-y;
+  }
+
+  /* ── FIX C: Disable orb animations entirely on mobile ─────
+     The previous override set them to 30s — still running.
+     Any CSS animation on a filter:blur element holds a GPU
+     layer in VRAM for the entire page lifetime, competing
+     directly with the scroll compositor layer.
+     Freezing them in place keeps the visual but frees VRAM.  */
   .projects-bg-orb--a,
   .projects-bg-orb--b,
   .projects-bg-orb--c {
-    animation-duration: 30s !important;
+    animation:   none !important;
+    will-change: auto !important;
+    transform:   none !important;
   }
 
+  /* ── FIX D: Halve the blur radius on mobile orbs ──────────
+     blur(80px) on desktop → blur(40px) on mobile.
+     Blur cost scales with radius² — halving radius = 4x
+     cheaper to composite on every scroll frame.              */
+  .projects-bg-orb {
+    filter: blur(40px) !important;
+  }
+
+  /* ── FIX E: Light mode orb blur overrides ─────────────────
+     Light mode orbs have larger blur values (100–120px).
+     Override them to match the 40px mobile cap.              */
+  .light .projects-bg-orb--a,
+  :root:not(.dark) .projects-bg-orb--a,
+  .light .projects-bg-orb--b,
+  :root:not(.dark) .projects-bg-orb--b,
+  .light .projects-bg-orb--c,
+  :root:not(.dark) .projects-bg-orb--c {
+    filter: blur(40px) !important;
+  }
+
+  /* ── FIX F: Hide grain layer on mobile ────────────────────
+     mix-blend-mode: overlay forces a separate compositing
+     layer. On mobile this means the browser must flatten
+     the grain layer with the orb layer on every scroll frame.
+     Hiding it entirely costs nothing visually on small screens.*/
   .projects-bg-grain {
     display: none;
+  }
+
+  /* ── FIX G: Force-clear will-change on stack cards ────────
+     The base rules set will-change:transform on these classes.
+     GSAP may also set style.willChange inline during animation.
+     !important overrides both the cascade AND inline styles,
+     ensuring no stale GPU layers survive on mobile.           */
+  .stack-card-shell,
+  .stack-card-reveal {
+    will-change: auto !important;
+    /* Keep translateZ(0) for paint containment, but drop
+       the dynamic transform GSAP values on mobile            */
+    transform:   translateZ(0) !important;
+  }
+
+  /* ── FIX H: Disable stack card bloom on mobile ────────────
+     Already in the original — keeping for completeness.      */
+  .stack-card-bloom {
+    display: none !important;
+  }
+
+  /* ── FIX I: Disable progress shimmer on mobile ────────────
+     Already in the original — keeping for completeness.      */
+  .stack-progress-fill::after {
+    display: none !important;
+  }
+
+  /* ── FIX J: Disable sweep animation on mobile ─────────────
+     The sweep uses background-position animation on a large
+     gradient — another unnecessary GPU layer during scroll.  */
+  .projects-bg-sweep {
+    animation:   none !important;
+    will-change: auto !important;
   }
 }

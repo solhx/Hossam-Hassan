@@ -33,39 +33,98 @@ export function useStackAnimation({
   const tl              = useRef<gsap.core.Timeline | null>(null);
   const onActiveChange_ = useRef(onActiveChange);
   const rafId           = useRef<number>(0);
+  // ── NEW: mouse tilt state ──────────────────────────────────────
+  const mouseTiltTl     = useRef<gsap.core.Tween | null>(null);
+  const tiltActiveIndex = useRef(0);
 
   useEffect(() => { onActiveChange_.current = onActiveChange; });
 
-  // ── Bloom burst ────────────────────────────────────────────────
+  // ── UPGRADE: Multi-ring bloom burst ───────────────────────────
+  // Instead of a single orb scaling up, 3 rings ripple outward
+  // Each ring is a separate GSAP tween staggered by 0.18s
   const triggerBloom = useCallback((index: number) => {
-    const handle = (cardHandles.current[index] as CardHandle & {
-      bloomEl?: HTMLDivElement | null
-    });
-    if (!handle?.bloomEl || reduced) {
-      gsap.killTweensOf(handle?.bloomEl);
-      return;
-    }
+    const handle = cardHandles.current[index] as CardHandle & {
+      bloomEl?: HTMLDivElement | null;
+    };
+    if (!handle?.bloomEl || reduced) return;
 
     const accent = PROJECT_ACCENTS[index % PROJECT_ACCENTS.length];
+    const { bloom } = STACK_CONFIG;
+    const el = handle.bloomEl;
 
-    gsap.set(handle.bloomEl, { scale: 0.5, filter: 'brightness(2)' });
+    gsap.killTweensOf(el);
 
-    gsap.to(handle.bloomEl, {
-      scale:     2.2,
-      filter:    'brightness(0)',
-      duration:  0.85,
-      ease:      GSAP_EASE.bloom,
-      overwrite: 'auto',
-      onComplete: () => {
-        gsap.set(handle.bloomEl!, { clearProps: 'scale,filter' });
+    // Update bloom color
+    el.style.background = `radial-gradient(
+      circle at 50% 50%,
+      rgba(${accent.bloomRgb}, 0.28) 0%,
+      rgba(${accent.bloomRgb}, 0.10) 40%,
+      transparent 65%
+    )`;
+
+    // Ring 1 — fast, bright core burst
+    gsap.fromTo(el,
+      { scale: 0.3, filter: 'brightness(2.5) blur(0px)', opacity: 1 },
+      {
+        scale:    bloom.maxScale * 0.7,
+        filter:   'brightness(0.8) blur(2px)',
+        opacity:  0,
+        duration: bloom.duration * 0.75,
+        ease:     GSAP_EASE.bloom,
+        overwrite: 'auto',
       },
-    });
+    );
 
-    handle.bloomEl.style.background =
-      `radial-gradient(circle at 50% 50%, rgba(${accent.bloomRgb}, 0.22) 0%, rgba(${accent.bloomRgb}, 0.08) 45%, transparent 70%)`;
+    // Ring 2 — medium, delayed
+    const ring2 = el.cloneNode(true) as HTMLDivElement;
+    ring2.style.position  = 'absolute';
+    ring2.style.inset     = '0';
+    ring2.style.zIndex    = '48';
+    ring2.style.pointerEvents = 'none';
+    el.parentElement?.appendChild(ring2);
+
+    gsap.fromTo(ring2,
+      { scale: 0.2, filter: 'brightness(1.5) blur(0px)', opacity: 0.7 },
+      {
+        scale:    bloom.maxScale,
+        filter:   'brightness(0) blur(8px)',
+        opacity:  0,
+        duration: bloom.duration,
+        delay:    bloom.stagger,
+        ease:     GSAP_EASE.bloom,
+        onComplete: () => ring2.remove(),
+      },
+    );
+
+    // Ring 3 — slow outer ripple
+    const ring3 = el.cloneNode(true) as HTMLDivElement;
+    ring3.style.position  = 'absolute';
+    ring3.style.inset     = '0';
+    ring3.style.zIndex    = '47';
+    ring3.style.pointerEvents = 'none';
+    el.parentElement?.appendChild(ring3);
+
+    gsap.fromTo(ring3,
+      { scale: 0.1, filter: 'brightness(1) blur(0px)', opacity: 0.4 },
+      {
+        scale:    bloom.maxScale * 1.3,
+        filter:   'brightness(0) blur(16px)',
+        opacity:  0,
+        duration: bloom.duration * 1.4,
+        delay:    bloom.stagger * 2,
+        ease:     GSAP_EASE.bloom,
+        onComplete: () => ring3.remove(),
+      },
+    );
+
+    // Reset original after all rings done
+    gsap.set(el, {
+      clearProps: 'scale,filter,opacity',
+      delay: bloom.duration + bloom.stagger * 2 + 0.1,
+    });
   }, [cardHandles, reduced]);
 
-  // ── Depth stack — translateZ instead of zIndex ─────────────────
+  // ── Depth stack ────────────────────────────────────────────────
   const setDepthStack = useCallback((
     activeIndex: number,
     animated:    boolean,
@@ -92,6 +151,7 @@ export function useStackAnimation({
         scale,
         y:       translateY,
         z:       translateZ,
+        rotateX: 0,
         filter:  `brightness(${brightness})`,
         force3D: true,
       };
@@ -108,7 +168,84 @@ export function useStackAnimation({
     });
   }, [cardHandles, reduced]);
 
-  // ── Transition ─────────────────────────────────────────────────
+  // ── UPGRADE: Mouse tilt on active card ────────────────────────
+  // Tracks mouse globally, tilts only the active card shell
+  // Feels like the card is a physical object reacting to light
+  const setupMouseTilt = useCallback((activeIndex: number) => {
+    if (reduced) return;
+
+    tiltActiveIndex.current = activeIndex;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const handle = cardHandles.current[tiltActiveIndex.current];
+      if (!handle?.shellEl) return;
+
+      // Normalize to -1 → 1
+      const nx = (e.clientX / window.innerWidth)  * 2 - 1;
+      const ny = (e.clientY / window.innerHeight) * 2 - 1;
+
+      const { tilt } = STACK_CONFIG;
+
+      mouseTiltTl.current?.kill();
+      mouseTiltTl.current = gsap.to(handle.shellEl, {
+        rotateY:  nx *  tilt.maxRotateY,
+        rotateX:  ny * -tilt.maxRotateX,
+        z:        tilt.maxTranslateZ * (1 - Math.abs(nx) * 0.3),
+        duration: 0.9,
+        ease:     'power2.out',
+        overwrite: 'auto',
+        force3D:  true,
+      });
+
+      // Parallax the image layer opposite direction
+      const imgHandle = handle as CardHandle & { imageEl?: HTMLDivElement | null };
+      if (imgHandle.imageEl) {
+        gsap.to(imgHandle.imageEl, {
+          x:        nx * -12,
+          y:        ny * -8,
+          duration: 1.2,
+          ease:     'power2.out',
+          overwrite: 'auto',
+        });
+      }
+    };
+
+    const handleMouseLeave = () => {
+      const handle = cardHandles.current[tiltActiveIndex.current];
+      if (!handle?.shellEl) return;
+
+      // Spring back to neutral
+      gsap.to(handle.shellEl, {
+        rotateX: 0,
+        rotateY: 0,
+        z:       0,
+        duration: 1.2,
+        ease:    GSAP_EASE.tiltSpring,
+        overwrite: 'auto',
+        force3D: true,
+      });
+
+      const imgHandle = handle as CardHandle & { imageEl?: HTMLDivElement | null };
+      if (imgHandle.imageEl) {
+        gsap.to(imgHandle.imageEl, {
+          x: 0, y: 0,
+          duration: 1.0,
+          ease: 'power3.out',
+          overwrite: 'auto',
+        });
+      }
+    };
+
+    window.addEventListener('mousemove',  handleMouseMove,  { passive: true });
+    window.addEventListener('mouseleave', handleMouseLeave, { passive: true });
+
+    return () => {
+      window.removeEventListener('mousemove',  handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [cardHandles, reduced]);
+
+  // ── UPGRADE: Cinematic transition ─────────────────────────────
   const animateTransition = useCallback((
     prevIndex: number,
     nextIndex: number,
@@ -135,35 +272,44 @@ export function useStackAnimation({
       onComplete: () => {
         if (nextHandle?.shellEl) {
           gsap.set(nextHandle.shellEl, {
-            scale:  1,
-            y:      0,
-            z:      0,
-            filter: 'brightness(1)',
+            scale:   1,
+            y:       0,
+            z:       0,
+            rotateX: 0,
+            rotateY: 0,
+            filter:  'brightness(1)',
           });
         }
+        // Re-attach tilt after transition completes
+        tiltActiveIndex.current = nextIndex;
       },
     });
 
-    // EXIT: outgoing card
+    // ── EXIT: outgoing card ──────────────────────────────────────
+    // UPGRADE: slight rotateX gives a "flipping away" depth feel
     if (prevHandle?.shellEl) {
       tl.current.to(prevHandle.shellEl, {
         scale:    exit.toScale,
         y:        exit.toTranslateY,
-        z:        -5,
-        filter:   'brightness(0.6)',
+        z:        -8,
+        rotateX:  exit.toRotateX,  // NEW: tips backward
+        filter:   'brightness(0.5)',
         duration: exit.duration,
         ease:     GSAP_EASE.exitCubic,
         force3D:  true,
       }, 0);
     }
 
-    // ENTRY: incoming card
+    // ── ENTRY: incoming card ─────────────────────────────────────
+    // UPGRADE: starts slightly rotated, springs to flat
     if (nextHandle?.shellEl && nextHandle?.revealEl) {
       gsap.set(nextHandle.shellEl, {
         scale:   entry.fromScale,
         y:       entry.fromTranslateY,
-        z:       5,
-        filter:  'brightness(1)',
+        z:       8,
+        rotateX: -3,    // NEW: leans forward on entry
+        rotateY:  1.5,  // NEW: slight horizontal lean
+        filter:  'brightness(1.05)',
         force3D: true,
       });
 
@@ -172,52 +318,54 @@ export function useStackAnimation({
         force3D:  true,
       });
 
+      // Shell animation — springs to neutral with slight overshoot
       tl.current.to(nextHandle.shellEl, {
-        scale:    1,
-        y:        0,
-        z:        0,
+        scale:   1,
+        y:       0,
+        z:       0,
+        rotateX: 0,
+        rotateY: 0,
+        filter:  'brightness(1)',
         duration: entry.duration,
-        ease:     GSAP_EASE.entryExpo,
-        force3D:  true,
-      }, 0.05);
+        ease:    GSAP_EASE.entryExpo,
+        force3D: true,
+      }, 0.04);
 
+      // ── UPGRADE: wipe uses richer ease ──────────────────────
       tl.current.to(nextHandle.revealEl, {
         clipPath: entry.toClipPath,
-        duration: entry.duration,
-        ease:     GSAP_EASE.entryExpo,
+        duration: entry.duration * 0.95,
+        ease:     GSAP_EASE.wipe,
         force3D:  true,
-      }, 0.05);
+      }, 0.04);
     }
 
-    // FIX 4: Defer React state update until clip-path covers old card
+    // Deferred React update (content swap hidden behind wipe)
     tl.current.call(
       () => { onActiveChange_.current(nextIndex); },
       [],
-      entry.duration - 0.1,
+      entry.duration - 0.12,
     );
 
+    // Depth reposition + bloom
     tl.current.call(() => {
       setDepthStack(nextIndex, true);
       triggerBloom(nextIndex);
-    }, [], entry.duration - 0.05);
+    }, [], entry.duration - 0.06);
 
   }, [cardHandles, reduced, setDepthStack, triggerBloom]);
 
   // ── Initialization ─────────────────────────────────────────────
   useEffect(() => {
-    // Kill any existing timeline on re-run (reduced toggle etc.)
     tl.current?.kill();
     tl.current = null;
 
     const section = sectionRef.current;
     if (!section) return;
 
-    // FIX 3: Proper retry loop — re-checks population on every frame.
-    // Previous code called initializeCards directly on retry, meaning
-    // if handles were STILL null on frame 2, GSAP received null refs
-    // silently and the stack was never set up beyond card 0.
     const MAX_RETRIES = 12;
-    let retryCount = 0;
+    let retryCount    = 0;
+    let tiltCleanup: (() => void) | undefined;
 
     const tryInit = () => {
       const allPopulated = cardHandles.current.every(
@@ -227,17 +375,10 @@ export function useStackAnimation({
       if (!allPopulated) {
         retryCount++;
         if (retryCount < MAX_RETRIES) {
-          // ✅ Re-checks population each frame instead of blindly calling initializeCards
           rafId.current = requestAnimationFrame(tryInit);
-        } else {
-          console.warn(
-            `[StackCarousel] Card handles not populated after ${MAX_RETRIES} frames. ` +
-            `Check that StackCard onRegister is being called correctly.`
-          );
         }
         return;
       }
-
       initializeCards();
     };
 
@@ -248,8 +389,6 @@ export function useStackAnimation({
 
       cardHandles.current.forEach((handle, i) => {
         if (!handle?.shellEl) return;
-
-        // Track how many cards were actually set up
         initializedCount++;
 
         if (i === 0) {
@@ -257,6 +396,8 @@ export function useStackAnimation({
             scale:   1,
             y:       0,
             z:       0,
+            rotateX: 0,
+            rotateY: 0,
             filter:  'brightness(1)',
             force3D: true,
           });
@@ -266,6 +407,8 @@ export function useStackAnimation({
             scale:   1 - depthLevel * STACK_CONFIG.depth.scaleStep,
             y:       depthLevel * STACK_CONFIG.depth.translateYStep,
             z:       -depthLevel * 20,
+            rotateX: 0,
+            rotateY: 0,
             filter:  `brightness(${Math.max(
               0.3,
               1 - depthLevel * STACK_CONFIG.depth.brightnessStep,
@@ -276,27 +419,24 @@ export function useStackAnimation({
 
         const h = handle as CardHandle & { revealEl?: HTMLDivElement | null };
         if (h.revealEl) {
-          gsap.set(h.revealEl, {
-            clipPath: STACK_CONFIG.entry.toClipPath,
-          });
+          gsap.set(h.revealEl, { clipPath: STACK_CONFIG.entry.toClipPath });
         }
       });
 
-      // FIX 4: Guard — only fire onActiveChange if card 0 was actually initialized.
-      // Previous code fired unconditionally even if all handles were null/skipped,
-      // meaning setVisible(false) was called on cards that had no GSAP state yet.
       if (initializedCount > 0) {
         onActiveChange_.current(0);
-      } else {
-        console.warn('[StackCarousel] initializeCards ran but no handles were valid.');
+        // Start mouse tilt on card 0
+        tiltCleanup = setupMouseTilt(0);
       }
     }
 
     return () => {
       cancelAnimationFrame(rafId.current);
       tl.current?.kill();
+      mouseTiltTl.current?.kill();
+      tiltCleanup?.();
     };
-  }, [cardHandles, count, sectionRef, reduced]);
+  }, [cardHandles, count, sectionRef, reduced, setupMouseTilt]);
 
   return {
     animateTransition,

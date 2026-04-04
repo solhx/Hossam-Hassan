@@ -12,34 +12,85 @@ import { ProjectsMobile }                            from './ProjectsMobile';
 import { ProjectsBackground }                        from './ProjectsBackground';
 import { PROJECT_ACCENTS, FM_EASE }                  from './constants';
 
+function useIsMobile(breakpoint = 768): boolean | null {
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < breakpoint);
+    check();
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    mq.addEventListener('change', check);
+    return () => mq.removeEventListener('change', check);
+  }, [breakpoint]);
+
+  return isMobile;
+}
+
 export function Projects() {
   const sectionRef = useRef<HTMLElement>(null);
   const reduced    = useReducedMotion();
+  const isMobile   = useIsMobile();
 
-  // ── Active accent — drives background accent ring ───────────────
-  // FIX 17: undefined initial prevents hydration mismatch
+  // ── Keep a ref so callbacks always read the latest value ───────
+  // FIX: Callbacks are created once (empty deps) but need to know
+  // the current isMobile value without being recreated.
+  // A ref solves this without adding isMobile to useCallback deps
+  // (which would recreate the callback and cause StackCarousel to
+  // re-render every time mobile state changes).
+  const isMobileRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    isMobileRef.current = isMobile;
+  }, [isMobile]);
+
   const [accentRgb, setAccentRgb] = useState<string | undefined>(undefined);
 
-  // Set initial on mount
   useEffect(() => {
     setAccentRgb(PROJECT_ACCENTS[0].bloomRgb);
   }, []);
 
+  // ── Section enter — DESKTOP ONLY ───────────────────────────────
+  // FIX: Previously this called lenis.stop() unconditionally.
+  //
+  // The call chain was:
+  //   IntersectionObserver (mobile effect in useScrollCapture)
+  //     → onSectionEnter?.()
+  //       → handleSectionEnter()
+  //         → lenis.stop()  ← froze ALL scrolling on mobile
+  //
+  // On mobile, lenis must NEVER be stopped — the mobile version of
+  // useScrollCapture uses passive touch listeners and lets lenis
+  // handle all scroll momentum naturally.
+  //
+  // On desktop, lenis.stop() is correct — it hands scroll control
+  // to the wheel/keyboard capture logic in useScrollCapture so
+  // each wheel tick navigates cards instead of scrolling the page.
   const handleSectionEnter = useCallback(() => {
+    // Guard: never stop lenis on mobile
+    if (isMobileRef.current) return;
+
     const lenis = getLenis();
     if (lenis) lenis.stop();
-  }, []);
+  }, []); // empty deps — reads isMobileRef.current at call time
 
+  // ── Section leave — DESKTOP ONLY ───────────────────────────────
+  // FIX: Same pattern — lenis.start() on mobile is a no-op
+  // (we never stopped it) but calling it is harmless. The guard
+  // is here for symmetry and clarity, not strict necessity.
   const handleSectionLeave = useCallback(() => {
+    if (isMobileRef.current) return;
+
     const lenis = getLenis();
     if (lenis) lenis.start();
-  }, []);
+  }, []); // empty deps — reads isMobileRef.current at call time
 
-  // Called by StackCarousel when active project changes
   const handleAccentChange = useCallback((index: number) => {
     const accent = PROJECT_ACCENTS[index % PROJECT_ACCENTS.length];
     setAccentRgb(accent.bloomRgb);
   }, []);
+
+  const sectionHeight = isMobile === false
+    ? `${(projects.length + 1) * 100}vh`
+    : 'auto';
 
   return (
     <section
@@ -47,12 +98,7 @@ export function Projects() {
       ref={sectionRef}
       aria-label="Projects showcase"
       className="relative w-full"
-      style={{
-        // FIX 1: Each project needs 100vh of scroll room to navigate through.
-        // +1 extra viewport gives room to scroll OUT of the section at the end.
-        // Without this the sticky container has no scroll space — navigate() never fires.
-        height: `${(projects.length + 1) * 100}vh`,
-      }}
+      style={{ height: sectionHeight }}
     >
 
       {/* ── DESKTOP ──────────────────────────────────────────── */}
@@ -66,10 +112,8 @@ export function Projects() {
           zIndex:   1,
         }}
       >
-        {/* Section-wide background — sits behind everything */}
         <ProjectsBackground accentRgb={accentRgb} />
 
-        {/* Heading — above background (z-30) */}
         <motion.div
           className="absolute top-0 left-0 right-0 z-30 pt-10 pointer-events-none"
           initial={{ filter: 'blur(8px)', y: -20 }}
@@ -88,7 +132,6 @@ export function Projects() {
           </div>
         </motion.div>
 
-        {/* Card stack — z-index above background */}
         <div className="relative w-full h-full" style={{ zIndex: 1 }}>
           <StackCarousel
             projects={projects}

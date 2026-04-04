@@ -1,23 +1,12 @@
 // src/components/sections/home/projects/ProjectsMobile.tsx
-// ─────────────────────────────────────────────────────────────────
-// FIX 8 — Mobile flip gesture conflict
-//
-// BEFORE: onClick={handleFlip}
-//         Problems:
-//         1. 300ms tap delay on iOS (browser waits for double-tap)
-//         2. CSS scroll-snap momentum scroll triggers onClick
-//            → accidental flips while scrolling
-//         3. No way to distinguish scroll intent from tap intent
-//
-// AFTER:  onPointerDown + onPointerUp with delta check.
-//         If pointer moved < 10px between down and up = tap = flip.
-//         If pointer moved >= 10px = scroll = ignore.
-//         No delay — pointerup fires immediately.
-//         Works with both mouse and touch (pointer events API).
-// ─────────────────────────────────────────────────────────────────
 'use client';
 
-import { useState, useRef, useCallback, memo } from 'react';
+import {
+  useState,
+  useRef,
+  useCallback,
+  memo,
+}                                               from 'react';
 import { motion }                               from 'framer-motion';
 import Image                                    from 'next/image';
 import { ExternalLink, Github, Star, Layers }   from 'lucide-react';
@@ -27,25 +16,38 @@ import { projects }                             from '@/lib/portfolio-data';
 import { PROJECT_ACCENTS, FM_EASE }             from './constants';
 import type { Project, Accent }                 from './types';
 
+// ── Card entrance variants ─────────────────────────────────────
 const mobileCardVariants = {
-  hidden: { y: 48, scale: 0.96, filter: 'blur(4px)' },
+  hidden: {
+    y:      48,
+    scale:  0.96,
+    filter: 'blur(4px)',
+    opacity: 0,
+  },
   show: {
-    y: 0, scale: 1, filter: 'blur(0px)',
+    y:       0,
+    scale:   1,
+    filter:  'blur(0px)',
+    opacity: 1,
     transition: { duration: 0.55, ease: FM_EASE.outExpo },
   },
 } as const;
 
+// ── Container ──────────────────────────────────────────────────
 export function ProjectsMobile() {
   const reduced = useReducedMotion();
 
   return (
     <div className="md:hidden w-full">
       <motion.div
-        className="max-w-lg mx-auto px-4 pt-32 pb-20 space-y-6"
+        // FIX: pt-32 → pt-6 — pt-32 was 128px of dead space on mobile
+        // The section heading already has pt-16 in Projects.tsx
+        // so we only need a small gap here between heading and cards
+        className="max-w-lg mx-auto px-4 pt-6 pb-24 space-y-5"
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, amount: 0.05 }}
-        transition={{ staggerChildren: 0.10, delayChildren: 0.05 }}
+        transition={{ staggerChildren: 0.09, delayChildren: 0.04 }}
       >
         {projects.map((project, index) => (
           <MobileProjectCard
@@ -60,6 +62,7 @@ export function ProjectsMobile() {
   );
 }
 
+// ── Single card ────────────────────────────────────────────────
 const MobileProjectCard = memo(function MobileProjectCard({
   project,
   index,
@@ -72,28 +75,71 @@ const MobileProjectCard = memo(function MobileProjectCard({
   const accent                = PROJECT_ACCENTS[index % PROJECT_ACCENTS.length] as Accent;
   const [flipped, setFlipped] = useState(false);
 
-  // ── FIX 8: Pointer delta tracking ─────────────────────────────
-  // Track pointer start position to distinguish tap from scroll
-  const pointerStartY = useRef(0);
-  const pointerStartX = useRef(0);
+  // ── FIX: Tap detection rewritten ────────────────────────────
+  // PROBLEM WITH PREVIOUS APPROACH:
+  //   onPointerDown fires immediately on touch start.
+  //   The browser hasn't decided if this is a scroll or a tap yet.
+  //   By capturing pointerdown on the card, we interfere with
+  //   the browser's native scroll detection pipeline.
+  //
+  // NEW APPROACH: touchstart / touchend only
+  //   touchstart records position but does NOT preventDefault.
+  //   This lets the browser keep full control of scroll.
+  //   touchend checks delta — if small = tap = flip.
+  //   No pointer events on the card wrapper at all.
+  //
+  // WHY touchstart instead of pointerdown:
+  //   On iOS Safari, pointerdown is synthesized from touchstart
+  //   but with a slight delay. Using touchstart directly gives
+  //   us the earliest possible position snapshot without
+  //   interfering with scroll gesture recognition.
 
-  // FIX 8: pointerdown records start position
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    pointerStartY.current = e.clientY;
-    pointerStartX.current = e.clientX;
+  const touchStartY   = useRef(0);
+  const touchStartX   = useRef(0);
+  const touchStartTime = useRef(0);
+  // Track if scroll happened between touch start and end
+  const didScrollRef  = useRef(false);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartY.current    = e.touches[0].clientY;
+    touchStartX.current    = e.touches[0].clientX;
+    touchStartTime.current = Date.now();
+    didScrollRef.current   = false;
   }, []);
 
-  // FIX 15: Increased threshold prevents scroll-flip conflicts
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    const deltaY = Math.abs(e.clientY - pointerStartY.current);
-    const deltaX = Math.abs(e.clientX - pointerStartX.current);
-
-    if (deltaY >= 20 || deltaX >= 20) return; // FIX 15: 20px threshold
-
-    setFlipped(f => !f);
+  // If touch moves more than 8px in any direction = scroll intent
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const deltaY = Math.abs(e.touches[0].clientY - touchStartY.current);
+    const deltaX = Math.abs(e.touches[0].clientX - touchStartX.current);
+    if (deltaY > 8 || deltaX > 8) {
+      didScrollRef.current = true;
+    }
   }, []);
 
-  // FIX 8: Prevent context menu on long-press (common on mobile cards)
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    // Ignore if scroll happened
+    if (didScrollRef.current) return;
+
+    const elapsed = Date.now() - touchStartTime.current;
+    const deltaY  = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    const deltaX  = Math.abs(e.changedTouches[0].clientX - touchStartX.current);
+
+    // Tap = small movement + short duration (< 300ms)
+    // Long press or large movement = not a tap
+    if (deltaY < 12 && deltaX < 12 && elapsed < 300) {
+      setFlipped(f => !f);
+    }
+  }, []);
+
+  // Keyboard support
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setFlipped(f => !f);
+    }
+  }, []);
+
+  // Prevent context menu on long-press
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
   }, []);
@@ -105,20 +151,28 @@ const MobileProjectCard = memo(function MobileProjectCard({
           role="button"
           tabIndex={0}
           aria-label={`${project.title} — tap to ${flipped ? 'see preview' : 'see details'}`}
-          // FIX 8: pointer events replace onClick
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
+          // FIX: touch handlers instead of pointer handlers
+          // touchstart/move/end don't block native scroll
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           onContextMenu={handleContextMenu}
-          // Keyboard support unchanged
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              setFlipped(f => !f);
-            }
+          onKeyDown={handleKeyDown}
+          style={{
+            // FIX: touchAction changed from 'pan-y' to 'manipulation'
+            // 'pan-y'        → only allows vertical panning — horizontal
+            //                  flip gesture on card gets confused with
+            //                  horizontal scroll on some iOS versions.
+            // 'manipulation' → disables double-tap zoom (removes 300ms
+            //                  delay) but allows ALL pan directions.
+            //                  Our touchMove handler decides intent.
+            touchAction: 'manipulation',
+            cursor:      'pointer',
+            userSelect:  'none',
+            // FIX: -webkit-tap-highlight-color removes the blue
+            // flash on iOS when tapping the card
+            WebkitTapHighlightColor: 'transparent',
           }}
-          // FIX 8: touch-action:pan-y allows vertical scroll
-          // but we handle the flip via pointer delta check above
-          style={{ touchAction: 'pan-y', cursor: 'pointer' }}
         >
           <motion.div
             style={{ transformStyle: 'preserve-3d' }}
@@ -132,48 +186,70 @@ const MobileProjectCard = memo(function MobileProjectCard({
             className="relative"
           >
 
-            {/* ── FRONT ─────────────────────────────────────── */}
+            {/* ── FRONT ──────────────────────────────────── */}
             <div
               className={cn(
-                'rounded-2xl overflow-hidden border shadow-2xl',
+                'rounded-2xl overflow-hidden border shadow-xl',
                 'bg-white border-neutral-200/80',
                 'dark:bg-[#080f0a] dark:border-white/[0.07]',
               )}
-              style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+              style={{
+                backfaceVisibility:       'hidden',
+                WebkitBackfaceVisibility: 'hidden' as React.CSSProperties['WebkitBackfaceVisibility'],
+              }}
             >
+              {/* Project image */}
               <div className="relative w-full aspect-video overflow-hidden">
                 <Image
                   src={project.image}
                   alt={project.title}
                   fill
-                  className="object-cover"
+                  className="object-cover object-top"
                   sizes="(max-width: 768px) 100vw"
                   loading="lazy"
                 />
-                // src/components/sections/home/projects/ProjectsMobile.tsx
-// (continued from front face image section)
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
+                {/* Gradient overlays */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                 <div
                   className="absolute inset-0 pointer-events-none"
                   style={{
-                    background: `radial-gradient(ellipse 70% 70% at 50% 100%, ${accent.glow}, transparent 70%)`,
+                    background: `radial-gradient(
+                      ellipse 70% 70% at 50% 100%,
+                      ${accent.glow},
+                      transparent 70%
+                    )`,
                   }}
                 />
 
+                {/* Featured badge */}
                 {project.featured && (
-                  <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-md text-white text-[10px] font-bold border border-white/10">
+                  <span className={cn(
+                    'absolute top-3 left-3',
+                    'inline-flex items-center gap-1 px-2.5 py-1',
+                    'rounded-full bg-black/50 backdrop-blur-md',
+                    'text-white text-[10px] font-bold',
+                    'border border-white/10',
+                  )}>
                     <Star size={8} className="fill-white" aria-hidden="true" />
                     Featured
                   </span>
                 )}
 
-                <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-white/50 text-[9px] border border-white/10">
+                {/* Flip hint */}
+                <span className={cn(
+                  'absolute bottom-3 right-3',
+                  'inline-flex items-center gap-1.5 px-2.5 py-1',
+                  'rounded-full bg-black/40 backdrop-blur-md',
+                  'text-white/50 text-[9px]',
+                  'border border-white/10',
+                )}>
                   <Layers size={8} aria-hidden="true" />
                   Tap for stack
                 </span>
               </div>
 
+              {/* Card body */}
               <div className="p-5">
                 {/* Accent line */}
                 <div
@@ -182,15 +258,21 @@ const MobileProjectCard = memo(function MobileProjectCard({
                   aria-hidden="true"
                 />
 
-                <h3 className="text-base font-bold text-neutral-900 dark:text-white mb-2 leading-snug">
+                <h3 className={cn(
+                  'text-base font-bold leading-snug mb-2',
+                  'text-neutral-900 dark:text-white',
+                )}>
                   {project.title}
                 </h3>
 
-                <p className="text-sm text-neutral-500 dark:text-white/50 leading-relaxed mb-4">
+                <p className={cn(
+                  'text-sm leading-relaxed mb-4',
+                  'text-neutral-500 dark:text-white/50',
+                )}>
                   {project.description}
                 </p>
 
-                {/* Tags — first 4 */}
+                {/* Tags row — first 4 only */}
                 <div className="flex flex-wrap gap-1.5 mb-4">
                   {project.tags.slice(0, 4).map((tag) => (
                     <span
@@ -204,111 +286,131 @@ const MobileProjectCard = memo(function MobileProjectCard({
                     </span>
                   ))}
                   {project.tags.length > 4 && (
-                    <span className="px-2.5 py-0.5 text-[10px] font-semibold rounded-lg border border-white/10 text-white/40 dark:border-white/10">
+                    <span className={cn(
+                      'px-2.5 py-0.5 text-[10px] font-semibold rounded-lg border',
+                      'border-black/10 text-neutral-400',
+                      'dark:border-white/10 dark:text-white/40',
+                    )}>
                       +{project.tags.length - 4}
                     </span>
                   )}
                 </div>
 
                 {/* CTA buttons */}
-                {/* FIX 8: stopPropagation prevents button taps
-                    from bubbling to the card's pointerUp handler
-                    (which would trigger a flip on link tap) */}
+                {/* FIX: stopPropagation on BOTH touchstart and touchend
+                    Previous code stopped pointer events but touch events
+                    on links were still bubbling to the card wrapper,
+                    triggering accidental flips when tapping links */}
                 <div className="flex gap-2.5">
                   <a
                     href={project.liveUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onPointerUp={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchEnd={(e) => e.stopPropagation()}
                     className="flex-1"
                     aria-label={`View ${project.title} live`}
                   >
-                    <button
+                    <span
                       className={cn(
                         'w-full inline-flex items-center justify-center gap-1.5',
                         'px-4 py-2.5 rounded-xl text-sm font-semibold text-white',
                         'transition-transform duration-150 active:scale-95',
+                        'select-none',
                       )}
                       style={{
-                        background: `linear-gradient(135deg, ${accent.primary}dd, ${accent.primary}88)`,
+                        background: `linear-gradient(
+                          135deg,
+                          ${accent.primary}dd,
+                          ${accent.primary}88
+                        )`,
                       }}
                     >
                       <ExternalLink size={13} aria-hidden="true" />
                       Demo
-                    </button>
+                    </span>
                   </a>
 
                   <a
                     href={project.githubUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onPointerUp={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchEnd={(e) => e.stopPropagation()}
                     className="flex-1"
                     aria-label={`View ${project.title} on GitHub`}
                   >
-                    <button
+                    <span
                       className={cn(
                         'w-full inline-flex items-center justify-center gap-1.5',
                         'px-4 py-2.5 rounded-xl text-sm font-semibold',
                         'border transition-transform duration-150 active:scale-95',
-                        'bg-white/5 border-white/10 text-white/70',
+                        'select-none',
+                        'bg-black/5 border-black/10 text-neutral-700',
                         'dark:bg-white/[0.04] dark:border-white/[0.08] dark:text-white/60',
                       )}
                     >
                       <Github size={13} aria-hidden="true" />
                       Code
-                    </button>
+                    </span>
                   </a>
                 </div>
               </div>
             </div>
 
-            {/* ── BACK ──────────────────────────────────────── */}
+            {/* ── BACK ───────────────────────────────────── */}
             <div
               className={cn(
                 'absolute inset-0 rounded-2xl overflow-hidden p-6',
                 'flex flex-col justify-between',
                 'border border-white/[0.08]',
-                'bg-[#060d08]',
                 'shadow-2xl',
+                // Light mode back
+                'bg-[#f5faf6] dark:bg-[#060d08]',
+                'border-neutral-200 dark:border-white/[0.08]',
               )}
               style={{
                 backfaceVisibility:       'hidden',
-                WebkitBackfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden' as React.CSSProperties['WebkitBackfaceVisibility'],
                 transform:                'rotateY(180deg)',
               }}
             >
               {/* Accent glow */}
               <div
                 className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: `radial-gradient(ellipse 90% 90% at 50% 50%, rgba(${accent.bloomRgb}, 0.12), transparent 70%)`,
-                }}
                 aria-hidden="true"
+                style={{
+                  background: `radial-gradient(
+                    ellipse 90% 90% at 50% 50%,
+                    rgba(${accent.bloomRgb}, 0.10),
+                    transparent 70%
+                  )`,
+                }}
               />
 
               {/* Grid texture */}
               <div
-                className="absolute inset-0 pointer-events-none"
+                className="absolute inset-0 pointer-events-none opacity-60"
+                aria-hidden="true"
                 style={{
                   backgroundImage: `
-                    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)
+                    linear-gradient(rgba(${accent.bloomRgb}, 0.04) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(${accent.bloomRgb}, 0.04) 1px, transparent 1px)
                   `,
                   backgroundSize: '24px 24px',
                 }}
-                aria-hidden="true"
               />
 
-              {/* Content */}
+              {/* Back content */}
               <div className="relative z-10">
                 <div className="mb-5">
-                  <span className="text-[9px] font-bold tracking-[0.25em] uppercase text-white/30">
+                  <span className={cn(
+                    'text-[9px] font-bold tracking-[0.25em] uppercase',
+                    'text-black/30 dark:text-white/30',
+                  )}>
                     Tech Stack
                   </span>
-                  <h4 className="text-lg font-bold text-white mt-1 leading-snug">
+                  <h4 className="text-lg font-bold mt-1 leading-snug text-neutral-900 dark:text-white">
                     {project.title}
                   </h4>
                   <div
@@ -318,23 +420,28 @@ const MobileProjectCard = memo(function MobileProjectCard({
                   />
                 </div>
 
-                {/* All tags — animate in on flip */}
+                {/* All tags with stagger-in animation on flip */}
                 <div className="flex flex-wrap gap-2">
                   {project.tags.map((tag, i) => (
                     <motion.span
                       key={tag}
-                      initial={{ scale: 0.8, filter: 'blur(4px)' }}
+                      initial={{ scale: 0.8, filter: 'blur(4px)', opacity: 0 }}
                       animate={
                         flipped
-                          ? { scale: 1,   filter: 'blur(0px)' }
-                          : { scale: 0.8, filter: 'blur(4px)' }
+                          ? { scale: 1,   filter: 'blur(0px)', opacity: 1 }
+                          : { scale: 0.8, filter: 'blur(4px)', opacity: 0 }
                       }
                       transition={{
-                        delay:    flipped ? 0.18 + i * 0.04 : 0,
-                        duration: 0.28,
+                        delay:    flipped ? 0.18 + i * 0.045 : 0,
+                        duration: 0.30,
                         ease:     FM_EASE.outSpring,
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold border bg-white/[0.05] border-white/[0.08] text-white/75"
+                      className={cn(
+                        'inline-flex items-center gap-1.5',
+                        'px-3 py-1.5 rounded-xl text-[11px] font-semibold border',
+                        'bg-black/[0.04] border-black/10 text-neutral-700',
+                        'dark:bg-white/[0.05] dark:border-white/[0.08] dark:text-white/75',
+                      )}
                     >
                       <span
                         className="w-1.5 h-1.5 rounded-full flex-shrink-0"
@@ -347,9 +454,9 @@ const MobileProjectCard = memo(function MobileProjectCard({
                 </div>
               </div>
 
-              {/* Footer hint */}
+              {/* Flip back hint */}
               <div className="relative z-10 text-center pt-4">
-                <span className="text-[10px] text-white/25 font-mono">
+                <span className="text-[10px] font-mono text-black/25 dark:text-white/25">
                   tap to flip back
                 </span>
               </div>
