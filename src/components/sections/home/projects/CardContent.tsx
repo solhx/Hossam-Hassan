@@ -5,7 +5,7 @@ import { memo }                                   from 'react';
 import { motion, AnimatePresence }                from 'framer-motion';
 import Image                                      from 'next/image';
 import { ExternalLink, Github, Star, ArrowRight } from 'lucide-react';
-import { cn }                                     from '@/utils/utils';
+import { cn }                                     from "@/utils/utils";
 import { FM_EASE }                                from './constants';
 import type { Project, Accent }                   from './types';
 
