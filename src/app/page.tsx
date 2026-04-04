@@ -12,7 +12,7 @@ import { Hero }       from '@/components/sections/home/Hero';
 import { AboutMe }    from '@/components/sections/home/AboutMe';
 import { Skills }     from '@/components/sections/home/Skills';
 import { Experience } from '@/components/sections/home/Experience';
-import { Projects }   from '@/components/sections/home/Projects';
+import { Projects }   from '@/components/sections/home/projects/Projects';
 import { Contact }    from '@/components/sections/home/Contact';
 
 export default function HomePage() {

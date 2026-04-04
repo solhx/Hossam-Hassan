@@ -37,7 +37,24 @@
   --animate-glow:          glow 2s ease-in-out infinite alternate;
   --animate-shimmer:       shimmer 2.5s linear infinite;
   --animate-shimmer-sweep: shimmer-sweep 2.5s ease-in-out infinite;
+
+  /* ── Projects green palette ──────────────────────────────── */
+  --projects-bg-base:     oklch(0.08 0.02 160);
+  --projects-green-950:   oklch(0.10 0.03 158);
+  --projects-green-900:   oklch(0.14 0.05 155);
+  --projects-green-800:   oklch(0.20 0.08 152);
+  --projects-green-700:   oklch(0.28 0.10 150);
+  --projects-green-600:   oklch(0.40 0.14 148);
+  --projects-green-500:   oklch(0.53 0.17 145);
+  --projects-green-400:   oklch(0.65 0.18 143);
+  --projects-green-300:   oklch(0.76 0.16 142);
+  --projects-green-neon:  oklch(0.82 0.22 140);
+  --projects-green-soft:  oklch(0.90 0.10 145);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Dark mode tokens
+───────────────────────────────────────────────────────────── */
 
 .dark {
   --color-background: oklch(0.145 0 0);
@@ -62,128 +79,13 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Panel Background
+   @property
 ═══════════════════════════════════════════════════════════════ */
 
-/*
-  ✅ contain: layout paint — NOT strict.
-
-  strict = size + layout + paint + style combined.
-  The size part breaks percentage-based width/height on orbs:
-  the browser resolves % against a zero-size containing block,
-  then snaps back when GSAP clipPath causes a reflow → flicker.
-
-  layout paint = safe: isolates layout and repaint boundaries
-  WITHOUT breaking percentage dimensions.
-*/
-.panel-bg {
-  contain: layout paint;
-}
-
-.panel-bg__base {
-  background: var(--pb-base-light);
-  /*
-    ✅ FIX: Remove transition from base layer.
-
-    The base layer covers the entire panel (inset: 0). A 600ms
-    background transition on a full-panel element means 600ms of
-    continuous repainting. During GSAP scroll scrubbing, this
-    transition re-triggers on every style recalculation, creating
-    a 600ms "ghost" of the previous color that overlaps the new
-    one — the shimmer/flicker visible during scroll.
-
-    Theme changes are handled by the View Transition in ToggleTheme.
-    We don't need CSS transitions on background here.
-  */
-}
-.dark .panel-bg__base {
-  background: var(--pb-base-dark);
-}
-
-.panel-bg__mesh {
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 80%, var(--pb-mesh-light)  0%, transparent 55%),
-    radial-gradient(ellipse 60% 80% at 80% 20%, var(--pb-orb3-light)  0%, transparent 55%),
-    radial-gradient(ellipse 90% 50% at 50% 50%, var(--pb-orb2-light)  0%, transparent 60%);
-  /*
-    ✅ FIX: No transition, no contain: strict.
-
-    contain: strict was here — removed (see .panel-bg note above).
-    No transition: the mesh background uses CSS vars that don't
-    change during scroll, only on theme switch. View Transition
-    handles the theme switch visually.
-  */
-}
-.dark .panel-bg__mesh {
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 80%, var(--pb-mesh-dark)  0%, transparent 55%),
-    radial-gradient(ellipse 60% 80% at 80% 20%, var(--pb-orb3-dark)  0%, transparent 55%),
-    radial-gradient(ellipse 90% 50% at 50% 50%, var(--pb-orb2-dark)  0%, transparent 60%);
-}
-
-/*
-  ✅ FIX: contain: layout paint on orbs — NOT strict.
-  
-  Also: NO transition property on orb background.
-  
-  The original had `transition: background 600ms ease` on each orb.
-  During GSAP scroll, the browser fires a style recalculation on
-  the entire panel subtree for EVERY clipPath update (60x/second).
-  Even though the CSS variable values haven't changed, the browser
-  sees a "style event" and restarts the transition — triggering
-  60 repaint cycles per second on each orb's radial-gradient.
-  That's the flicker during scrolling.
-
-  Theme transitions are cosmetic and handled by View Transition API.
-  Orbs don't need background transitions.
-*/
-.panel-bg__orb {
-  contain: layout paint;
-}
-
-.panel-bg__orb--a {
-  background: radial-gradient(circle at center, var(--pb-orb1-light) 0%, transparent 68%);
-}
-.dark .panel-bg__orb--a {
-  background: radial-gradient(circle at center, var(--pb-orb1-dark) 0%, transparent 68%);
-}
-
-.panel-bg__orb--b {
-  background: radial-gradient(circle at center, var(--pb-orb2-light) 0%, transparent 68%);
-}
-.dark .panel-bg__orb--b {
-  background: radial-gradient(circle at center, var(--pb-orb2-dark) 0%, transparent 68%);
-}
-
-.panel-bg__orb--c {
-  background: radial-gradient(circle at center, var(--pb-orb3-light) 0%, transparent 68%);
-}
-.dark .panel-bg__orb--c {
-  background: radial-gradient(circle at center, var(--pb-orb3-dark) 0%, transparent 68%);
-}
-
-.panel-bg__grid {
-  background-image:
-    linear-gradient(rgba(0,0,0,0.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,0,0,0.028) 1px, transparent 1px);
-}
-.dark .panel-bg__grid {
-  background-image:
-    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-}
-
-/*
-  ✅ Grain as CSS class — parsed once, never re-evaluated inline.
-  contain: paint shrinks repaint region to element bounds.
-*/
-.panel-bg__grain {
-  opacity: 0.035;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 160px 160px;
-  contain: paint;
+@property --gradient-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -235,69 +137,49 @@
   50%       { background-position: 100% 50%; }
 }
 
-@keyframes clip-reveal {
-  from { clip-path: inset(100% 0% 0% 0%); }
-  to   { clip-path: inset(0%   0% 0% 0%); }
+/* ── Stack carousel keyframes ───────────────────────────────── */
+
+@keyframes stack-scroll-line {
+  0%   { transform: translateY(-100%); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(200%);  opacity: 0; }
 }
 
-@keyframes rail-pulse {
-  0%, 100% { box-shadow: 0 0 0 0   rgba(16, 185, 129, 0);    }
-  50%       { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.18); }
+@keyframes stack-cue-fade {
+  0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(12px); }
 }
 
-/*
-  ✅ Panel orb keyframes: translateZ(0) kept INSIDE the keyframe.
-  This promotes the GPU layer only during active animation frames,
-  not permanently. Combined with animationFillMode: none in the
-  component, the layer is de-promoted when animation is paused.
-*/
-@keyframes panel-orb-a {
-  0%   { transform: translate( 0%,   0%)  scale(1)    translateZ(0); }
-  20%  { transform: translate( 8%,  -12%) scale(1.06) translateZ(0); }
-  45%  { transform: translate(-6%,   10%) scale(0.95) translateZ(0); }
-  65%  { transform: translate(12%,   5%)  scale(1.04) translateZ(0); }
-  80%  { transform: translate(-4%,  -8%)  scale(1.02) translateZ(0); }
-  100% { transform: translate( 0%,   0%)  scale(1)    translateZ(0); }
+/* ── Projects background keyframes ─────────────────────────── */
+
+@keyframes projects-orb-drift-a {
+  0%   { transform: translate(  0%,   0%) scale(1.00); }
+  20%  { transform: translate(  4%,  -8%) scale(1.04); }
+  45%  { transform: translate( -3%,   6%) scale(0.97); }
+  65%  { transform: translate(  6%,   3%) scale(1.03); }
+  80%  { transform: translate( -2%,  -5%) scale(1.01); }
+  100% { transform: translate(  0%,   0%) scale(1.00); }
 }
 
-@keyframes panel-orb-b {
-  0%   { transform: translate(  0%,   0%) scale(1)    translateZ(0); }
-  25%  { transform: translate(-10%,  14%) scale(1.08) translateZ(0); }
-  50%  { transform: translate(  7%,  -6%) scale(0.93) translateZ(0); }
-  75%  { transform: translate( -5%,   9%) scale(1.05) translateZ(0); }
-  100% { transform: translate(  0%,   0%) scale(1)    translateZ(0); }
+@keyframes projects-orb-drift-b {
+  0%   { transform: translate(  0%,   0%) scale(1.00); }
+  25%  { transform: translate( -6%,   8%) scale(1.06); }
+  50%  { transform: translate(  4%,  -4%) scale(0.94); }
+  75%  { transform: translate( -3%,   6%) scale(1.03); }
+  100% { transform: translate(  0%,   0%) scale(1.00); }
 }
 
-@keyframes panel-orb-c {
-  0%   { transform: translate(  0%,   0%) scale(1)   translateZ(0); }
-  30%  { transform: translate( 14%, -10%) scale(1.1) translateZ(0); }
-  60%  { transform: translate( -8%,  12%) scale(0.9) translateZ(0); }
-  100% { transform: translate(  0%,   0%) scale(1)   translateZ(0); }
+@keyframes projects-orb-drift-c {
+  0%   { transform: translate(  0%,   0%) scale(1.00); }
+  30%  { transform: translate(  8%,  -6%) scale(1.08); }
+  60%  { transform: translate( -5%,   8%) scale(0.93); }
+  100% { transform: translate(  0%,   0%) scale(1.00); }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Panel orb: reduced motion
-═══════════════════════════════════════════════════════════════ */
-
-@media (prefers-reduced-motion: reduce) {
-  .panel-bg__orb--a,
-  .panel-bg__orb--b,
-  .panel-bg__orb--c,
-  .panel-bg__mesh,
-  .panel-bg__grain {
-    animation: none !important;
-    will-change: auto !important;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   @property
-═══════════════════════════════════════════════════════════════ */
-
-@property --gradient-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
+@keyframes projects-sweep {
+  0%   { background-position:  200% 200%; }
+  50%  { background-position: -100% -100%; }
+  100% { background-position:  200% 200%; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -315,18 +197,6 @@ html {
 }
 
 body {
-  /*
-    ✅ FIX: Remove transition on background-color/color.
-
-    transition: background-color 0ms is a no-op (0ms = instant).
-    BUT declaring ANY transition on body makes the browser include
-    body in its "elements with transitions" list. On every scroll
-    event, the browser checks this list for elements that need
-    transition updates. On a page with GSAP ScrollTrigger running
-    at 60fps, this adds 60 unnecessary body-style checks per second.
-
-    Removed entirely — no visual difference, measurable perf gain.
-  */
   background:  var(--color-background);
   color:       var(--color-foreground);
   font-family: var(--font-sans);
@@ -376,38 +246,45 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Reduced Motion — global
+   Reduced Motion — single merged block
 ═══════════════════════════════════════════════════════════════ */
 
-/*
-  ✅ CRITICAL FIX: Scope reduced-motion to CSS animations ONLY.
-  Never apply it to transition-duration on *.
-
-  The original rule used `transition-duration: 0.01ms !important`
-  on `*`. This overrides Framer Motion's inline style transitions
-  (which are set as style="transition: transform 0.5s ...").
-  !important wins over inline styles.
-
-  Result: every Framer Motion animation on MobileCard snapped to
-  0.01ms, then Framer Motion detected the "completed" animation
-  and re-queued it — creating the rapid flicker loop on mobile.
-
-  Fix: Only suppress CSS @keyframes animations in reduced-motion.
-  Framer Motion handles its own reduced-motion via the
-  useReducedMotion() hook in the component — don't interfere.
-*/
 @media (prefers-reduced-motion: reduce) {
-  /*
-    Target only CSS keyframe animations — not JS-driven transitions.
-    The [style] attribute selector excludes elements that have
-    inline style transitions set by Framer Motion.
-  */
-  *:not([style*="transition"]),
-  *:not([style*="transition"])::before,
-  *:not([style*="transition"])::after {
+  *,
+  *::before,
+  *::after {
     animation-duration:        0.01ms !important;
     animation-iteration-count: 1      !important;
     scroll-behavior:           auto   !important;
+  }
+
+  [data-nav-animated] {
+    animation:  none !important;
+    transition: none !important;
+  }
+
+  .stack-card-shell,
+  .stack-card-reveal {
+    will-change: auto  !important;
+    transform:   none  !important;
+    clip-path:   none  !important;
+    transition:  none  !important;
+  }
+
+  .stack-card-bloom {
+    display: none !important;
+  }
+
+  .projects-bg-orb--a,
+  .projects-bg-orb--b,
+  .projects-bg-orb--c {
+    animation:   none !important;
+    will-change: auto !important;
+  }
+
+  .projects-bg-sweep {
+    animation:   none !important;
+    will-change: auto !important;
   }
 }
 
@@ -474,9 +351,9 @@ body {
     from var(--gradient-angle),
     #009966, #10b981, #6ee7b7, #008299, #009966
   );
-  animation: gradient-rotate 4s linear infinite;
-  z-index:   -1;
-  opacity:   0;
+  animation:  gradient-rotate 4s linear infinite;
+  z-index:    -1;
+  opacity:    0;
   transition: opacity 0.5s ease;
 }
 .gradient-border-animated:hover::before {
@@ -530,21 +407,10 @@ body {
   .glass-nav,
   .glass-strong,
   .glass {
-    background:          Canvas          !important;
-    border:              1px solid ButtonText !important;
-    backdrop-filter:         none        !important;
-    -webkit-backdrop-filter: none        !important;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Reduced motion: nav
-═══════════════════════════════════════════════════════════════ */
-
-@media (prefers-reduced-motion: reduce) {
-  [data-nav-animated] {
-    animation:  none !important;
-    transition: none !important;
+    background:              Canvas        !important;
+    border:                  1px solid ButtonText !important;
+    backdrop-filter:         none          !important;
+    -webkit-backdrop-filter: none          !important;
   }
 }
 
@@ -564,4 +430,302 @@ body {
 
 .border-white\/8 {
   border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Stack Carousel System
+═══════════════════════════════════════════════════════════════ */
+
+.stack-card-shell {
+  position:                    absolute;
+  inset:                       0;
+  will-change:                 transform;
+  transform:                   scale(1) translateY(0px) translateZ(0);
+  transform-origin:            center center;
+  backface-visibility:         hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.stack-card-reveal {
+  position:    absolute;
+  inset:       0;
+  will-change: transform, clip-path;
+  transform:   translateZ(0);
+  clip-path:   inset(0% 0% 0% 0% round 0px);
+}
+
+.stack-card-bloom {
+  position:        absolute;
+  inset:           0;
+  pointer-events:  none;
+  border-radius:   50%;
+  will-change:     transform, filter;
+  transform:       scale(0.5) translateZ(0);
+  filter:          brightness(0);
+  z-index:         50;
+}
+
+.stack-card-image {
+  position:    absolute;
+  inset:       -8%;
+  will-change: transform;
+  transform:   translateY(0%) translateZ(0);
+}
+
+.stack-dot {
+  border-radius: 9999px;
+  width:         8px;
+  transition:
+    height      500ms cubic-bezier(0.16, 1, 0.3, 1),
+    background  500ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow  500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stack-progress-fill {
+  height:     100%;
+  transition: width 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Mobile overrides for stack system ──────────────────────── */
+@media (max-width: 767px) {
+  .stack-card-shell,
+  .stack-card-reveal,
+  .stack-card-bloom,
+  .stack-card-image {
+    will-change: auto;
+    transform:   none;
+  }
+
+  .stack-card-bloom {
+    display: none;
+  }
+}
+/* ─────────────────────────────────────────────────────────────
+   NOTE: @media block closed here ↑
+   Everything below is TOP-LEVEL — not nested inside any block
+───────────────────────────────────────────────────────────── */
+
+/* ═══════════════════════════════════════════════════════════════
+   Projects Section — Green Design System
+   All background work is CSS-only.
+   Zero GSAP involvement. Zero image dependencies.
+   Animations use transform only (compositor-safe).
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Root container ─────────────────────────────────────────── */
+.projects-bg-root {
+  position:   absolute;
+  inset:      0;
+  overflow:   hidden;
+  z-index:    0;
+  background: oklch(0.08 0.02 160);
+}
+
+/* ── Layer 1: Static mesh gradient ─────────────────────────── */
+.projects-bg-mesh {
+  position: absolute;
+  inset:    0;
+  background:
+    radial-gradient(
+      ellipse 70% 60% at -10% -10%,
+      oklch(0.20 0.08 152 / 0.70) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 80% 70% at 110% 110%,
+      oklch(0.16 0.06 155 / 0.60) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 100% 80% at 50% 50%,
+      oklch(0.12 0.04 158 / 0.90) 0%,
+      oklch(0.08 0.02 160) 70%
+    );
+}
+
+/* ── Layer 2: Animated ambient orbs ────────────────────────── */
+.projects-bg-orb {
+  position:       absolute;
+  border-radius:  50%;
+  pointer-events: none;
+  will-change:    transform;
+  filter:         blur(80px);
+}
+
+.projects-bg-orb--a {
+  width:      55vw;
+  height:     55vw;
+  max-width:  700px;
+  max-height: 700px;
+  top:        -20%;
+  left:       20%;
+  background: radial-gradient(
+    circle at center,
+    oklch(0.40 0.14 148 / 0.22) 0%,
+    oklch(0.28 0.10 150 / 0.10) 50%,
+    transparent 70%
+  );
+  animation: projects-orb-drift-a 18s ease-in-out infinite;
+}
+
+.projects-bg-orb--b {
+  width:           40vw;
+  height:          40vw;
+  max-width:       520px;
+  max-height:      520px;
+  bottom:          -10%;
+  right:           -5%;
+  background: radial-gradient(
+    circle at center,
+    oklch(0.53 0.17 145 / 0.16) 0%,
+    oklch(0.40 0.14 148 / 0.08) 50%,
+    transparent 70%
+  );
+  animation:       projects-orb-drift-b 22s ease-in-out infinite;
+  animation-delay: -6s;
+}
+
+.projects-bg-orb--c {
+  width:           35vw;
+  height:          35vw;
+  max-width:       450px;
+  max-height:      450px;
+  top:             30%;
+  left:            -8%;
+  background: radial-gradient(
+    circle at center,
+    oklch(0.65 0.18 143 / 0.12) 0%,
+    oklch(0.53 0.17 145 / 0.06) 50%,
+    transparent 70%
+  );
+  animation:       projects-orb-drift-c 26s ease-in-out infinite;
+  animation-delay: -12s;
+}
+
+.projects-bg-orb--d {
+  width:      50vw;
+  height:     50vw;
+  max-width:  600px;
+  max-height: 600px;
+  bottom:     -25%;
+  left:       -10%;
+  background: radial-gradient(
+    circle at center,
+    oklch(0.20 0.08 152 / 0.35) 0%,
+    oklch(0.14 0.05 155 / 0.15) 50%,
+    transparent 70%
+  );
+  /* Static — no animation for performance */
+}
+
+/* ── Layer 3: Grid overlay ──────────────────────────────────── */
+.projects-bg-grid {
+  position:         absolute;
+  inset:            0;
+  background-image:
+    linear-gradient(oklch(1 0 0 / 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(1 0 0 / 0.028) 1px, transparent 1px);
+  background-size:    48px 48px;
+  -webkit-mask-image: radial-gradient(
+    ellipse 80% 80% at 50% 50%,
+    black 30%,
+    transparent 90%
+  );
+  mask-image: radial-gradient(
+    ellipse 80% 80% at 50% 50%,
+    black 30%,
+    transparent 90%
+  );
+}
+
+/* ── Layer 4: Noise grain ───────────────────────────────────── */
+/*
+  FIX 6: SVG data URI replaced with CSS crosshatch pattern.
+  BEFORE: 2KB+ SVG parsed per element = repaint on scroll.
+  AFTER:  Pure CSS math — zero bytes, zero GPU texture upload.
+  Two overlapping 45deg gradients create micro-texture cheaply.
+*/
+.projects-bg-grain {
+  position:      absolute;
+  inset:         0;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  contain:        paint;
+  /* CSS crosshatch — GPU-computed, zero memory cost */
+  background-image: linear-gradient(
+      45deg,
+      transparent 49.5%,
+      rgba(255, 255, 255, 0.03) 49.5%,
+      rgba(255, 255, 255, 0.03) 50.5%,
+      transparent 50.5%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 49.5%,
+      rgba(255, 255, 255, 0.03) 49.5%,
+      rgba(255, 255, 255, 0.03) 50.5%,
+      transparent 50.5%
+    );
+  background-size: 4px 4px;
+  opacity: 0.6;
+}
+
+/* ── Layer 5: Vignette ──────────────────────────────────────── */
+.projects-bg-vignette {
+  position:   absolute;
+  inset:      0;
+  background: radial-gradient(
+    ellipse 85% 85% at 50% 50%,
+    transparent 40%,
+    oklch(0.06 0.01 160 / 0.55) 100%
+  );
+  pointer-events: none;
+}
+
+/* ── Layer 6: Animated sweep ────────────────────────────────── */
+.projects-bg-sweep {
+  position:        absolute;
+  inset:           0;
+  background:      linear-gradient(
+    105deg,
+    transparent                   0%,
+    oklch(0.40 0.14 148 / 0.04)  40%,
+    oklch(0.53 0.17 145 / 0.06)  50%,
+    oklch(0.40 0.14 148 / 0.04)  60%,
+    transparent                  100%
+  );
+  background-size: 200% 200%;
+  animation:       projects-sweep 12s ease-in-out infinite;
+  pointer-events:  none;
+}
+
+/* ── Layer 7: Per-project accent ring ───────────────────────── */
+.projects-bg-accent-ring {
+  position:   absolute;
+  inset:      0;
+  background: radial-gradient(
+    ellipse 60% 50% at 50% 50%,
+    var(--project-accent-rgb, oklch(0.40 0.14 148 / 0.10)) 0%,
+    transparent 65%
+  );
+  transition:     opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  opacity:        1;
+}
+
+/* ── Mobile optimizations ───────────────────────────────────── */
+@media (max-width: 767px) {
+  .projects-bg-orb {
+    filter: blur(50px);
+  }
+
+  .projects-bg-orb--a,
+  .projects-bg-orb--b,
+  .projects-bg-orb--c {
+    animation-duration: 30s !important;
+  }
+
+  .projects-bg-grain {
+    display: none;
+  }
 }
