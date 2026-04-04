@@ -1,8 +1,18 @@
 // src/components/sections/home/projects/constants.ts
+// ─────────────────────────────────────────────────────────────────
+// PURE DATA — no Framer Motion imports, no GSAP imports
+// Animation variants live in CardContent.tsx (FM scope only)
+// GSAP timing lives in useStackAnimation.ts (GSAP scope only)
+// ─────────────────────────────────────────────────────────────────
+
 import type { Accent } from './types';
 
+// ── Accent palette ───────────────────────────────────────────────
+// Each project gets a unique color identity
+// bloomRgb is used by GSAP for the burst effect (no opacity hack)
 export const PROJECT_ACCENTS: Accent[] = [
   {
+    // Urban Nile — emerald (brand identity: streetwear, growth)
     primary:  '#10b981',
     glow:     'rgba(16,185,129,0.20)',
     bloomRgb: '16,185,129',
@@ -11,6 +21,7 @@ export const PROJECT_ACCENTS: Accent[] = [
     text:     'text-emerald-600 dark:text-emerald-400',
   },
   {
+    // LMS — teal (education, trust, clarity)
     primary:  '#14b8a6',
     glow:     'rgba(20,184,166,0.20)',
     bloomRgb: '20,184,166',
@@ -19,6 +30,7 @@ export const PROJECT_ACCENTS: Accent[] = [
     text:     'text-teal-600 dark:text-teal-400',
   },
   {
+    // 3D Portfolio — lime (creative, bold, forward)
     primary:  '#84cc16',
     glow:     'rgba(132,204,22,0.18)',
     bloomRgb: '132,204,22',
@@ -27,6 +39,7 @@ export const PROJECT_ACCENTS: Accent[] = [
     text:     'text-lime-600 dark:text-lime-400',
   },
   {
+    // ShopHub — cyan (commerce, speed, digital)
     primary:  '#06b6d4',
     glow:     'rgba(6,182,212,0.18)',
     bloomRgb: '6,182,212',
@@ -35,6 +48,7 @@ export const PROJECT_ACCENTS: Accent[] = [
     text:     'text-cyan-600 dark:text-cyan-400',
   },
   {
+    // FlowState — green (SaaS, productivity, clean)
     primary:  '#22c55e',
     glow:     'rgba(34,197,94,0.18)',
     bloomRgb: '34,197,94',
@@ -44,81 +58,69 @@ export const PROJECT_ACCENTS: Accent[] = [
   },
 ];
 
+// ── Depth stack config ───────────────────────────────────────────
+// These are the ONLY values GSAP uses for the stack
+// Defined here so they're easy to tune without touching animation code
 export const STACK_CONFIG = {
+  // Active card
   active: {
     scale:      1.0,
     translateY: 0,
     translateZ: 0,
     blur:       0,
   },
+  // Cards behind active (per-step reduction)
   depth: {
-    scaleStep:      0.055,
-    translateYStep: 16,
-    maxDepth:       3,
-    brightnessStep: 0.08,
+    scaleStep:      0.055,  // each card behind = -0.055 scale
+    translateYStep: 16,     // px — each card behind = +16px down
+    maxDepth:       3,      // only animate 3 cards behind
+    brightnessStep: 0.08,   // filter: brightness — no opacity!
   },
+  // Entry animation for incoming active card
   entry: {
-    fromScale:      0.88,
-    fromTranslateY: 56,
-    // ── UPGRADE: diagonal wipe instead of straight bottom-up ──
-    // Feels more cinematic — slides in from bottom-left corner
-    fromClipPath: 'inset(100% 0% 0% 0% round 28px)',
-    toClipPath:   'inset(0% 0% 0% 0% round 28px)',
-    duration:     0.78,
+    fromScale:      0.90,
+    fromTranslateY: 44,    // px
+    fromClipPath:   'inset(100% 0 0 0 round 24px)',
+    toClipPath:     'inset(0% 0% 0% 0% round 24px)',  // Phase 3a: Consistent
+    duration:       0.72,
   },
+  // Exit animation for outgoing active card
   exit: {
-    toScale:        0.86,
-    toTranslateY:   -72,
-    // ── UPGRADE: slight rotation on exit for depth feel ───────
-    toRotateX:      4,
-    duration:       0.52,
-  },
-  // ── NEW: tilt config for mouse parallax ───────────────────────
-  tilt: {
-    maxRotateX:   8,   // degrees
-    maxRotateY:   10,  // degrees
-    maxTranslateZ: 30, // px — card lifts toward viewer
-    stiffness:    60,
-    damping:      20,
-  },
-  // ── NEW: multi-ring bloom config ──────────────────────────────
-  bloom: {
-    rings:    3,          // number of ripple rings
-    duration: 1.1,        // seconds per ring
-    stagger:  0.18,       // delay between rings
-    maxScale: 2.8,
+    toScale:      0.88,
+    toTranslateY: -60,     // px
+    duration:     0.55,
   },
 } as const;
 
+// ── Parallax config ──────────────────────────────────────────────
 export const PARALLAX_CONFIG = {
-  imageMultiplier: 0.18,
-  textMultiplier:  0.08,
+  imageMultiplier: 0.18,   // image moves 18% of scroll delta
+  textMultiplier:  0.08,   // text moves 8% of scroll delta
 } as const;
 
+// ── Scroll capture config ────────────────────────────────────────
 export const SCROLL_CONFIG = {
-  snapDuration:  { min: 0.45, max: 0.65 },
-  scrubStrength: 0.9,
-  velocityDecay: 0.88,
+  snapDuration:    { min: 0.45, max: 0.65 },
+  scrubStrength:   0.9,
+  velocityDecay:   0.88,
 } as const;
 
+// ── GSAP easing ──────────────────────────────────────────────────
+// Defined as strings for GSAP (not Framer Motion arrays)
 export const GSAP_EASE = {
-  // ── UPGRADE: richer easing curves ─────────────────────────────
-  entryExpo:   'expo.out',          // ultra-fast deceleration
-  exitCubic:   'power2.inOut',
-  depthSpring: 'power3.out',
-  bloom:       'power2.out',
-  snap:        'power3.inOut',
-  // NEW: for the diagonal wipe — feels like fabric pulling
-  wipe:        'power4.inOut',
-  // NEW: for the tilt spring back
-  tiltSpring:  'elastic.out(1, 0.5)',
+  entryExpo:  'power4.out',     // fast deceleration — cinematic landing
+  exitCubic:  'power2.inOut',   // smooth departure
+  depthSpring: 'power3.out',    // stack depth repositioning
+  bloom:      'power2.out',     // bloom burst
+  snap:       'power3.inOut',   // snap positioning
 } as const;
 
+// ── Framer Motion easing ─────────────────────────────────────────
+// Used ONLY for content micro-animations (text, tags, links)
+// NEVER applied to panel containers
 export const FM_EASE = {
-  outExpo:    [0.16, 1,    0.3,  1]    as const,
-  outSpring:  [0.34, 1.56, 0.64, 1]   as const,
-  inCubic:    [0.55, 0,    1,    0.45] as const,
-  smooth:     [0.25, 0.46, 0.45, 0.94] as const,
-  // NEW: for counter morph
-  snapBack:   [0.175, 0.885, 0.32, 1.275] as const,
+  outExpo:   [0.16, 1, 0.3,  1]  as const,
+  outSpring: [0.34, 1.56, 0.64, 1] as const,
+  inCubic:   [0.55, 0,   1, 0.45] as const,
+  smooth:    [0.25, 0.46, 0.45, 0.94] as const,
 } as const;

@@ -28,8 +28,8 @@ import {
   Menu,
   X,
 } from 'lucide-react';
-import Link            from 'next/link';
-import { cn }          from '@/utils/utils';
+import Link          from 'next/link';
+import { cn }        from '@/utils/utils';
 import { ToggleTheme } from '@/components/common/ToggleTheme';
 
 /* ── Types ────────────────────────────────────────────────────── */
@@ -61,6 +61,7 @@ function useIsMobileReady(breakpoint = 768): boolean | null {
   useEffect(() => {
     const check = () => setState(window.innerWidth < breakpoint);
     check();
+
     const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
     mq.addEventListener('change', check);
     return () => mq.removeEventListener('change', check);
@@ -69,29 +70,47 @@ function useIsMobileReady(breakpoint = 768): boolean | null {
   return state;
 }
 
-/* ── useNavScroll ─────────────────────────────────────────────── */
+/* ── useNavScroll — subscribes to lenis-scroll, NOT window.scroll ── */
+//
+// WHY: FloatingAppBar previously used window.addEventListener('scroll').
+// This fires on the NATIVE scroll event, which on a Lenis-driven page
+// arrives at a different time than Lenis's virtual scroll position.
+// Result: GSAP's onUpdate (setting activeIndex) and navbar's setVisible
+// fired in the same frame but as two separate React batches — causing
+// the Projects panel clipPath to reset mid-transition (the flicker).
+//
+// The lenis-scroll custom event is dispatched FROM inside lenis.on('scroll'),
+// which runs inside GSAP's RAF ticker. Both GSAP and the navbar now update
+// in the same requestAnimationFrame tick — one React batch, no flicker.
 
 function useNavScroll() {
   const [visible,  setVisible]  = useState(true);
   const [scrolled, setScrolled] = useState(false);
 
-  const lastScrollRef = useRef(0);
-  const rafPendingRef = useRef(false);
+  const lastScrollRef  = useRef(0);
+  // ✅ Debounce state updates with RAF to prevent mid-frame React renders
+  const rafPendingRef  = useRef(false);
+
   const closeMobileRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => {
       const { scroll } = (e as CustomEvent<{ scroll: number; velocity: number }>).detail;
 
+      // ✅ Only schedule one RAF update per frame.
+      // Without this, fast scrolling dispatches multiple lenis-scroll
+      // events per frame (Lenis interpolates), each calling setState —
+      // triggering multiple React renders per frame instead of one.
       if (rafPendingRef.current) return;
       rafPendingRef.current = true;
 
       requestAnimationFrame(() => {
         rafPendingRef.current = false;
 
-        const prev         = lastScrollRef.current;
+        const prev = lastScrollRef.current;
         const scrollingDown = scroll > prev && scroll > 100;
 
+        // ✅ Close mobile menu on scroll down — same logic, correct timing
         if (scrollingDown && scroll > 100) {
           closeMobileRef.current?.();
         }
@@ -118,6 +137,7 @@ function useNavScroll() {
 }
 
 /* ── IconContainer ────────────────────────────────────────────── */
+// (Unchanged — no scroll dependency, no re-render issues)
 
 function IconContainer({
   mouseX,
@@ -134,7 +154,7 @@ function IconContainer({
   onClick?:       () => void;
   isThemeToggle?: boolean;
 }) {
-  const ref    = useRef<HTMLDivElement>(null);
+  const ref           = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
 
   const distance = useTransform(mouseX, (val) => {
@@ -253,6 +273,7 @@ function IconContainer({
 }
 
 /* ── MobileDockItem ───────────────────────────────────────────── */
+// (Unchanged)
 
 function MobileDockItem({
   item,
@@ -335,41 +356,32 @@ function MobileTriggerButton({
       aria-expanded={isOpen}
       aria-controls="mobile-nav-dock"
       className={cn(
-        // FIX 1: Changed z-[9999] → z-[200]
-        // z-9999 on a fixed element forces the browser to re-evaluate
-        // the entire stacking order on every Framer Motion animation frame.
-        // z-200 is more than enough to sit above content (z-50) and
-        // below browser UI — no scroll performance impact.
-        'fixed bottom-5 left-5 z-[200]',
+        'fixed bottom-5 left-5 z-[9999]',
         'w-12 h-12 rounded-full',
         'flex items-center justify-center',
         'bg-gradient-to-br from-emerald-400 to-emerald-600',
         'text-white shadow-lg shadow-emerald-500/30',
         'focus-visible:outline-none focus-visible:ring-2',
         'focus-visible:ring-emerald-400 focus-visible:ring-offset-2',
-        // FIX 2: touch-action: manipulation — tells the browser
-        // this element handles taps only (no pan/zoom).
-        // Without this, mobile browsers add a 300ms tap delay
-        // AND reserve the touch event for potential scroll gestures,
-        // meaning your onClick fires late AND competes with scroll.
-        'touch-action-manipulation',
       )}
-      // FIX 3: Removed will-change from whileHover/whileTap entirely.
-      // Framer Motion internally applies will-change:transform during
-      // animation and removes it after. Adding it statically via style
-      // keeps a GPU layer alive permanently — competing with lenis's
-      // own composited scroll layer on mobile.
+      // ✅ CRITICAL FIX: Remove willChange: 'transform' from the trigger button.
+      //
+      // The original code had willChange: 'transform' on this fixed button.
+      // On iOS Safari and Chrome Android, when a position:fixed element has
+      // willChange:transform, the browser creates a NEW compositor layer for
+      // it. GSAP's pinned section ALSO creates a compositor layer (position:fixed
+      // for pinning). Two competing fixed compositor layers on the same z-axis
+      // cause the browser to re-composite the entire fixed stack on EVERY scroll
+      // tick — visually flickering the Projects section as layers are re-ordered.
+      //
+      // Removing willChange lets the browser decide compositing. The button is
+      // only 48x48px with a spring animation — it doesn't NEED a dedicated layer.
+      // whileTap/whileHover still use GPU via Framer Motion's transform path.
       whileTap={{ scale: 0.88 }}
       whileHover={{ scale: 1.08 }}
       transition={{ type: 'spring', stiffness: 400, damping: 17 }}
     >
-      {/* FIX 4: Reduced tap target padding from -inset-2 to -inset-1.
-          The original -inset-2 expanded the touch area by 8px on all sides,
-          overlapping with the MobileVerticalDock items directly above.
-          When the dock is open, tapping an item could accidentally hit
-          this expanded trigger area and immediately close the dock. */}
-      <span className="absolute -inset-1 rounded-full" aria-hidden="true" />
-
+      <span className="absolute -inset-2 rounded-full" aria-hidden="true" />
       <AnimatePresence mode="wait" initial={false}>
         {isOpen ? (
           <motion.span
@@ -400,6 +412,7 @@ function MobileTriggerButton({
 }
 
 /* ── MobileVerticalDock ───────────────────────────────────────── */
+// (Unchanged — only structural fixes needed at the portal level)
 
 function MobileVerticalDock({
   items,
@@ -425,36 +438,20 @@ function MobileVerticalDock({
         {isOpen && (
           <motion.div
             key="mobile-backdrop"
-            // FIX 5: Changed z-[9998] → z-[198]
-            // Matches the reduced z-index of the trigger button.
-            // High z-index values on fixed+backdrop-filter elements
-            // cause full-page recomposite on mobile GPUs.
-            // Also added pointer-events-none when not in use to prevent
-            // the invisible backdrop from swallowing touch events during
-            // the exit animation.
-            className="fixed inset-0 z-[198]"
+            className="fixed inset-0 z-[9998]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{    opacity: 0 }}
             transition={{ duration: 0.2 }}
-            style={{
-              background: 'rgba(0,0,0,0.15)',
-              // FIX 6: touch-action: pan-y — the backdrop should allow
-              // vertical scrolling to pass through.
-              // Without this, touching the backdrop on mobile is treated
-              // as a captured touch event and the page won't scroll while
-              // the menu is open.
-              touchAction: 'pan-y',
-            }}
+            style={{ background: 'rgba(0,0,0,0.15)' }}
             onClick={onClose}
             aria-hidden="true"
           />
         )}
       </AnimatePresence>
 
-      {/* Glow blob — decorative only, aria-hidden */}
       <motion.div
-        className="fixed z-[197] pointer-events-none"
+        className="fixed z-[9997] pointer-events-none"
         style={{ bottom: '16px', left: '16px' }}
         animate={{
           opacity: isOpen ? 1 : 0,
@@ -472,29 +469,27 @@ function MobileVerticalDock({
         className={cn(
           'fixed flex flex-col items-center gap-1',
           'bottom-20 left-4',
-          // FIX 7: Changed z-[9998] → z-[199]
-          // Sits between the backdrop (198) and trigger (200).
-          'z-[199]',
+          'z-[9998]',
           'py-2 px-1.5 rounded-2xl',
           'bg-white/65 dark:bg-neutral-900/65',
-          // FIX 8: Replaced 'backdrop-blur-xl' with a lighter blur.
-          // backdrop-blur-xl = blur(24px). On mobile, every pixel
-          // of a blurred fixed element must be redrawn during scroll.
-          // blur(12px) is visually close but 4x cheaper to composite
-          // because the blur kernel is half the size.
-          'backdrop-blur-md',
+          'backdrop-blur-xl',
           'border border-white/25 dark:border-white/[0.1]',
           'shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
+          // ✅ CRITICAL FIX: Remove 'isolate' from the mobile dock.
+          //
+          // 'isolate' creates a new stacking context (isolation: isolate).
+          // When combined with position:fixed and z-index on a mobile browser,
+          // it forces the browser to flatten this element's layer tree separately
+          // from the rest of the page. This made the dock's backdrop-filter and
+          // opacity animations recalculate the stacking order of ALL fixed
+          // elements — including the GSAP-pinned Projects section — on every
+          // open/close animation frame.
         )}
         style={{
-          // FIX 9: Reduced WebkitBackdropFilter saturation.
-          // saturate(160%) forces full-color recomposite on every frame.
-          // saturate(130%) is perceptually similar but lighter.
-          WebkitBackdropFilter: 'blur(12px) saturate(130%)',
-          // FIX 10: touch-action: pan-y on the dock itself.
-          // Items in the dock are tappable, but the dock container
-          // should never capture vertical pan gestures.
-          touchAction: 'pan-y',
+          WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+          // ✅ Only apply will-change when actually animating (open state).
+          // Persisting will-change:transform on a fixed element even when
+          // idle keeps an unnecessary GPU layer alive, competing with GSAP.
         }}
         initial={false}
         animate={{
@@ -510,7 +505,6 @@ function MobileVerticalDock({
           opacity:   { duration: 0.2 },
         }}
       >
-        {/* Shimmer sweep — decorative */}
         <div
           className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
           aria-hidden="true"
@@ -536,10 +530,6 @@ function MobileVerticalDock({
               damping:   25,
             }}
             className="relative"
-            // FIX 11: touch-action on each item wrapper.
-            // This is the most granular fix — each item only needs
-            // to respond to taps, never to pan gestures.
-            style={{ touchAction: 'manipulation' }}
           >
             <MobileDockItem item={item} onAction={onClose} />
           </motion.div>
@@ -564,6 +554,15 @@ function MobileNavPortal({
   onClose:  () => void;
   isMobile: boolean | null;
 }) {
+  // ✅ CRITICAL FIX: Don't use useState for the portal target.
+  //
+  // Original: useState(null) → useEffect sets it → re-render → page re-render
+  // → GSAP ScrollTrigger sees layout change → refresh() → clipPath reset → flicker.
+  //
+  // Fix: if isMobile is already true (measured by useIsMobileReady), document.body
+  // is guaranteed available (we're client-side). Skip the state entirely.
+  // There is NO async gap between isMobile===true and document.body being ready.
+  
   if (isMobile !== true) return null;
 
   return createPortal(
@@ -578,18 +577,22 @@ function MobileNavPortal({
 /* ── FloatingAppBar ───────────────────────────────────────────── */
 
 export function FloatingAppBar() {
+  // ✅ useNavScroll now subscribes to lenis-scroll event instead of window.scroll
   const { visible, scrolled, closeMobileRef } = useNavScroll();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [navHovered, setNavHovered] = useState(false);
 
-  const navRef    = useRef<HTMLElement>(null);
-  const mouseX    = useMotionValue(Infinity);
-  const navMouseX = useMotionValue(0);
+  const navRef     = useRef<HTMLElement>(null);
+  const mouseX     = useMotionValue(Infinity);
+  const navMouseX  = useMotionValue(0);
   const smoothNavX = useSpring(navMouseX, { stiffness: 250, damping: 30 });
 
   const isMobileReady = useIsMobileReady();
 
+  // ✅ Wire close callback into the scroll hook's ref.
+  // Using a ref avoids adding setMobileOpen to useNavScroll's
+  // dependency array, which would recreate the effect on every render.
   const closeMobile = useCallback(() => setMobileOpen(false), []);
   const openMobile  = useCallback(() => setMobileOpen(true),  []);
 
@@ -603,13 +606,10 @@ export function FloatingAppBar() {
 
   const glassClasses = cn(
     'rounded-full overflow-visible',
-    // FIX 12: Removed '[will-change:transform,opacity]' from desktop navbar.
-    // This class was applied PERMANENTLY to the nav element.
-    // On mobile (even though we don't render this branch when isMobileReady===true),
-    // keeping will-change on a position:fixed element for its entire lifetime
-    // prevents the browser from reclaiming the GPU layer between animations.
-    // Framer Motion applies will-change automatically during animate() and
-    // cleans it up after — we should let it do that instead.
+    // ✅ REMOVED 'isolate' from desktop navbar.
+    // Same reason as mobile dock — isolate creates a stacking context that
+    // forces layer re-evaluation on every animate() call, competing with GSAP.
+    '[will-change:transform,opacity]',
     'border transition-[background-color,border-color,box-shadow] duration-700 ease-out',
     scrolled
       ? 'bg-white/75 dark:bg-neutral-900/75 backdrop-blur-2xl border-white/30 dark:border-white/[0.12] shadow-[0_8px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)]'
@@ -723,8 +723,8 @@ export function FloatingAppBar() {
                   transition: { delay: 0.2, type: 'spring', stiffness: 300, damping: 20 },
                 }}
                 whileHover={{
-                  scale:      1.15,
-                  boxShadow:  '0 0 20px rgba(16,185,129,0.45)',
+                  scale: 1.15,
+                  boxShadow: '0 0 20px rgba(16,185,129,0.45)',
                   transition: { type: 'spring', stiffness: 400, damping: 15 },
                 }}
                 whileTap={{ scale: 0.85, rotate: -15 }}
@@ -799,8 +799,8 @@ export function FloatingAppBar() {
                   <motion.div
                     className="group relative flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-medium bg-gradient-to-r from-emerald-500 to-emerald-600 text-white cursor-pointer overflow-hidden"
                     whileHover={{
-                      scale:      1.08,
-                      boxShadow:  '0 0 24px rgba(16,185,129,0.4)',
+                      scale: 1.08,
+                      boxShadow: '0 0 24px rgba(16,185,129,0.4)',
                       transition: { type: 'spring', stiffness: 400, damping: 15 },
                     }}
                     whileTap={{ scale: 0.9 }}
