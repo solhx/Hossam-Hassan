@@ -22,6 +22,32 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  /*
+   * Webpack alias: maps 'framer-motion' → 'motion/react'
+   *
+   * WHY:
+   * package.json uses "motion": "^12.34.0" — the new unified package
+   * that replaced the separate "framer-motion" package at v12.
+   * All existing UI components (3d-card, section-heading, FloatingAppBar,
+   * VelocityScroll, etc.) import from 'framer-motion'.
+   * Without this alias, those imports would fail at bundle time because
+   * 'framer-motion' is not in node_modules.
+   *
+   * This alias is transparent — the resolved exports are identical.
+   * Zero changes needed in any other file.
+   *
+   * The optimizePackageImports entry above keeps 'framer-motion' because
+   * Next.js applies that optimisation BEFORE webpack alias resolution,
+   * so it still correctly tree-shakes motion/react exports.
+   */
+  webpack(config) {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'framer-motion': 'motion/react',
+    };
+    return config;
+  },
+
   compiler: {
     removeConsole: {
       exclude: ['error', 'warn'],
@@ -45,8 +71,6 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self' data:",
               "img-src 'self' data: blob: https:",
-              // ✅ Add ws://localhost for Turbopack HMR in development only.
-              // In production this entry is omitted — no security risk.
               isDev
                 ? "connect-src 'self' ws://localhost:* ws://127.0.0.1:* wss://localhost:* https://openrouter.ai https://va.vercel-scripts.com https://vitals.vercel-insights.com"
                 : "connect-src 'self' https://openrouter.ai https://va.vercel-scripts.com https://vitals.vercel-insights.com",
@@ -56,7 +80,10 @@ const nextConfig: NextConfig = {
               "form-action 'self'",
             ].join('; '),
           },
-          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          {
+            key:   'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
         ],
       },
       {

@@ -1,16 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X } from 'lucide-react';
-import { ChatWindow } from './ChatWindow';
-import { cn } from '@/utils/utils';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal }                from 'react-dom';
+import { motion, AnimatePresence }     from 'framer-motion';
+import { MessageCircle, X }            from 'lucide-react';
+import { ChatWindow }                  from './ChatWindow';
+import { cn }                          from '@/utils/utils';
 
 export function ChatWidget() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isOpen,        setIsOpen]        = useState(false);
+  const [isMinimized,   setIsMinimized]   = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
+  const [showTooltip,   setShowTooltip]   = useState(false);
+  const [mounted,       setMounted]       = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (hasInteracted) return;
@@ -29,16 +35,12 @@ export function ChatWidget() {
     }
   };
 
-return (
+  const widget = (
     <div
       className={cn(
-        'fixed z-50 flex flex-col items-end gap-3',
-        // ✅ On mobile: right-4 bottom-4 — away from FloatingAppBar (left side)
-        // ✅ On desktop: right-6 bottom-6 — same as before
+        'fixed z-[9990] flex flex-col items-end gap-3',
         'bottom-4 right-4',
         'md:bottom-6 md:right-6',
-        // ❌ REMOVED: bottom-20 md:bottom-6
-        // bottom-20 was pushing it too high and covering content
       )}
     >
       <AnimatePresence>
@@ -55,8 +57,8 @@ return (
         {showTooltip && !isOpen && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0,  scale: 1   }}
+            exit={{    opacity: 0, y: 10, scale: 0.9 }}
             className="relative bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 rounded-2xl rounded-br-sm px-4 py-3 shadow-lg dark:shadow-black/30 max-w-[220px]"
           >
             <button
@@ -81,7 +83,7 @@ return (
         onClick={handleOpen}
         className="group relative p-4 rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:bg-emerald-600 transition-all duration-300 cursor-pointer"
         whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileTap={{   scale: 0.95 }}
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 2 }}
@@ -92,8 +94,8 @@ return (
             <motion.div
               key="close"
               initial={{ rotate: -90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: 90, opacity: 0 }}
+              animate={{ rotate: 0,   opacity: 1 }}
+              exit={{    rotate:  90, opacity: 0 }}
               transition={{ duration: 0.15 }}
             >
               <X size={22} />
@@ -101,9 +103,9 @@ return (
           ) : (
             <motion.div
               key="open"
-              initial={{ rotate: 90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: -90, opacity: 0 }}
+              initial={{ rotate:  90, opacity: 0 }}
+              animate={{ rotate: 0,   opacity: 1 }}
+              exit={{    rotate: -90, opacity: 0 }}
               transition={{ duration: 0.15 }}
             >
               <MessageCircle size={22} />
@@ -137,4 +139,10 @@ return (
       </motion.button>
     </div>
   );
+
+  // Portal to document.body — completely outside any stacking
+  // context created by GSAP pin spacers, Lenis wrappers, or
+  // any transform on ancestor elements.
+  if (!mounted) return null;
+  return createPortal(widget, document.body);
 }
