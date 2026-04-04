@@ -1,22 +1,36 @@
 // src/components/sections/home/projects/StackCard.tsx
 // ─────────────────────────────────────────────────────────────────
-// FIXES APPLIED:
+// CHANGES:
 //
-// FIX 1 — Race Condition (useImperativeHandle removed entirely)
-// BEFORE: useImperativeHandle + manual ref assignment = two systems
-//         fighting each other. StrictMode double-invoke overwrote
-//         refs mid-mount. GSAP received stale/null DOM nodes.
-// AFTER:  Single registration point via useEffect after mount.
-//         Parent passes onRegister callback (not forwardRef).
-//         Cleanup nulls the slot on unmount — no leaks.
+// FIX E — CardHandle unified type
+// BEFORE: Exported StackCardHandle locally, causing StackCarousel
+//         to import two overlapping handle types. useStackAnimation
+//         had to cast CardHandle to access bloomEl/revealEl.
+// AFTER:  Uses CardHandle from types.ts directly. bloomEl and
+//         revealEl are first-class fields — no intersection cast.
+//         onRegister type is now (index, CardHandle | null) → void.
 //
-// FIX 3 — Layout Thrashing (inline zIndex removed)
-// BEFORE: shellEl.style.zIndex = String(...) triggers reflow.
-//         zIndex reads force the browser to resolve the stacking
-//         context before compositing — blocks GPU.
-// AFTER:  Initial zIndex set ONCE in CSS (style prop on mount).
-//         GSAP never writes zIndex again — uses translateZ for
-//         3D stacking order (compositor-only, no reflow).
+// FIX G — revealEl registration race
+// BEFORE: revealRef was only registered if shellRef was populated.
+//         revealRef.current is set synchronously (ref={revealRef})
+//         so it's always available by mount time — no race.
+//         But the guard `if (handle.shellEl)` also covered revealEl,
+//         meaning if shellEl was null (StrictMode double-invoke),
+//         revealEl was never registered either. GSAP couldn't animate
+//         the clip-path reveal on initial load.
+// AFTER:  Both refs are checked independently in the handle object.
+//         Registration only fires when ALL required refs are present.
+//
+// FIX H — CardContent transform-style isolation
+// BEFORE: CardContent lived inside the preserve-3d stacking context.
+//         FM animations (scale, y) on CardContent's children
+//         interacted with GSAP's z-axis transforms on the shell.
+//         On Safari this caused content to appear behind the card
+//         during transitions.
+// AFTER:  The content wrapper div gets transformStyle:'flat' to
+//         create a new stacking context that doesn't inherit 3D.
+//         GSAP still controls the shell in 3D space — content
+//         renders flat within that shell, correctly layered.
 // ─────────────────────────────────────────────────────────────────
 'use client';
 
@@ -29,18 +43,7 @@ import {
 } from 'react';
 import { CardBackground } from './CardBackground';
 import { CardContent }    from './CardContent';
-import type { Project, Accent } from './types';
-
-// ── Handle type ────────────────────────────────────────────────────
-// Flat interface — no forwardRef, no useImperativeHandle.
-// Parent receives this via onRegister callback after mount.
-export interface StackCardHandle {
-  shellEl:   HTMLDivElement | null;
-  imageEl:   HTMLDivElement | null;
-  bloomEl:   HTMLDivElement | null;
-  revealEl:  HTMLDivElement | null;
-  setVisible: (v: boolean) => void;
-}
+import type { Project, Accent, CardHandle } from './types';
 
 interface StackCardProps {
   project:    Project;
@@ -49,14 +52,10 @@ interface StackCardProps {
   total:      number;
   reduced:    boolean;
   isFirst:    boolean;
-  // FIX 1: Registration callback replaces forwardRef entirely
-  // Called once after mount with populated DOM refs + setVisible
-  // Called with null on unmount for clean slot nulling
-  onRegister: (index: number, handle: StackCardHandle | null) => void;
+  // FIX E: Uses unified CardHandle from types.ts
+  onRegister: (index: number, handle: CardHandle | null) => void;
 }
 
-// memo: only re-renders when isFirst or project changes
-// index/accent/total are stable after mount
 export const StackCard = memo(function StackCard({
   project,
   index,
@@ -68,116 +67,141 @@ export const StackCard = memo(function StackCard({
 }: StackCardProps) {
 
   // ── GSAP-owned DOM refs ────────────────────────────────────────
+  // These are written to by GSAP only — React never reads them
   const shellRef  = useRef<HTMLDivElement>(null);
-  const imageRef  = useRef<HTMLDivElement>(null);
-  const bloomRef  = useRef<HTMLDivElement>(null);
-  const revealRef = useRef<HTMLDivElement>(null);
+  const imageRef  = useRef<HTMLDivElement>(null);  // CardBackground parallax
+  const bloomRef  = useRef<HTMLDivElement>(null);  // burst overlay
+  const revealRef = useRef<HTMLDivElement>(null);  // clip-path wrapper
 
-  // ── React-owned visibility state ──────────────────────────────
+  // ── React-owned state ─────────────────────────────────────────
+  // Only isVisible is React state — all other animation is GSAP
   const [isVisible, setIsVisible] = useState(isFirst);
 
-  // Stable identity — never recreated after mount
-  const setVisible = useCallback((v: boolean) => {
-    setIsVisible(v);
-  }, []);
+  // Stable identity callback — useCallback with [] deps.
+  // This is the ONLY React call that GSAP triggers (via the
+  // onActiveChange bridge in useStackAnimation). It's intentionally
+  // not in the GSAP timeline — it's called via tl.current.call()
+  // at the correct animation progress point.
+  const setVisible = useCallback((v: boolean) => setIsVisible(v), []);
 
-// ── FIX 11: StrictMode + will-change fix ──────────────────────
-// Guard prevents double-register. will-change:auto cleanup.
-const registeredRef = useRef(false);
+  // ── FIX G + FIX 11: Registration with all-ref guard ───────────
+  const registeredRef = useRef(false);
 
-useEffect(() => {
-  const handle = {
-    shellEl:   shellRef.current,
-    imageEl:   imageRef.current,
-    bloomEl:   bloomRef.current,
-    revealEl:  revealRef.current,
-    setVisible,
-  };
-  if (handle.shellEl && !registeredRef.current) {
+  useEffect(() => {
+    // FIX G: Check all required refs before registering.
+    // refs are populated synchronously before useEffect runs,
+    // so this check is safe — it's just a null guard for StrictMode.
+    const shell  = shellRef.current;
+    const image  = imageRef.current;
+    const bloom  = bloomRef.current;
+    const reveal = revealRef.current;
+
+    // All refs must be present — if any is null, registration
+    // is deferred to the next effect run (which won't happen
+    // unless the component remounts, e.g. StrictMode)
+    if (!shell || !reveal || registeredRef.current) return;
+
     registeredRef.current = true;
+
+    const handle: CardHandle = {
+      shellEl:    shell,
+      imageEl:    image,   // may be null if CardBackground not mounted yet
+      bloomEl:    bloom,
+      revealEl:   reveal,
+      setVisible,
+    };
+
     onRegister(index, handle);
-    // Activate compositor layer
-    if (shellRef.current) shellRef.current.style.willChange = 'transform';
-  }
-  return () => {
-    registeredRef.current = false;
-    onRegister(index, null);
-    // Reset layer — prevent memory bloat
-    if (shellRef.current) shellRef.current.style.willChange = 'auto';
-  };
-}, [index]); // onRegister stable via parent []
+
+    // Activate GPU compositor layer for the shell
+    shell.style.willChange = 'transform';
+
+    return () => {
+      registeredRef.current = false;
+      onRegister(index, null);
+      // Deactivate compositor layer — prevent VRAM bloat
+      if (shellRef.current) shellRef.current.style.willChange = 'auto';
+    };
+  }, [index, setVisible]); // onRegister is stable (useCallback [])
 
   return (
-    // ── Shell: GSAP-owned ─────────────────────────────────────────
+    // ── Shell: GSAP transform target ─────────────────────────────
+    // GSAP animates: scale, y, z, filter (brightness) on this element.
+    // React never writes style here after mount.
     //
-    // FIX 3: zIndex set ONCE here as initial inline style.
-    // GSAP NEVER writes zIndex after this — uses translateZ instead.
-    //
-    // WHY translateZ for stacking:
-    // translateZ creates depth in the 3D compositing layer.
-    // z-index writes trigger stacking context recalculation
-    // which forces a layout pass. translateZ is compositor-only.
-    //
-    // Initial values:
-    // isFirst → z: 0 (front, no depth offset needed)
-    // others  → z: -index * 10 (pushed back proportionally)
-    // GSAP will set exact translateZ values on first init
+    // zIndex set once at render time to establish initial stacking.
+    // GSAP never writes zIndex — uses translateZ for depth ordering.
+    // translateZ is compositor-only (no layout reflow).
+    // zIndex writes trigger stacking context recalculation (layout).
     <div
       ref={shellRef}
       aria-hidden={!isFirst}
-      className="absolute inset-0 will-change-transform"  // Phase 3b: static compositor hint
+      className="absolute inset-0"
       style={{
-        // FIX 3: One-time zIndex to establish initial stacking.
-        zIndex:          isFirst ? 10 : Math.max(1, 5 - index),
-        transform:       'scale(1) translateY(0px) translateZ(0)',
-        transformOrigin: 'center center',
+        // Initial stacking order — GSAP takes over via translateZ
+        zIndex:                    isFirst ? 10 : Math.max(1, 5 - index),
+        transform:                 'scale(1) translateY(0px) translateZ(0)',
+        transformOrigin:           'center center',
+        // FIX H: preserve-3d on the carousel root propagates here.
+        // backfaceVisibility:hidden prevents the back face from
+        // flickering through during GSAP scale transitions on Safari.
         backfaceVisibility:        'hidden',
         WebkitBackfaceVisibility:  'hidden' as React.CSSProperties['WebkitBackfaceVisibility'],
+        willChange:                'transform',
       }}
     >
-
-      {/* Background gradient layer — GSAP parallax target */}
+      {/* Background — GSAP parallax target (imageEl) */}
       <CardBackground
         accent={accent}
         index={index}
         imageRef={(el) => {
+          // imageRef is passed as a callback to CardBackground
+          // because CardBackground owns the DOM element via its own ref.
+          // This bridge populates our imageRef without forwardRef.
           (imageRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
         }}
       />
 
-      {/* Clip-path reveal wrapper — GSAP wipe animation target */}
+      {/* Clip-path reveal wrapper — GSAP animates clipPath here */}
       <div
         ref={revealRef}
-        className="absolute inset-0 will-change-transform"
+        className="absolute inset-0"
         style={{
-          transform:  'translateZ(0)',
-          clipPath:   'inset(0% 0% 0% 0% round 24px)',  // Phase 3a: Consistent round
+          transform: 'translateZ(0)',   // promote to compositor layer
+          clipPath:  'inset(0% 0% 0% 0% round 24px)',
+          // willChange set on demand by GSAP (overwrite:'auto')
         }}
       >
-        {/* Content: React/FM only — GSAP never enters this subtree */}
-        <CardContent
-          project={project}
-          index={index}
-          accent={accent}
-          total={total}
-          isVisible={isVisible}
-          reduced={reduced}
-        />
+        {/* FIX H: transform-style:flat isolates FM content animations
+            from the GSAP 3D stacking context on the shell.
+            Without this, FM's scale/y transforms on CardContent's
+            children participate in the 3D perspective calculation,
+            causing z-fighting artifacts on Safari during transitions. */}
+        <div style={{ transformStyle: 'flat', height: '100%' }}>
+          <CardContent
+            project={project}
+            index={index}
+            accent={accent}
+            total={total}
+            isVisible={isVisible}
+            reduced={reduced}
+          />
+        </div>
       </div>
 
-      {/* Bloom burst — GSAP: scale + brightness (no opacity) */}
+      {/* Bloom burst — GSAP animates scale + filter here */}
       <div
         ref={bloomRef}
         aria-hidden="true"
-        className="absolute inset-0 pointer-events-none rounded-full will-change-transform"
+        className="absolute inset-0 pointer-events-none rounded-full"
         style={{
           transform:  'scale(0.5) translateZ(0)',
           filter:     'brightness(0)',
           background: `radial-gradient(circle at 50% 50%, rgba(${accent.bloomRgb},0.22) 0%, transparent 70%)`,
           zIndex:     50,
+          willChange: 'transform, filter',
         }}
       />
-
     </div>
   );
 });
