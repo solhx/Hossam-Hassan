@@ -9,7 +9,7 @@ export const siteConfig = {
   description:
     "MERN Stack Developer with hands-on experience building full-stack web applications using MongoDB, Express.js, React, and Node.js. Skilled in creating scalable backend APIs, secure server-side logic, and responsive front-end interfaces. Previously worked as a Front-End Developer, delivering optimized and accessible user experiences with React and Next.js. Strong ability to translate UI/UX designs into clean, maintainable code and collaborate effectively within agile development teams.",
   email: "hossamhassan112003@gmail.com",
-  url: "https://hossam-hassann.netlify.app",
+  url: "https://hossam-hassann.vercel.app",
   resumeUrl: "/Hossam-Hassan-Resume.pdf",
   ogImage: "/fav.webp",
   location: "Cairo, Egypt",

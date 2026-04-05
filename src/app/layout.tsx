@@ -94,7 +94,7 @@ export default function RootLayout({
       '@context': 'https://schema.org',
       '@type': 'Person',
       name: 'Hossam Hassan',
-      url: 'https://hossam-hassann.netlify.app',
+      url: 'https://hossam-hassann.vercel.app',
       jobTitle: 'Full-Stack Developer',
       address: {
         '@type': 'PostalAddress',
@@ -102,8 +102,8 @@ export default function RootLayout({
         addressCountry: 'EG',
       },
       sameAs: [
-        'https://github.com/hossam-hassan',
-        'https://linkedin.com/in/hossam-hassan',
+        'https://github.com/solhx',
+        'https://www.linkedin.com/in/hossam-hassan-132055244',
       ],
     }),
   }}

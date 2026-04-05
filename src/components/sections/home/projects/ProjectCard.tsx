@@ -1,187 +1,384 @@
 // src/components/sections/home/projects/ProjectCard.tsx
-import Image from 'next/image';
-import Link  from 'next/link';
-import { Github, ArrowUpRight } from 'lucide-react';
-import { cn }                   from '@/utils/utils';
-import type { Project }         from '@/lib/mocks/projects';
+'use client';
 
-const TAG_VARIANTS = [
-  'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
-  'bg-teal-500/10    text-teal-700    dark:text-teal-300    border-teal-500/20',
-  'bg-green-500/10   text-green-700   dark:text-green-300   border-green-500/20',
-  'bg-cyan-500/10    text-cyan-700    dark:text-cyan-300    border-cyan-500/20',
-  'bg-emerald-400/10 text-emerald-600 dark:text-emerald-200 border-emerald-400/20',
-  'bg-teal-400/10    text-teal-600    dark:text-teal-200    border-teal-400/20',
-] as const;
+import { useRef, memo, useState, useCallback } from 'react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import type { Variants } from 'framer-motion';
+import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowUpRight, Github, ExternalLink, ChevronDown } from 'lucide-react';
+import { cn } from '@/utils/utils';
+import type { Project } from '@/lib/mocks/projects';
 
 interface ProjectCardProps {
-  project:   Project;
-  index:     number;
-  isActive:  boolean;
-  imageRef?: (el: HTMLDivElement | null) => void;
+  project: Project;
+  index: number;
+  total: number;
+  prefersReduced: boolean;
+  isMobile: boolean;
 }
 
-export function ProjectCard({
+// Custom easing as tuple (required by Framer Motion types)
+const easeOut: [number, number, number, number] = [0.25, 0.46, 0.45, 0.94];
+
+// Animation variants with proper typing
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: easeOut,
+    },
+  },
+};
+
+const contentVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (delay: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      delay,
+      ease: easeOut,
+    },
+  }),
+};
+
+// Tag animation variants
+const tagVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.8, y: 10 },
+  visible: (i: number) => ({
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+      delay: i * 0.05,
+      ease: easeOut,
+    },
+  }),
+  exit: {
+    opacity: 0,
+    scale: 0.8,
+    y: -10,
+    transition: {
+      duration: 0.2,
+      ease: easeOut,
+    },
+  },
+};
+
+// Number of tags to show initially
+const INITIAL_TAGS_COUNT = 6;
+
+export const ProjectCard = memo(function ProjectCard({
   project,
   index,
-  isActive,
-  imageRef,
+  total,
+  prefersReduced,
+  isMobile,
 }: ProjectCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [showAllTags, setShowAllTags] = useState(false);
+
+  // Scroll-based parallax (desktop only, non-reduced motion)
+  const { scrollYProgress } = useScroll({
+    target: cardRef,
+    offset: ['start end', 'end start'],
+  });
+
+  // Subtle parallax transform for image - disabled on mobile/reduced motion
+  const imageY = useTransform(
+    scrollYProgress,
+    [0, 1],
+    isMobile || prefersReduced ? ['0%', '0%'] : ['5%', '-5%']
+  );
+
+  // Subtle scale effect on scroll
+  const cardScale = useTransform(
+    scrollYProgress,
+    [0, 0.3, 0.7, 1],
+    prefersReduced || isMobile ? [1, 1, 1, 1] : [0.97, 1, 1, 0.97]
+  );
+
+  const isEven = index % 2 === 0;
+  const hasMoreTags = project.tags.length > INITIAL_TAGS_COUNT;
+  const hiddenTagsCount = project.tags.length - INITIAL_TAGS_COUNT;
+
+  // Tags to display based on expanded state
+  const visibleTags = showAllTags
+    ? project.tags
+    : project.tags.slice(0, INITIAL_TAGS_COUNT);
+
+  // Toggle tags expansion
+  const toggleTags = useCallback(() => {
+    setShowAllTags((prev) => !prev);
+  }, []);
+
   return (
-    <article
-      aria-hidden={!isActive}
-      aria-label={`Project: ${project.title}`}
-      className={cn(
-        'relative w-full h-full rounded-2xl overflow-hidden',
-        'bg-white/95 dark:bg-neutral-900/85',
-        'backdrop-blur-md',
-        'border border-neutral-200/80 dark:border-white/[0.07]',
-        'shadow-[0_1px_0_0_rgba(255,255,255,0.9)_inset,0_32px_64px_-12px_rgba(0,120,80,0.14),0_8px_24px_-4px_rgba(0,120,80,0.09),0_0_0_1px_rgba(0,180,120,0.10)]',
-        'dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_32px_64px_-12px_rgba(0,0,0,0.65),0_8px_24px_-4px_rgba(0,0,0,0.45),0_0_0_1px_rgba(16,185,129,0.07)]',
-        'transition-shadow duration-500',
-      )}
+    <motion.article
+      ref={cardRef}
+      variants={prefersReduced ? undefined : cardVariants}
+      initial={prefersReduced ? undefined : 'hidden'}
+      whileInView={prefersReduced ? undefined : 'visible'}
+      viewport={{ once: true, margin: '-100px' }}
+      style={{
+        scale: cardScale,
+      }}
+      className="relative project-card"
     >
-      <div className="relative h-[54%] overflow-hidden">
-        <div
-          ref={imageRef}
-          className="stack-card-image"
-        >
-          <Image
-            src={project.image}
-            alt={`Screenshot of ${project.title}`}
-            fill
-            priority={index === 0}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 60vw, 50vw"
-            className="object-cover object-top"
-          />
-        </div>
-
-        <div
-          aria-hidden="true"
-          className={cn(
-            'absolute inset-0 pointer-events-none',
-            'bg-gradient-to-b from-black/5 via-transparent',
-            'to-white/95 dark:to-neutral-900/95',
-          )}
-        />
-
-        {project.featured && (
-          <div className={cn(
-            'absolute top-3 right-3 z-10',
-            'px-2.5 py-0.5 rounded-full',
-            'text-[10px] font-bold tracking-widest uppercase',
-            'bg-emerald-500 text-white',
-            'shadow-lg shadow-emerald-500/40',
-          )}>
-            Featured
-          </div>
+      <div
+        className={cn(
+          'grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 xl:gap-16 items-center'
         )}
-
-        <div
-          aria-hidden="true"
+      >
+        {/* Image Section */}
+        <motion.div
           className={cn(
-            'absolute top-3 left-3 z-10',
-            'w-7 h-7 rounded-full',
-            'flex items-center justify-center',
-            'text-[10px] font-bold tabular-nums',
-            'bg-black/35 dark:bg-black/55 text-white',
-            'backdrop-blur-md border border-white/25',
+            'relative lg:col-span-7',
+            'aspect-[16/10] rounded-2xl lg:rounded-3xl overflow-hidden',
+            'shadow-2xl shadow-black/10 dark:shadow-black/30',
+            'ring-1 ring-black/5 dark:ring-white/5',
+            // Alternate layout on desktop
+            isEven ? 'lg:order-1' : 'lg:order-2'
           )}
+          whileHover={prefersReduced ? undefined : { scale: 1.02 }}
+          transition={{ duration: 0.4, ease: easeOut }}
         >
-          {String(index + 1).padStart(2, '0')}
-        </div>
-      </div>
+          {/* Image container with parallax */}
+          <motion.div
+            className="absolute inset-[-10%] project-image-wrapper"
+            style={{ y: imageY }}
+          >
+            <Image
+              src={project.image}
+              alt={`Screenshot of ${project.title}`}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 58vw, 700px"
+              className="object-cover"
+              loading={index < 2 ? 'eager' : 'lazy'}
+              quality={90}
+            />
+          </motion.div>
 
-      <div className="relative h-[46%] px-5 pt-3 pb-4 flex flex-col gap-2.5">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className={cn(
-            'text-sm sm:text-base lg:text-lg font-bold leading-snug',
-            'text-neutral-900 dark:text-neutral-50',
-            'line-clamp-2',
-          )}>
-            {project.title}
-          </h3>
-
-          <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-            {project.githubUrl && (
-              <Link
-                href={project.githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`${project.title} source code on GitHub`}
-                onClick={(e) => e.stopPropagation()}
-                className={cn(
-                  'w-8 h-8 rounded-full',
-                  'flex items-center justify-center',
-                  'bg-neutral-100 dark:bg-white/[0.05]',
-                  'border border-neutral-200 dark:border-white/[0.07]',
-                  'text-neutral-500 dark:text-neutral-400',
-                  'hover:bg-neutral-800 dark:hover:bg-white/[0.12]',
-                  'hover:text-white',
-                  'hover:border-neutral-800 dark:hover:border-white/20',
-                  'transition-all duration-200',
-                )}
-              >
-                <Github size={12} aria-hidden="true" />
-              </Link>
+          {/* Gradient overlay */}
+          <div
+            className={cn(
+              'absolute inset-0',
+              'bg-gradient-to-t from-black/40 via-transparent to-transparent',
+              'opacity-0 group-hover:opacity-100 transition-opacity duration-300'
             )}
+          />
+
+          {/* Project number badge */}
+          <div className="absolute top-4 left-4 z-10 project-number-badge">
+            {String(index + 1).padStart(2, '0')}/{String(total).padStart(2, '0')}
+          </div>
+
+          {/* Featured badge */}
+          {project.featured && (
+            <div className="absolute top-4 right-4 z-10 featured-badge">
+              Featured
+            </div>
+          )}
+
+          {/* Quick action overlay on hover */}
+          <div
+            className={cn(
+              'absolute inset-0 flex items-center justify-center',
+              'bg-black/60 backdrop-blur-sm',
+              'opacity-0 hover:opacity-100',
+              'transition-opacity duration-300',
+              'cursor-pointer'
+            )}
+          >
             {project.liveUrl && (
               <Link
                 href={project.liveUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`${project.title} live demo`}
-                onClick={(e) => e.stopPropagation()}
                 className={cn(
-                  'w-8 h-8 rounded-full',
-                  'flex items-center justify-center',
-                  'bg-emerald-500/10 border border-emerald-500/20',
-                  'text-emerald-600 dark:text-emerald-400',
-                  'hover:bg-emerald-500 hover:text-white',
-                  'hover:border-emerald-500',
-                  'hover:shadow-lg hover:shadow-emerald-500/30',
-                  'transition-all duration-200',
+                  'flex items-center gap-2 px-6 py-3',
+                  'bg-white text-black rounded-full',
+                  'font-semibold text-sm',
+                  'hover:bg-emerald-400 transition-colors duration-200'
                 )}
               >
-                <ArrowUpRight size={12} aria-hidden="true" />
+                <ExternalLink size={16} />
+                View Live
               </Link>
             )}
           </div>
-        </div>
+        </motion.div>
 
-        <p className={cn(
-          'text-xs sm:text-sm leading-relaxed',
-          'text-neutral-500 dark:text-neutral-400',
-          'line-clamp-2 flex-1',
-        )}>
-          {project.description}
-        </p>
-
+        {/* Content Section */}
         <div
-          className="flex flex-wrap gap-1.5"
-          aria-label={`Technologies: ${
-            project.tags.slice(0, 5).join(', ')
-          }${project.tags.length > 5 ? ` and ${project.tags.length - 5} more` : ''}`}
-        >
-          {project.tags.slice(0, 5).map((tag, ti) => (
-            <span
-              key={tag}
-              className={cn(
-                'px-2 py-0.5 rounded-full',
-                'text-[10px] font-medium border',
-                TAG_VARIANTS[ti % TAG_VARIANTS.length],
-              )}
-            >
-              {tag}
-            </span>
-          ))}
-          {project.tags.length > 5 && (
-            <span className="self-center text-[10px] text-neutral-400 dark:text-neutral-600">
-              +{project.tags.length - 5}
-            </span>
+          className={cn(
+            'lg:col-span-5 flex flex-col gap-5',
+            isEven ? 'lg:order-2' : 'lg:order-1',
+            !isEven && 'lg:text-right lg:items-end'
           )}
+        >
+          {/* Title */}
+          <motion.h3
+            custom={0.1}
+            variants={prefersReduced ? undefined : contentVariants}
+            initial={prefersReduced ? undefined : 'hidden'}
+            whileInView={prefersReduced ? undefined : 'visible'}
+            viewport={{ once: true, margin: '-50px' }}
+            className={cn(
+              'text-2xl sm:text-3xl lg:text-4xl',
+              'font-bold tracking-tight leading-tight',
+              'text-neutral-900 dark:text-white'
+            )}
+          >
+            {project.title}
+          </motion.h3>
+
+          {/* Description */}
+          <motion.p
+            custom={0.2}
+            variants={prefersReduced ? undefined : contentVariants}
+            initial={prefersReduced ? undefined : 'hidden'}
+            whileInView={prefersReduced ? undefined : 'visible'}
+            viewport={{ once: true, margin: '-50px' }}
+            className={cn(
+              'text-base sm:text-lg leading-relaxed',
+              'text-neutral-600 dark:text-neutral-400',
+              'max-w-lg',
+              !isEven && 'lg:ml-auto'
+            )}
+          >
+            {project.description}
+          </motion.p>
+
+          {/* Tags */}
+          <motion.div
+            custom={0.3}
+            variants={prefersReduced ? undefined : contentVariants}
+            initial={prefersReduced ? undefined : 'hidden'}
+            whileInView={prefersReduced ? undefined : 'visible'}
+            viewport={{ once: true, margin: '-50px' }}
+            className={cn('flex flex-wrap gap-2', !isEven && 'lg:justify-end')}
+            aria-label={`Technologies: ${project.tags.join(', ')}`}
+          >
+            <AnimatePresence mode="popLayout">
+              {visibleTags.map((tag, tagIndex) => (
+                <motion.span
+                  key={tag}
+                  custom={tagIndex}
+                  variants={prefersReduced ? undefined : tagVariants}
+                  initial={prefersReduced ? undefined : 'hidden'}
+                  animate="visible"
+                  exit="exit"
+                  layout
+                  className="project-tag"
+                >
+                  {tag}
+                </motion.span>
+              ))}
+            </AnimatePresence>
+
+            {/* Show more / Show less button */}
+            {hasMoreTags && (
+              <motion.button
+                type="button"
+                onClick={toggleTags}
+                layout
+                className={cn(
+                  'project-tag cursor-pointer',
+                  'hover:bg-emerald-500/20 hover:border-emerald-500/40',
+                  'focus-visible:outline-none focus-visible:ring-2',
+                  'focus-visible:ring-emerald-500 focus-visible:ring-offset-2',
+                  'transition-colors duration-200',
+                  'inline-flex items-center gap-1'
+                )}
+                aria-expanded={showAllTags}
+                aria-label={
+                  showAllTags
+                    ? 'Show fewer technologies'
+                    : `Show ${hiddenTagsCount} more technologies`
+                }
+              >
+                {showAllTags ? (
+                  <>
+                    Show less
+                    <ChevronDown
+                      size={14}
+                      className="rotate-180 transition-transform duration-200"
+                      aria-hidden="true"
+                    />
+                  </>
+                ) : (
+                  <>
+                    +{hiddenTagsCount} more
+                    <ChevronDown
+                      size={14}
+                      className="transition-transform duration-200"
+                      aria-hidden="true"
+                    />
+                  </>
+                )}
+              </motion.button>
+            )}
+          </motion.div>
+
+          {/* Action Buttons */}
+          <motion.div
+            custom={0.4}
+            variants={prefersReduced ? undefined : contentVariants}
+            initial={prefersReduced ? undefined : 'hidden'}
+            whileInView={prefersReduced ? undefined : 'visible'}
+            viewport={{ once: true, margin: '-50px' }}
+            className={cn(
+              'flex items-center gap-3 flex-wrap pt-2',
+              !isEven && 'lg:justify-end'
+            )}
+          >
+            {project.liveUrl && (
+              <Link
+                href={project.liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`View ${project.title} live demo (opens in new tab)`}
+                className="project-btn-primary group"
+              >
+                Live Demo
+                <ArrowUpRight
+                  size={16}
+                  aria-hidden="true"
+                  className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200"
+                />
+              </Link>
+            )}
+            {project.githubUrl && (
+              <Link
+                href={project.githubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`View ${project.title} source code on GitHub (opens in new tab)`}
+                className="project-btn-secondary group"
+              >
+                <Github size={16} aria-hidden="true" />
+                Source Code
+              </Link>
+            )}
+          </motion.div>
         </div>
       </div>
-    </article>
+
+      {/* Separator line (except for last item) */}
+      {index < total - 1 && (
+        <div
+          className="project-separator mt-20 sm:mt-28 lg:mt-36"
+          aria-hidden="true"
+        />
+      )}
+    </motion.article>
   );
-}
+});
+
+ProjectCard.displayName = 'ProjectCard';

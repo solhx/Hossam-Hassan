@@ -32,31 +32,17 @@
 
   --breakpoint-xs: 480px;
 
-  --animate-marquee:       marquee 30s linear infinite;
-  --animate-float:         float 6s ease-in-out infinite;
-  --animate-glow:          glow 2s ease-in-out infinite alternate;
-  --animate-shimmer:       shimmer 2.5s linear infinite;
+  /* ── Core animations (kept - lightweight) ───────────────────── */
+  --animate-marquee: marquee 30s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+  --animate-shimmer: shimmer 2.5s linear infinite;
   --animate-shimmer-sweep: shimmer-sweep 2.5s ease-in-out infinite;
 
-  /* ── Projects green palette ──────────────────────────────── */
-  --projects-bg-base:    oklch(0.08 0.02 160);
-  --projects-green-950:  oklch(0.10 0.03 158);
-  --projects-green-900:  oklch(0.14 0.05 155);
-  --projects-green-800:  oklch(0.20 0.08 152);
-  --projects-green-700:  oklch(0.28 0.10 150);
-  --projects-green-600:  oklch(0.40 0.14 148);
-  --projects-green-500:  oklch(0.53 0.17 145);
-  --projects-green-400:  oklch(0.65 0.18 143);
-  --projects-green-300:  oklch(0.76 0.16 142);
-  --projects-green-neon: oklch(0.82 0.22 140);
-  --projects-green-soft: oklch(0.90 0.10 145);
-
-  /* ── Projects light palette ──────────────────────────────── */
-  --projects-light-base:    oklch(0.97 0.008 160);
-  --projects-light-surface: oklch(0.99 0.004 155);
-  --projects-light-muted:   oklch(0.94 0.012 158);
-  --projects-light-border:  oklch(0.88 0.018 155);
-  --projects-light-subtle:  oklch(0.92 0.015 157);
+  /* ── Projects color palette (simplified) ─────────────────────── */
+  --projects-green-500: oklch(0.53 0.17 145);
+  --projects-green-400: oklch(0.65 0.18 143);
+  --projects-green-300: oklch(0.76 0.16 142);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -96,129 +82,54 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Keyframes
+   Keyframes (Core - kept lightweight)
 ═══════════════════════════════════════════════════════════════ */
 
 @keyframes marquee {
-  0%   { transform: translateX(0%); }
+  0% { transform: translateX(0%); }
   100% { transform: translateX(-50%); }
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-20px); }
+  50% { transform: translateY(-20px); }
 }
 
 @keyframes glow {
-  0%   { box-shadow: 0 0 20px rgba(109, 244, 173, 0.15); }
+  0% { box-shadow: 0 0 20px rgba(109, 244, 173, 0.15); }
   100% { box-shadow: 0 0 40px rgba(109, 244, 173, 0.3); }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 @keyframes shimmer-sweep {
-  0%   { transform: translateX(-100%); }
+  0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
 
-@keyframes shimmer-sweep-vertical {
-  0%   { transform: translateY(-100%); }
-  100% { transform: translateY(500%); }
-}
-
 @keyframes pulse-ring {
-  0%   { transform: scale(0.85); opacity: 1; }
-  100% { transform: scale(1.8);  opacity: 0; }
+  0% { transform: scale(0.85); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
 }
 
 @keyframes gradient-rotate {
-  0%   { --gradient-angle: 0deg; }
+  0% { --gradient-angle: 0deg; }
   100% { --gradient-angle: 360deg; }
 }
 
 @keyframes gradient-shift {
-  0%, 100% { background-position: 0%   50%; }
-  50%       { background-position: 100% 50%; }
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
-/* ── Stack carousel keyframes ───────────────────────────────── */
+/* ── Skeleton loading animation ─────────────────────────────── */
 
-@keyframes stack-scroll-line {
-  0%   { transform: translateY(-100%); opacity: 1; }
-  80%  { opacity: 1; }
-  100% { transform: translateY(200%);  opacity: 0; }
-}
-
-@keyframes stack-cue-fade {
-  0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(12px); }
-}
-
-/* ── Projects background keyframes ─────────────────────────── */
-
-@keyframes projects-orb-drift-a {
-  0%   { transform: translate(  0%,   0%) scale(1.00); }
-  20%  { transform: translate(  4%,  -8%) scale(1.04); }
-  45%  { transform: translate( -3%,   6%) scale(0.97); }
-  65%  { transform: translate(  6%,   3%) scale(1.03); }
-  80%  { transform: translate( -2%,  -5%) scale(1.01); }
-  100% { transform: translate(  0%,   0%) scale(1.00); }
-}
-
-@keyframes projects-orb-drift-b {
-  0%   { transform: translate(  0%,   0%) scale(1.00); }
-  25%  { transform: translate( -6%,   8%) scale(1.06); }
-  50%  { transform: translate(  4%,  -4%) scale(0.94); }
-  75%  { transform: translate( -3%,   6%) scale(1.03); }
-  100% { transform: translate(  0%,   0%) scale(1.00); }
-}
-
-@keyframes projects-orb-drift-c {
-  0%   { transform: translate(  0%,   0%) scale(1.00); }
-  30%  { transform: translate(  8%,  -6%) scale(1.08); }
-  60%  { transform: translate( -5%,   8%) scale(0.93); }
-  100% { transform: translate(  0%,   0%) scale(1.00); }
-}
-
-@keyframes projects-sweep {
-  0%   { background-position:  200% 200%; }
-  50%  { background-position: -100% -100%; }
-  100% { background-position:  200% 200%; }
-}
-
-/* ── Light mode orb drift (gentler amplitude) ───────────────── */
-
-@keyframes projects-orb-drift-a-light {
-  0%   { transform: translate(  0%,   0%) scale(1.00); }
-  20%  { transform: translate(  2%,  -4%) scale(1.02); }
-  45%  { transform: translate( -2%,   3%) scale(0.98); }
-  65%  { transform: translate(  3%,   2%) scale(1.02); }
-  80%  { transform: translate( -1%,  -3%) scale(1.01); }
-  100% { transform: translate(  0%,   0%) scale(1.00); }
-}
-
-@keyframes projects-orb-drift-b-light {
-  0%   { transform: translate(  0%,   0%) scale(1.00); }
-  25%  { transform: translate( -3%,   4%) scale(1.03); }
-  50%  { transform: translate(  2%,  -2%) scale(0.97); }
-  75%  { transform: translate( -2%,   3%) scale(1.02); }
-  100% { transform: translate(  0%,   0%) scale(1.00); }
-}
-
-@keyframes projects-orb-drift-c-light {
-  0%   { transform: translate(  0%,   0%) scale(1.00); }
-  30%  { transform: translate(  4%,  -3%) scale(1.04); }
-  60%  { transform: translate( -3%,   4%) scale(0.96); }
-  100% { transform: translate(  0%,   0%) scale(1.00); }
-}
-
-@keyframes projects-sweep-light {
-  0%   { background-position:  200% 200%; opacity: 0.4; }
-  50%  { background-position: -100% -100%; opacity: 0.7; }
-  100% { background-position:  200% 200%; opacity: 0.4; }
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -230,16 +141,23 @@
 }
 
 html {
-  scroll-behavior: auto;
+  scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: rgba(16, 185, 129, 0.2) transparent;
 }
 
+/* Disable smooth scroll for reduced motion users */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
-  background:  var(--color-background);
-  color:       var(--color-foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: var(--font-sans);
-  -webkit-font-smoothing:  antialiased;
+  -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
@@ -248,12 +166,19 @@ body {
   color: var(--color-foreground);
 }
 
-::-webkit-scrollbar       { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 ::-webkit-scrollbar-thumb {
-  background:    rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.2);
   border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(16, 185, 129, 0.35);
 }
@@ -263,9 +188,9 @@ body {
 ═══════════════════════════════════════════════════════════════ */
 
 :focus-visible {
-  outline:        2px solid rgba(16, 185, 129, 0.7);
+  outline: 2px solid rgba(16, 185, 129, 0.7);
   outline-offset: 2px;
-  border-radius:  4px;
+  border-radius: 4px;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -275,72 +200,34 @@ body {
 .touch-target-relative {
   position: relative;
 }
+
 .touch-target-relative::before,
 .touch-target::before {
-  content:    '';
-  position:   absolute;
-  inset:      -8px;
-  min-width:  44px;
+  content: '';
+  position: absolute;
+  inset: -8px;
+  min-width: 44px;
   min-height: 44px;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Reduced Motion
+   Reduced Motion - Global Override
 ═══════════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration:        0.01ms !important;
-    animation-iteration-count: 1      !important;
-    scroll-behavior:           auto   !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 
-  [data-nav-animated] {
-    animation:  none !important;
-    transition: none !important;
-  }
-
-  /*
-   * ✅ FIX 8: Reduced motion overrides for stack system.
-   *
-   * BEFORE: These rules set will-change:auto and transform:none.
-   * That created a CSS specificity conflict with GSAP's inline
-   * transforms: CSS !important vs GSAP inline style.
-   * On WebKit (iOS Safari), !important wins over inline styles
-   * for transform — GSAP transforms were silently ignored,
-   * causing cards to stack incorrectly and snap instead of
-   * animating into position.
-   *
-   * AFTER: will-change is now managed entirely by GSAP via
-   * tl.call() — set just before each transition, cleared after.
-   * CSS no longer sets will-change at all, so there is no
-   * specificity conflict. The reduced-motion override only
-   * needs to ensure no CSS animations run — GSAP handles the
-   * rest via the prefersReduced path in initScrollTrigger.
-   */
-  .stack-card-shell,
-  .stack-card-reveal {
-    /* No transform:none — GSAP manages transforms directly   */
-    /* No will-change:auto — GSAP manages compositor layers   */
-    transition: none !important;
-  }
-
-  .stack-card-bloom {
-    display: none !important;
-  }
-
-  .projects-bg-orb--a,
-  .projects-bg-orb--b,
-  .projects-bg-orb--c {
-    animation:   none !important;
-    will-change: auto !important;
-  }
-
-  .projects-bg-sweep {
-    animation:   none !important;
-    will-change: auto !important;
+  /* Allow opacity transitions for accessibility */
+  .allow-opacity-transition {
+    transition-duration: 0.3s !important;
+    transition-property: opacity !important;
   }
 }
 
@@ -349,13 +236,20 @@ body {
 ═══════════════════════════════════════════════════════════════ */
 
 .gradient-text {
-  background:              linear-gradient(135deg, #009966 0%, #6ee7b7 50%, #008299 100%);
-  background-clip:         text;
+  background: linear-gradient(135deg, #009966 0%, #6ee7b7 50%, #008299 100%);
+  background-clip: text;
   -webkit-background-clip: text;
-  color:                   transparent;
+  color: transparent;
   -webkit-text-fill-color: transparent;
-  background-size:         200% 200%;
-  animation:               gradient-shift 6s ease infinite;
+  background-size: 200% 200%;
+  animation: gradient-shift 6s ease infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-text {
+    animation: none;
+    background-size: 100% 100%;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -363,31 +257,29 @@ body {
 ═══════════════════════════════════════════════════════════════ */
 
 .glass {
-  background:              oklch(0.97 0 0 / 60%);
-  backdrop-filter:         blur(20px);
+  background: oklch(0.97 0 0 / 60%);
+  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid oklch(0.922 0 0);
-  transition:
-    background-color 400ms ease,
-    border-color     400ms ease;
+  transition: background-color 400ms ease, border-color 400ms ease;
 }
+
 .dark .glass {
   background: oklch(0.205 0 0 / 60%);
-  border:     1px solid oklch(1 0 0 / 8%);
+  border: 1px solid oklch(1 0 0 / 8%);
 }
 
 .glass-strong {
-  background:              oklch(1 0 0 / 80%);
-  backdrop-filter:         blur(40px);
+  background: oklch(1 0 0 / 80%);
+  backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   border: 1px solid oklch(0.922 0 0);
-  transition:
-    background-color 400ms ease,
-    border-color     400ms ease;
+  transition: background-color 400ms ease, border-color 400ms ease;
 }
+
 .dark .glass-strong {
   background: oklch(0.145 0 0 / 85%);
-  border:     1px solid oklch(1 0 0 / 10%);
+  border: 1px solid oklch(1 0 0 / 10%);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -395,33 +287,47 @@ body {
 ═══════════════════════════════════════════════════════════════ */
 
 .gradient-border-animated {
-  position:      relative;
+  position: relative;
   border-radius: var(--radius);
 }
+
 .gradient-border-animated::before {
-  content:       "";
-  position:      absolute;
-  inset:         -1px;
+  content: "";
+  position: absolute;
+  inset: -1px;
   border-radius: inherit;
-  background:    conic-gradient(
+  background: conic-gradient(
     from var(--gradient-angle),
-    #009966, #10b981, #6ee7b7, #008299, #009966
+    #009966,
+    #10b981,
+    #6ee7b7,
+    #008299,
+    #009966
   );
-  animation:  gradient-rotate 4s linear infinite;
-  z-index:    -1;
-  opacity:    0;
+  animation: gradient-rotate 4s linear infinite;
+  z-index: -1;
+  opacity: 0;
   transition: opacity 0.5s ease;
 }
+
 .gradient-border-animated:hover::before {
   opacity: 1;
 }
+
 .gradient-border-animated::after {
-  content:       "";
-  position:      absolute;
-  inset:         0;
+  content: "";
+  position: absolute;
+  inset: 0;
   border-radius: inherit;
-  background:    var(--color-card);
-  z-index:       -1;
+  background: var(--color-card);
+  z-index: -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-border-animated::before {
+    animation: none;
+    background: linear-gradient(135deg, #009966, #10b981, #6ee7b7, #008299);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -443,15 +349,13 @@ body {
 
 .navbar-shimmer-mask {
   -webkit-mask-image: linear-gradient(black, black);
-  mask-image:         linear-gradient(black, black);
+  mask-image: linear-gradient(black, black);
 }
 
 @supports (backdrop-filter: blur(1px)) {
   .nav-glass-transition {
-    transition:
-      background-color 700ms ease-out,
-      border-color     700ms ease-out,
-      box-shadow       700ms ease-out;
+    transition: background-color 700ms ease-out, border-color 700ms ease-out,
+      box-shadow 700ms ease-out;
   }
 }
 
@@ -463,10 +367,10 @@ body {
   .glass-nav,
   .glass-strong,
   .glass {
-    background:              Canvas        !important;
-    border:                  1px solid ButtonText !important;
-    backdrop-filter:         none          !important;
-    -webkit-backdrop-filter: none          !important;
+    background: Canvas !important;
+    border: 1px solid ButtonText !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }
 
@@ -476,7 +380,7 @@ body {
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation:      none;
+  animation: none;
   mix-blend-mode: normal;
 }
 
@@ -489,589 +393,412 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Stack Carousel System
+   Projects Section — Optimized (New)
 ═══════════════════════════════════════════════════════════════ */
 
 /*
- * ✅ FIX 8: will-change REMOVED from .stack-card-shell and
- * .stack-card-reveal entirely.
- *
- * BEFORE:
- *   .stack-card-shell  { will-change: transform; }
- *   .stack-card-reveal { will-change: transform, clip-path; }
- *
- * PROBLEM:
- *   CSS will-change applies permanently to ALL matched elements.
- *   With 5 projects × 2 layers = 10 permanent GPU compositor
- *   layers. Each compositor layer consumes GPU memory and must
- *   be composited every frame even when not animating.
- *   On mobile (≤ 2GB RAM), this exhausted the GPU memory budget,
- *   causing the browser to de-promote layers mid-animation —
- *   visible as a flash of unstyled content (FOUC) during card
- *   transitions.
- *
- * FIX:
- *   will-change is now set by GSAP via tl.call() immediately
- *   before each card transition begins, and cleared via another
- *   tl.call() after the longest tween in that transition completes
- *   (offset +0.98s > all durations: 0.70, 0.75, 0.80, 0.85, 0.95).
- *
- *   Maximum simultaneous compositor layers during animation:
- *   BEFORE: 10 (all cards, all the time)
- *   AFTER:  4  (outgoing shell + reveal, incoming shell + reveal)
- *
- *   GPU memory reduction: ~60% on a 5-card carousel.
- *
- * translateZ(0) is kept on both elements — this is a DIFFERENT
- * mechanism from will-change. translateZ(0) forces the element
- * into its own stacking context so that GSAP's clip-path and
- * transform animations do not trigger parent repaints.
- * It does NOT create a full GPU compositor layer the way
- * will-change:transform does.
+ * GPU-accelerated project cards
+ * Using transform: translateZ(0) for layer promotion without
+ * the memory overhead of will-change on all elements
  */
-.stack-card-shell {
-  position:        absolute;
-  inset:           0;
-  /*
-   * will-change intentionally absent — managed by GSAP dynamically.
-   * See initScrollTrigger tl.call() blocks in StackCarousel.tsx.
-   */
-  transform:                   scale(1) translateY(0px) translateZ(0);
-  transform-origin:            center center;
-  backface-visibility:         hidden;
+.project-card {
+  transform: translateZ(0);
+  backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
-.stack-card-reveal {
-  position:  absolute;
-  inset:     0;
-  /*
-   * will-change intentionally absent — managed by GSAP dynamically.
-   * translateZ(0): stacking context isolation only, not a full layer.
-   */
-  transform: translateZ(0);
-  clip-path: inset(0% 0% 0% round 0px);
-}
-
-.stack-card-bloom {
-  position:        absolute;
-  inset:           0;
-  pointer-events:  none;
-  border-radius:   50%;
-  /*
-   * bloom IS allowed a permanent will-change because:
-   * 1. It only renders on desktop (display:none on mobile)
-   * 2. It's a single element per card (not 2 per card like shell/reveal)
-   * 3. Its filter:brightness animation cannot be promoted without it
-   * bloom is hidden by default (opacity:0) so the layer cost is
-   * minimal when not animating.
-   */
-  will-change:     transform, filter;
-  transform:       scale(0.5) translateZ(0);
-  filter:          brightness(0);
-  z-index:         50;
-}
-
-.stack-card-image {
-  position:    absolute;
-  inset:       -8%;
-  /*
-   * will-change intentionally absent here too.
-   * The parallax translateY on this element is driven by the same
-   * GSAP timeline as the card transitions. GSAP will set
-   * will-change on the parent shell just before the transition —
-   * the shell's compositor layer covers child elements including
-   * this one. No separate will-change needed.
-   */
+/* Only apply will-change during active interactions */
+.project-card:hover,
+.project-card:focus-within {
   will-change: transform;
-  transform:   translateY(0%) translateZ(0);
 }
 
-.stack-dot {
-  border-radius: 9999px;
-  width:         8px;
-  transition:
-    height      500ms cubic-bezier(0.16, 1, 0.3, 1),
-    background  500ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow  500ms cubic-bezier(0.16, 1, 0.3, 1);
+/* Remove will-change after interaction */
+.project-card:not(:hover):not(:focus-within) {
+  will-change: auto;
 }
 
-.stack-progress-fill {
-  height:     100%;
-  transition: width 700ms cubic-bezier(0.16, 1, 0.3, 1);
+/* Project image container - optimized for parallax */
+.project-image-wrapper {
+  transform: translateZ(0);
+  overflow: hidden;
+  border-radius: 1rem;
 }
 
-/* ── Mobile overrides for stack system ──────────────────────── */
+/* Smooth hover transitions */
+.project-card-hover {
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
 
+.project-card-hover:hover {
+  transform: translateY(-4px) translateZ(0);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+
+.dark .project-card-hover:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+}
+
+/* Project section background */
+.projects-section-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Static gradient orbs (no animation - much lighter) */
+.projects-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+}
+
+.dark .projects-orb {
+  opacity: 0.1;
+}
+
+.projects-orb--primary {
+  width: 40vw;
+  height: 40vw;
+  max-width: 500px;
+  max-height: 500px;
+  background: radial-gradient(
+    circle,
+    rgba(16, 185, 129, 0.4) 0%,
+    transparent 70%
+  );
+  top: 10%;
+  left: -10%;
+}
+
+.projects-orb--secondary {
+  width: 35vw;
+  height: 35vw;
+  max-width: 400px;
+  max-height: 400px;
+  background: radial-gradient(
+    circle,
+    rgba(20, 184, 166, 0.3) 0%,
+    transparent 70%
+  );
+  bottom: 20%;
+  right: -5%;
+}
+
+/* Subtle grid pattern */
+.projects-grid-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+      rgba(16, 185, 129, 0.03) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(
+    ellipse 80% 80% at 50% 50%,
+    black 20%,
+    transparent 80%
+  );
+}
+
+/* Mobile optimizations for projects */
 @media (max-width: 767px) {
-  /*
-   * ✅ FIX 8 mobile: Removed transform:none and will-change:auto.
-   *
-   * BEFORE:
-   *   .stack-card-shell,
-   *   .stack-card-reveal,
-   *   .stack-card-bloom,
-   *   .stack-card-image {
-   *     will-change: auto;
-   *     transform:   none;   ← THIS WAS THE BUG
-   *   }
-   *
-   * PROBLEM WITH transform:none:
-   *   GSAP sets inline style transform on these elements.
-   *   CSS transform:none has lower specificity than inline styles
-   *   in most browsers — BUT on iOS Safari with will-change:auto,
-   *   there is a known WebKit bug where removing will-change can
-   *   cause a style recalculation that briefly applies the CSS
-   *   transform:none OVER the inline style, producing a single
-   *   frame where the card snaps to its un-transformed position.
-   *   This is the "flicker on mobile" symptom reported.
-   *
-   * FIX:
-   *   Since will-change is no longer set in CSS (managed by GSAP),
-   *   the WebKit bug cannot trigger. We remove transform:none
-   *   entirely — GSAP's inline transforms are never overridden.
-   *
-   *   The only mobile-specific override we need is:
-   *   - Reduce orb animation duration (cheaper on low-end devices)
-   *   - Hide bloom (too expensive on mobile GPU)
-   *   - Reduce blur on orbs (smaller filter radius = faster)
-   *   - Hide grain texture (paint-heavy on mobile)
-   */
-
-  .stack-card-bloom {
-    display: none; /* GPU budget — bloom effect not worth it on mobile */
+  .projects-orb {
+    filter: blur(60px);
+    opacity: 0.1;
   }
 
-  .stack-card-image {
-    /*
-     * On mobile, the parallax translateY range is ±6% which is
-     * subtle enough that the performance cost of animating it
-     * outweighs the visual benefit on low-end devices.
-     * Disable by resetting to 0% — GSAP will still set it but
-     * the CSS initial value means no visual jump on unmount.
-     *
-     * NOTE: We do NOT use will-change:auto here because that
-     * would re-trigger the WebKit bug described above.
-     */
-    transform: translateY(0%) translateZ(0);
+  .dark .projects-orb {
+    opacity: 0.08;
+  }
+
+  .projects-grid-pattern {
+    display: none;
+  }
+
+  .project-card-hover:hover {
+    transform: none;
+  }
+
+  /* Disable parallax effects on mobile */
+  .project-image-wrapper {
+    will-change: auto;
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Projects Section — DARK mode background (default)
+   Project Card Tags
 ═══════════════════════════════════════════════════════════════ */
 
-.projects-bg-root {
-  position:   absolute;
-  inset:      0;
-  overflow:   hidden;
-  z-index:    0;
-  background: oklch(0.08 0.02 160);
-  transition: background 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+.project-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: rgba(16, 185, 129, 0.1);
+  color: rgb(5, 150, 105);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.projects-bg-mesh {
-  position:   absolute;
-  inset:      0;
-  transition: opacity 0.6s ease;
-  background:
-    radial-gradient(
-      ellipse 70% 60% at -10% -10%,
-      oklch(0.20 0.08 152 / 0.70) 0%,
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse 80% 70% at 110% 110%,
-      oklch(0.16 0.06 155 / 0.60) 0%,
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse 100% 80% at 50% 50%,
-      oklch(0.12 0.04 158 / 0.90) 0%,
-      oklch(0.08 0.02 160) 70%
-    );
+.dark .project-tag {
+  background: rgba(16, 185, 129, 0.1);
+  color: rgb(110, 231, 183);
+  border-color: rgba(16, 185, 129, 0.2);
 }
 
-.projects-bg-orb {
-  position:       absolute;
-  border-radius:  50%;
-  pointer-events: none;
-  /*
-   * ✅ FIX 8: will-change kept on orbs.
-   * Orbs use pure CSS keyframe animations (not GSAP) so they
-   * cannot benefit from GSAP's dynamic will-change management.
-   * They need permanent will-change:transform for the browser
-   * to promote them to compositor layers before the first
-   * animation frame — without it, the first keyframe tick
-   * triggers a repaint on the parent (projects-bg-root).
-   *
-   * Mitigation: orbs are display:none on mobile (see below),
-   * so the GPU layer cost only applies on desktop where it is
-   * acceptable (4 orb layers vs 10 card layers removed).
-   */
-  will-change:    transform;
-  filter:         blur(80px);
+.project-tag:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
-.projects-bg-orb--a {
-  width:      55vw;
-  height:     55vw;
-  max-width:  700px;
-  max-height: 700px;
-  top:        -20%;
-  left:        20%;
-  background: radial-gradient(
-    circle at center,
-    oklch(0.40 0.14 148 / 0.22) 0%,
-    oklch(0.28 0.10 150 / 0.10) 50%,
-    transparent 70%
+/* ═══════════════════════════════════════════════════════════════
+   Project Action Buttons
+═══════════════════════════════════════════════════════════════ */
+
+.project-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: rgb(16, 185, 129);
+  color: white;
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.25);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.project-btn-primary:hover {
+  background: rgb(5, 150, 105);
+  box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.3);
+  transform: translateY(-2px);
+}
+
+.project-btn-primary:active {
+  transform: translateY(0);
+}
+
+.project-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.05);
+  color: rgb(64, 64, 64);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.dark .project-btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgb(212, 212, 212);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.project-btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.dark .project-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.project-btn-secondary:active {
+  transform: translateY(0);
+}
+
+/* Reduced motion for buttons */
+@media (prefers-reduced-motion: reduce) {
+  .project-btn-primary,
+  .project-btn-secondary {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .project-btn-primary:hover,
+  .project-btn-secondary:hover {
+    transform: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Image Loading Skeleton
+═══════════════════════════════════════════════════════════════ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.06) 75%
   );
-  animation: projects-orb-drift-a 18s ease-in-out infinite;
-  transition: background 0.6s ease;
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
 }
 
-.projects-bg-orb--b {
-  width:           40vw;
-  height:          40vw;
-  max-width:       520px;
-  max-height:      520px;
-  bottom:          -10%;
-  right:           -5%;
-  background: radial-gradient(
-    circle at center,
-    oklch(0.53 0.17 145 / 0.16) 0%,
-    oklch(0.40 0.14 148 / 0.08) 50%,
-    transparent 70%
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.06) 75%
   );
-  animation:       projects-orb-drift-b 22s ease-in-out infinite;
-  animation-delay: -6s;
-  transition:      background 0.6s ease;
+  background-size: 200% 100%;
 }
 
-.projects-bg-orb--c {
-  width:           35vw;
-  height:          35vw;
-  max-width:       450px;
-  max-height:      450px;
-  top:             30%;
-  left:            -8%;
-  background: radial-gradient(
-    circle at center,
-    oklch(0.65 0.18 143 / 0.12) 0%,
-    oklch(0.53 0.17 145 / 0.06) 50%,
-    transparent 70%
-  );
-  animation:       projects-orb-drift-c 26s ease-in-out infinite;
-  animation-delay: -12s;
-  transition:      background 0.6s ease;
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
-.projects-bg-orb--d {
-  width:      50vw;
-  height:     50vw;
-  max-width:  600px;
-  max-height: 600px;
-  bottom:     -25%;
-  left:       -10%;
-  background: radial-gradient(
-    circle at center,
-    oklch(0.20 0.08 152 / 0.35) 0%,
-    oklch(0.14 0.05 155 / 0.15) 50%,
-    transparent 70%
-  );
-  transition: background 0.6s ease;
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: skeleton-pulse 2s ease-in-out infinite;
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .skeleton {
+    background: rgba(255, 255, 255, 0.08);
+  }
 }
 
-.projects-bg-grid {
-  position:         absolute;
-  inset:            0;
-  background-image:
-    linear-gradient(oklch(1 0 0 / 0.028) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(1 0 0 / 0.028) 1px, transparent 1px);
-  background-size:    48px 48px;
-  -webkit-mask-image: radial-gradient(
-    ellipse 80% 80% at 50% 50%,
-    black 30%,
-    transparent 90%
-  );
-  mask-image: radial-gradient(
-    ellipse 80% 80% at 50% 50%,
-    black 30%,
-    transparent 90%
-  );
-  transition: opacity 0.6s ease;
-}
+/* ═══════════════════════════════════════════════════════════════
+   Project Separator
+═══════════════════════════════════════════════════════════════ */
 
-.projects-bg-grain {
-  position:       absolute;
-  inset:          0;
-  mix-blend-mode: overlay;
-  pointer-events: none;
-  contain:        paint;
-  background-image: linear-gradient(
-      45deg,
-      transparent 49.5%,
-      rgba(255, 255, 255, 0.03) 49.5%,
-      rgba(255, 255, 255, 0.03) 50.5%,
-      transparent 50.5%
-    ),
-    linear-gradient(
-      -45deg,
-      transparent 49.5%,
-      rgba(255, 255, 255, 0.03) 49.5%,
-      rgba(255, 255, 255, 0.03) 50.5%,
-      transparent 50.5%
-    );
-  background-size: 4px 4px;
-  opacity:         0.6;
-  transition:      opacity 0.6s ease;
-}
-
-.projects-bg-vignette {
-  position:   absolute;
-  inset:      0;
-  background: radial-gradient(
-    ellipse 85% 85% at 50% 50%,
-    transparent 40%,
-    oklch(0.06 0.01 160 / 0.55) 100%
-  );
-  pointer-events: none;
-  transition:     background 0.6s ease;
-}
-
-.projects-bg-sweep {
-  position:        absolute;
-  inset:           0;
-  background:      linear-gradient(
-    105deg,
-    transparent                   0%,
-    oklch(0.40 0.14 148 / 0.04)  40%,
-    oklch(0.53 0.17 145 / 0.06)  50%,
-    oklch(0.40 0.14 148 / 0.04)  60%,
-    transparent                  100%
-  );
-  background-size: 200% 200%;
-  animation:       projects-sweep 12s ease-in-out infinite;
-  pointer-events:  none;
-  transition:      opacity 0.6s ease;
-}
-
-.projects-bg-accent-ring {
-  position:   absolute;
-  inset:      0;
-  background: radial-gradient(
-    ellipse 60% 50% at 50% 50%,
-    var(--project-accent-rgb, oklch(0.40 0.14 148 / 0.10)) 0%,
-    transparent 65%
-  );
-  transition:     opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-  pointer-events: none;
-  opacity:        1;
-}
-
-.projects-bg-edge-top {
-  position:   absolute;
-  top:        0;
-  left:       0;
-  right:      0;
-  height:     1px;
+.project-separator {
+  height: 1px;
+  width: 100%;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    oklch(0.53 0.17 145 / 0.4) 30%,
-    oklch(0.65 0.18 143 / 0.7) 50%,
-    oklch(0.53 0.17 145 / 0.4) 70%,
+    rgba(0, 0, 0, 0.1) 20%,
+    rgba(0, 0, 0, 0.1) 80%,
     transparent 100%
   );
-  pointer-events: none;
-  transition:     opacity 0.6s ease;
+}
+
+.dark .project-separator {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 20%,
+    rgba(255, 255, 255, 0.1) 80%,
+    transparent 100%
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Projects Section — LIGHT mode overrides
+   Featured Badge
 ═══════════════════════════════════════════════════════════════ */
 
-.light .projects-bg-root,
-:root:not(.dark) .projects-bg-root {
-  background: oklch(0.97 0.008 160);
+.featured-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgb(16, 185, 129);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
-.light .projects-bg-mesh,
-:root:not(.dark) .projects-bg-mesh {
-  background:
-    radial-gradient(
-      ellipse 70% 60% at -10% -10%,
-      oklch(0.88 0.04 152 / 0.50) 0%,
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse 80% 70% at 110% 110%,
-      oklch(0.90 0.03 155 / 0.45) 0%,
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse 100% 80% at 50% 50%,
-      oklch(0.95 0.015 158 / 0.80) 0%,
-      oklch(0.97 0.008 160) 70%
-    );
+/* ═══════════════════════════════════════════════════════════════
+   Project Number Badge
+═══════════════════════════════════════════════════════════════ */
+
+.project-number-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.9);
+  color: rgb(23, 23, 23);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-.light .projects-bg-orb--a,
-:root:not(.dark) .projects-bg-orb--a {
-  background: radial-gradient(
-    circle at center,
-    oklch(0.82 0.08 148 / 0.18) 0%,
-    oklch(0.88 0.05 150 / 0.08) 50%,
-    transparent 70%
-  );
-  animation-name: projects-orb-drift-a-light;
-  filter: blur(100px);
+.dark .project-number-badge {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
 }
 
-.light .projects-bg-orb--b,
-:root:not(.dark) .projects-bg-orb--b {
-  background: radial-gradient(
-    circle at center,
-    oklch(0.78 0.10 145 / 0.14) 0%,
-    oklch(0.85 0.06 148 / 0.06) 50%,
-    transparent 70%
-  );
-  animation-name: projects-orb-drift-b-light;
-  filter: blur(110px);
-}
+/* ═══════════════════════════════════════════════════════════════
+   Utility Classes for Projects
+═══════════════════════════════════════════════════════════════ */
 
-.light .projects-bg-orb--c,
-:root:not(.dark) .projects-bg-orb--c {
-  background: radial-gradient(
-    circle at center,
-    oklch(0.75 0.12 143 / 0.10) 0%,
-    oklch(0.82 0.08 145 / 0.05) 50%,
-    transparent 70%
-  );
-  animation-name: projects-orb-drift-c-light;
-  filter: blur(120px);
-}
-
-.light .projects-bg-orb--d,
-:root:not(.dark) .projects-bg-orb--d {
-  background: radial-gradient(
-    circle at center,
-    oklch(0.90 0.03 152 / 0.25) 0%,
-    oklch(0.94 0.02 155 / 0.10) 50%,
-    transparent 70%
-  );
-}
-
-.light .projects-bg-grid,
-:root:not(.dark) .projects-bg-grid {
-  background-image:
-    linear-gradient(oklch(0.40 0.08 155 / 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.40 0.08 155 / 0.06) 1px, transparent 1px);
-}
-
-.light .projects-bg-grain,
-:root:not(.dark) .projects-bg-grain {
-  mix-blend-mode: multiply;
-  background-image: linear-gradient(
-      45deg,
-      transparent 49.5%,
-      rgba(0, 80, 50, 0.025) 49.5%,
-      rgba(0, 80, 50, 0.025) 50.5%,
-      transparent 50.5%
-    ),
-    linear-gradient(
-      -45deg,
-      transparent 49.5%,
-      rgba(0, 80, 50, 0.025) 49.5%,
-      rgba(0, 80, 50, 0.025) 50.5%,
-      transparent 50.5%
-    );
-  opacity: 0.5;
-}
-
-.light .projects-bg-vignette,
-:root:not(.dark) .projects-bg-vignette {
-  background: radial-gradient(
-    ellipse 90% 90% at 50% 50%,
-    transparent 50%,
-    oklch(0.94 0.010 158 / 0.40) 100%
-  );
-}
-
-.light .projects-bg-sweep,
-:root:not(.dark) .projects-bg-sweep {
-  background: linear-gradient(
-    105deg,
-    transparent                   0%,
-    oklch(0.78 0.10 148 / 0.04)  40%,
-    oklch(0.72 0.12 145 / 0.07)  50%,
-    oklch(0.78 0.10 148 / 0.04)  60%,
-    transparent                  100%
-  );
-  animation-name: projects-sweep-light;
-}
-
-.light .projects-bg-accent-ring,
-:root:not(.dark) .projects-bg-accent-ring {
-  opacity: 0.6;
-}
-
-.light .projects-bg-edge-top,
-:root:not(.dark) .projects-bg-edge-top {
+/* Smooth appear animation for scroll reveal */
+.appear-on-scroll {
   opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* ── Light mode card chrome ──────────────────────────────────── */
-
-:root:not(.dark) .stack-card-light-surface {
-  background: oklch(1 0 0 / 0.85);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  box-shadow:
-    0 1px 0 0 oklch(1 0 0 / 0.9) inset,
-    0 32px 64px -12px oklch(0.60 0.10 155 / 0.15),
-    0  8px 24px  -4px oklch(0.70 0.12 152 / 0.10),
-    0  0   0     1px  oklch(0.80 0.06 155 / 0.25);
+.appear-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-:root:not(.dark) .stack-progress-track-light {
-  background: oklch(0.88 0.02 155 / 0.6);
+@media (prefers-reduced-motion: reduce) {
+  .appear-on-scroll {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
-/* ── Mobile optimizations ────────────────────────────────────── */
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
-@media (max-width: 767px) {
-  /*
-   * ✅ Reduce blur radius on mobile.
-   * filter:blur() is rasterized on the CPU on mobile browsers
-   * that don't support GPU-accelerated blur (Android WebView,
-   * older iOS). Halving the radius reduces the rasterization
-   * area by ~75% (blur area scales with radius²).
-   */
-  .projects-bg-orb {
-    filter: blur(50px);
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Aspect ratio utilities (fallback for older browsers) */
+@supports not (aspect-ratio: 16 / 9) {
+  .aspect-project {
+    position: relative;
+    padding-bottom: 62.5%; /* 16:10 ratio */
   }
 
-  /*
-   * ✅ Slow down orb animations on mobile.
-   * Longer duration = fewer keyframe interpolations per second
-   * = less style recalculation work on the compositor thread.
-   * Visual difference is imperceptible (orbs move slowly anyway).
-   */
-  .projects-bg-orb--a,
-  .projects-bg-orb--b,
-  .projects-bg-orb--c {
-    animation-duration: 30s !important;
-  }
-
-  /*
-   * ✅ Hide grain on mobile.
-   * The grain texture uses a 4px tiling pattern with mix-blend-mode.
-   * mix-blend-mode requires the browser to rasterize the element
-   * and its background separately then blend them — expensive on
-   * mobile CPUs that don't have a dedicated blend pipeline.
-   */
-  .projects-bg-grain {
-    display: none;
+  .aspect-project > * {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
   }
 }

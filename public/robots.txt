@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://hossam-hassann.netlify.app
+Host: https://hossam-hassann.vercel.app
 
 # Sitemaps
-Sitemap: https://hossam-hassann.netlify.app/sitemap.xml
+Sitemap: https://hossam-hassann.vercel.app/sitemap.xml
